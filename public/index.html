@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KRWMP Portal - Authentication</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 font-sans antialiased flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-md bg-white border border-slate-200 rounded-lg shadow-sm p-6 sm:p-8">
+        
+        <div class="mb-6 text-center">
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">KRWMP Portal</h1>
+            <p id="formSubtitle" class="text-sm text-slate-500 mt-1">Sign in to access your spatial datasets.</p>
+        </div>
+
+        <div id="messageBanner" class="hidden p-3 rounded text-sm mb-4 font-medium"></div>
+
+        <form id="loginForm" class="space-y-4">
+            <div>
+                <label for="login_phone" class="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
+                <input type="tel" id="login_phone" required 
+                    class="w-full px-3 py-2 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    placeholder="E.g., +94771234567">
+            </div>
+
+            <div>
+                <label for="login_password" class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                <input type="password" id="login_password" required 
+                    class="w-full px-3 py-2 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    placeholder="••••••••">
+            </div>
+
+            <div class="pt-2">
+                <button type="submit" 
+                    class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium text-sm transition duration-150">
+                    Sign In
+                </button>
+            </div>
+
+            <p class="text-center text-xs text-slate-500 mt-4">
+                Don't have an account? 
+                <button type="button" onclick="toggleForm('register')" class="text-blue-600 font-medium hover:underline focus:outline-none">Register here</button>
+            </p>
+        </form>
+
+        <form id="registrationForm" class="space-y-4 hidden">
+            <div>
+                <label for="reg_name" class="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                <input type="text" id="reg_name" required 
+                    class="w-full px-3 py-2 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    placeholder="E.g., John Doe">
+            </div>
+
+            <div>
+                <label for="reg_phone" class="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
+                <input type="tel" id="reg_phone" required 
+                    class="w-full px-3 py-2 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    placeholder="E.g., +94771234567">
+            </div>
+
+            <div>
+                <label for="reg_designation" class="block text-sm font-medium text-slate-700 mb-1">Designation / Role</label>
+                <input type="text" id="reg_designation" required 
+                    class="w-full px-3 py-2 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    placeholder="E.g., Town Planner / GIS Expert">
+            </div>
+
+            <div>
+                <label for="reg_organization" class="block text-sm font-medium text-slate-700 mb-1">Organization / Department</label>
+                <input type="text" id="reg_organization" required 
+                    class="w-full px-3 py-2 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    placeholder="E.g., Urban Development Authority">
+            </div>
+
+            <div>
+                <label for="reg_password" class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                <input type="password" id="reg_password" required 
+                    class="w-full px-3 py-2 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    placeholder="••••••••">
+            </div>
+
+            <div class="pt-2">
+                <button type="submit" 
+                    class="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white rounded font-medium text-sm transition duration-150">
+                    Create Account
+                </button>
+            </div>
+
+            <p class="text-center text-xs text-slate-500 mt-4">
+                Already have an account? 
+                <button type="button" onclick="toggleForm('login')" class="text-blue-600 font-medium hover:underline focus:outline-none">Sign in instead</button>
+            </p>
+        </form>
+
+    </div>
+
+    <script>
+        const banner = document.getElementById('messageBanner');
+
+        // Smooth UI Toggle State Logic
+        function toggleForm(mode) {
+            banner.classList.add('hidden');
+            const loginForm = document.getElementById('loginForm');
+            const regForm = document.getElementById('registrationForm');
+            const subtitle = document.getElementById('formSubtitle');
+
+            if (mode === 'register') {
+                loginForm.classList.add('hidden');
+                regForm.classList.remove('hidden');
+                subtitle.innerText = "Create an account to access the spatial analytics system.";
+            } else {
+                regForm.classList.add('hidden');
+                loginForm.classList.remove('hidden');
+                subtitle.innerText = "Sign in to access your spatial datasets.";
+            }
+        }
+
+        // Handle Login Submission Logic
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            banner.classList.add('hidden');
+
+            const payload = {
+                phone_number: document.getElementById('login_phone').value,
+                password: document.getElementById('login_password').value
+            };
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                
+                banner.classList.remove('hidden');
+                banner.innerText = result.message;
+
+                if (response.ok) {
+                    banner.className = "p-3 rounded text-sm mb-4 font-medium bg-green-50 text-green-700 border border-green-200";
+                    
+                    // Commit active user properties to client session storage
+                    localStorage.setItem('krwmp_user', JSON.stringify(result.user));
+                    
+                    // Route directly to Map Dashboard Canvas Shell
+                    setTimeout(() => {
+                        window.location.href = '/map.html';
+                    }, 1000);
+                } else {
+                    banner.className = "p-3 rounded text-sm mb-4 font-medium bg-red-50 text-red-700 border border-red-200";
+                }
+            } catch (err) {
+                showNetworkError();
+            }
+        });
+
+        // Handle Registration Submission Logic
+        document.getElementById('registrationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            banner.classList.add('hidden');
+
+            const payload = {
+                name: document.getElementById('reg_name').value,
+                phone_number: document.getElementById('reg_phone').value,
+                designation: document.getElementById('reg_designation').value,
+                organization: document.getElementById('reg_organization').value,
+                password: document.getElementById('reg_password').value
+            };
+
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+
+                banner.classList.remove('hidden');
+                banner.innerText = result.message;
+
+                if (response.ok) {
+                    banner.className = "p-3 rounded text-sm mb-4 font-medium bg-green-50 text-green-700 border border-green-200";
+                    document.getElementById('registrationForm').reset();
+                    setTimeout(() => toggleForm('login'), 1500); // Shift tabs over seamlessly to login UI
+                } else {
+                    banner.className = "p-3 rounded text-sm mb-4 font-medium bg-red-50 text-red-700 border border-red-200";
+                }
+            } catch (err) {
+                showNetworkError();
+            }
+        });
+
+        function showNetworkError() {
+            banner.classList.remove('hidden');
+            banner.className = "p-3 rounded text-sm mb-4 font-medium bg-red-50 text-red-700 border border-red-200";
+            banner.innerText = "Failed to communicate with the KRWMP authentication server.";
+        }
+    </script>
+</body>
+</html>

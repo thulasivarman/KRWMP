@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KRWMP Portal - Spatial Analytics</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/maplibre-gl@^4.0.0/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@^4.0.0/dist/maplibre-gl.css" rel="stylesheet" />
+    
+    <link href="/assets/css/style.css" rel="stylesheet" />
+    <script src="/assets/js/layers-config.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans antialiased flex flex-col h-screen">
+
+    <div class="flex flex-1 overflow-hidden relative">
+        
+        <aside id="sidebar" class="absolute left-0 top-0 h-full w-80 bg-slate-900 border-r border-slate-800 flex flex-col z-40 transition-transform duration-300 transform translate-x-0"></aside>
+
+        <button onclick="toggleSidebar()" class="absolute left-4 top-4 z-50 bg-slate-950 text-slate-300 hover:text-white border border-slate-800 p-2.5 rounded-md shadow-lg flex items-center justify-center focus:outline-none transition" title="Toggle Sidebar Menu">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </button>
+
+        <main id="map" class="w-full h-full"></main>
+    </div>
+
+    <footer class="bg-slate-950 border-t border-slate-800 px-6 py-2.5 z-30 text-center md:flex md:justify-between md:items-center text-xs tracking-wide text-slate-400">
+        <p class="font-medium text-slate-300">This site was developed under the <span class="text-emerald-400 font-semibold">Kelani River Basin Management Plan Project</span>.</p>
+        <p class="mt-1 md:mt-0 uppercase text-[10px] tracking-widest text-slate-500 font-bold">Ministry of Agriculture</p>
+    </footer>
+
+    <script>
+        // =============================================================
+        // 1. ASYNCHRONOUS FRONTEND INTERFACE ENGINE INITIALIZATION
+        // =============================================================
+        async function loadSidebarAndUI() {
+            try {
+                const response = await fetch('/sidebar.html');
+                if (!response.ok) throw new Error("Sidebar template could not be loaded.");
+                
+                document.getElementById('sidebar').innerHTML = await response.text();
+                buildDynamicLayerControls();
+
+                const activeSessionUser = JSON.parse(localStorage.getItem('krwmp_user'));
+                if (activeSessionUser && document.getElementById('userNameLabel')) {
+                    document.getElementById('userNameLabel').innerText = activeSessionUser.name;
+                }
+            } catch (err) {
+                console.error("UI compilation execution fault error:", err);
+            }
+        }
+
+        // Programmatically generate sidebar layer switches out of your configuration parameters array
+        function buildDynamicLayerControls() {
+            const container = document.getElementById('dynamicLayerContainer');
+            if (!container) return;
+
+            let htmlContent = '';
+            krwmpLayersRegistry.forEach((layer, idx) => {
+                const isChecked = layer.defaultVisible ? 'checked' : '';
+                const paddingTopClass = idx === 0 ? 'pt-2' : '';
+                
+                let legendGraphicHTML = '';
+                if (layer.symbology.legendType === 'polygon') {
+                    legendGraphicHTML = `<div class="w-6 h-4 rounded-sm flex-shrink-0 border-2" style="border-color: ${layer.symbology.strokeColor}; background-color: ${layer.symbology.fillColor}33;"></div>`;
+                } else if (layer.symbology.legendType === 'line') {
+                    legendGraphicHTML = `<div class="w-6 h-0.5 flex-shrink-0" style="background-color: ${layer.symbology.strokeColor};"></div>`;
+                }
+
+                htmlContent += `
+                    <div class="${paddingTopClass}">
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center gap-3 text-sm cursor-pointer text-slate-400 hover:text-white">
+                                <input type="checkbox" id="checkbox-${layer.id}" ${isChecked} 
+                                    onchange="toggleRegistryLayer('${layer.id}')" 
+                                    class="rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-0">
+                                ${layer.name}
+                            </label>
+                            <button onclick="toggleSection('legend-${layer.id}', 'icon-${layer.id}')" class="text-slate-500 hover:text-emerald-400 p-1 transition">
+                                <svg id="icon-${layer.id}" class="h-4 w-4 rotate-icon collapsed" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="legend-${layer.id}" class="accordion-content collapsed ml-7">
+                            <div class="mt-2 flex items-center gap-3 bg-slate-900/80 p-2.5 rounded border border-slate-800">
+                                ${legendGraphicHTML}
+                                <div class="text-[10px] leading-tight text-slate-500">
+                                    <span class="text-slate-300 font-bold block mb-0.5">SYMBOLOGY</span>
+                                    ${layer.symbology.legendText}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = htmlContent;
+        }
+
+        loadSidebarAndUI();
+
+        // =============================================================
+        // 2. STRUCTURAL INTERFACE ACCORDION PANEL VIEW UTILITIES
+        // =============================================================
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('translate-x-0');
+            sidebar.classList.toggle('-translate-x-full');
+        }
+
+        function toggleSection(contentId, iconId) {
+            const content = document.getElementById(contentId);
+            const icon = document.getElementById(iconId);
+            if (content && icon) {
+                content.classList.toggle('collapsed');
+                icon.classList.toggle('collapsed');
+            }
+        }
+
+        // =============================================================
+        // 3. INITIALIZE INTERACTIVE MAP ENVIRONMENT BASE LAYERS
+        // =============================================================
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: {
+                version: 8,
+                sources: {
+                    'osm-raster-tiles': {
+                        type: 'raster',
+                        tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                        tileSize: 256,
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    }
+                },
+                layers: [{ id: 'osm-layer', type: 'raster', source: 'osm-raster-tiles', minzoom: 0, maxzoom: 19 }]
+            },
+            center: [80.20, 6.95], 
+            zoom: 9,
+            pitch: 0
+        });
+        map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+        // =============================================================
+        // 4. DATA-DRIVEN SPATIAL VECTOR REGISTRY INJECTION HUB
+        // =============================================================
+        map.on('load', () => {
+            krwmpLayersRegistry.forEach(layer => {
+                try {
+                    map.addSource(`${layer.id}-source`, { type: 'geojson', data: layer.url });
+                    const visibilityValue = layer.defaultVisible ? 'visible' : 'none';
+
+                    if (layer.type === 'polygon') {
+                        // Inject Area Polygon Fill Layer
+                        map.addLayer({
+                            id: `${layer.id}-fill`, type: 'fill', source: `${layer.id}-source`,
+                            layout: { 'visibility': visibilityValue },
+                            paint: { 'fill-color': layer.symbology.fillColor, 'fill-opacity': layer.symbology.fillOpacity }
+                        });
+                        
+                        // Inject Bounding Outline Line Stroke Layer
+                        map.addLayer({
+                            id: `${layer.id}-line`, type: 'line', source: `${layer.id}-source`,
+                            layout: { 'visibility': visibilityValue },
+                            paint: { 'line-color': layer.symbology.strokeColor, 'line-width': layer.symbology.strokeWidth }
+                        });
+                        
+                        // Register cursor tracking updates across both line and fill geometries
+                        attachMouseHoverControl(`${layer.id}-fill`);
+                        attachMouseHoverControl(`${layer.id}-line`);
+                    } 
+                    else if (layer.type === 'line') {
+                        map.addLayer({
+                            id: `${layer.id}-line`, type: 'line', source: `${layer.id}-source`,
+                            layout: { 'visibility': visibilityValue },
+                            paint: { 'line-color': layer.symbology.strokeColor, 'line-width': layer.symbology.strokeWidth }
+                        });
+                        attachMouseHoverControl(`${layer.id}-line`);
+                    }
+                } catch (layerError) {
+                    console.warn(`Skipped registering layer [${layer.id}]:`, layerError.message);
+                }
+            });
+        });
+
+        // =============================================================
+        // 5. METADATA POPUP ATTRIBUTE ASSEMBLER ENGINE (GLOBAL INTERCEPTOR)
+        // =============================================================
+        
+        // Expanded target layer query configuration stack array metrics
+        const targetClickableLayers = [
+            'kelani-basin-fill',
+            'kelani-basin-line',
+            'dsd-boundary-fill',
+            'dsd-boundary-line'
+        ];
+
+        map.on('click', (e) => {
+            // Query rendered vector features sitting directly under click point coordinates coordinates
+            const features = map.queryRenderedFeatures(e.point, {
+                layers: targetClickableLayers
+            });
+
+            // Diagnostic Dev Terminal Log Hook (F12 inspection checkpoint)
+            console.log("=== KRWMP CLICK INTERCEPTOR DATA ===");
+            console.log("Raw Map Pointer Coordinates Lat/Lng:", e.lngLat);
+            console.log("Captured Map Viewport Features Array:", features);
+
+            if (!features || features.length === 0) {
+                console.log("No valid vector layers caught under pointer cursor location click.");
+                return;
+            }
+
+            // Prioritize selecting features that cleanly hold structured attribute property metadata keys
+            const clickedFeature = features.find(f => f.properties && Object.keys(f.properties).length > 0) || features[0];
+            const properties = clickedFeature.properties;
+            
+            console.log("Selected Feature Structural Metadata Properties Array:", properties);
+
+            // Strip suffix values away to isolate matching registry identities
+            const layerId = clickedFeature.layer.id.replace('-fill', '').replace('-line', '');
+            const layerMetadata = krwmpLayersRegistry.find(l => l.id === layerId) || { name: "Spatial Layer" };
+
+            // Dynamic runtime compilation string builder loop execution
+            let rowsHTML = '';
+            for (const [key, value] of Object.entries(properties)) {
+                const readableKey = key.replace(/_/g, ' '); 
+                rowsHTML += `
+                    <div style="display: flex; justify-content: space-between; align-items: start; gap: 16px; font-size: 11px; border-bottom: 1px solid rgba(51, 65, 85, 0.4); padding: 4px 0;">
+                        <span style="color: #94a3b8; font-weight: 500; text-transform: capitalize;">${readableKey}:</span>
+                        <span style="color: #f8fafc; font-weight: 600; text-align: right; word-break: break-all;">${value !== null && value !== undefined ? value : 'N/A'}</span>
+                    </div>
+                `;
+            }
+
+            // Complete custom layout inner frame box configuration
+            let popupContent = `
+                <div style="background-color: #020617; color: #f8fafc; font-family: sans-serif; padding: 12px; border-radius: 8px; border: 1px solid #334155; min-width: 240px; max-width: 320px;">
+                    <div style="border-bottom: 1px solid #475569; padding-bottom: 6px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <span style="width: 8px; height: 8px; background-color: #10b981; border-radius: 50%;"></span>
+                        <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #ffffff; letter-spacing: 0.05em;">${layerMetadata.name}</span>
+                    </div>
+                    <div class="custom-scrollbar" style="max-height: 180px; overflow-y: auto; padding-right: 4px;">
+                        ${rowsHTML || '<p style="color: #64748b; font-style: italic; font-size: 11px;">No attribute properties discovered.</p>'}
+                    </div>
+                    <div style="font-size: 9px; color: #475569; font-style: italic; margin-top: 8px; border-top: 1px solid #1e293b; padding-top: 4px; text-align: right;">
+                        KRWMP Management Portal
+                    </div>
+                </div>
+            `;
+
+            new maplibregl.Popup({ closeButton: true, maxWidth: 'none' })
+                .setLngLat(e.lngLat)
+                .setHTML(popupContent)
+                .addTo(map);
+        });
+
+        // Dynamic mouse pointer hand tracking broker controller 
+        function attachMouseHoverControl(layerTargetId) {
+            map.on('mouseenter', layerTargetId, () => { map.getCanvas().style.cursor = 'pointer'; });
+            map.on('mouseleave', layerTargetId, () => { map.getCanvas().style.cursor = ''; });
+        }
+
+        // =============================================================
+        // 6. CENTRAL REGISTRY VISIBILITY LAYER CONTROLLER BROKER
+        // =============================================================
+        function toggleRegistryLayer(layerId) {
+            const checkbox = document.getElementById(`checkbox-${layerId}`);
+            if (!checkbox) return;
+            
+            const visibilityState = checkbox.checked ? 'visible' : 'none';
+
+            if (map.getLayer(`${layerId}-line`)) {
+                map.setLayoutProperty(`${layerId}-line`, 'visibility', visibilityState);
+            }
+            if (map.getLayer(`${layerId}-fill`)) {
+                map.setLayoutProperty(`${layerId}-fill`, 'visibility', visibilityState);
+            }
+        }
+    </script>
+</body>
+</html>
