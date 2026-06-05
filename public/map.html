@@ -3,286 +3,202 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KRWMP Portal - Spatial Analytics Canvas</title>
-    
+    <title>Map Visualization Workspace - KRWMP Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/maplibre-gl@^4.0.0/dist/maplibre-gl.js"></script>
-    <link href="https://unpkg.com/maplibre-gl@^4.0.0/dist/maplibre-gl.css" rel="stylesheet" />
-    
-    <link href="/assets/css/style.css" rel="stylesheet" />
-    
-    <script src="/assets/js/krwmp-global.js"></script>
-    <script src="/assets/js/layers-config.js"></script>
+    <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/assets/css/style.css">
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans antialiased flex flex-col h-screen">
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-emerald-500/30 overflow-hidden">
 
-    <div class="flex flex-1 overflow-hidden relative">
-        
-        <aside id="sidebar" class="absolute left-0 top-0 h-full w-80 bg-slate-900 border-r border-slate-800 flex flex-col z-40 transition-transform duration-300 transform translate-x-0"></aside>
+    <div class="flex h-screen w-screen overflow-hidden">
+        <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col z-20"></div>
 
-        <button onclick="toggleSidebar()" class="absolute left-4 top-4 z-50 bg-slate-950 text-slate-300 hover:text-white border border-slate-800 p-2.5 rounded-md shadow-lg flex items-center justify-center focus:outline-none transition" title="Toggle Sidebar Menu">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-        </button>
+        <div class="flex-1 relative h-full">
+            <div id="map-canvas" class="absolute inset-0 h-full w-full z-10"></div>
 
-        <main id="map" class="w-full h-full"></main>
+            <div id="data-layers-panel" class="hidden absolute top-6 right-6 w-80 bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-xl p-5 shadow-2xl z-20 text-xs">
+                <div class="flex items-center justify-between pb-2.5 border-b border-slate-800 mb-4">
+                    <h3 class="font-bold tracking-wider uppercase text-slate-200">Kelani Basin Layer Matrix</h3>
+                    <button onclick="document.getElementById('data-layers-panel').classList.add('hidden')" class="text-slate-400 hover:text-white font-bold text-base">&times;</button>
+                </div>
+                <div class="space-y-3">
+                    <label class="flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-sky-500/30 transition">
+                        <input type="checkbox" id="chk-layer-basin" checked class="accent-sky-500 h-4 w-4 cursor-pointer">
+                        <div>
+                            <div class="font-semibold text-slate-300">Watershed Catchment Perimeter</div>
+                            <div class="text-[10px] text-slate-500">Outer Basin Morphological Limit</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-emerald-500/30 transition">
+                        <input type="checkbox" id="chk-layer-dsd" class="accent-emerald-500 h-4 w-4 cursor-pointer">
+                        <div>
+                            <div class="font-semibold text-slate-300">Divisional Secretariats (DSD)</div>
+                            <div class="text-[10px] text-slate-500">Secondary Administrative Boundaries</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-amber-500/30 transition">
+                        <input type="checkbox" id="chk-layer-gnd" class="accent-amber-500 h-4 w-4 cursor-pointer">
+                        <div>
+                            <div class="font-semibold text-slate-300">Grama Niladhari Divisions (GND)</div>
+                            <div class="text-[10px] text-slate-500">Micro-Planning Administrative Boundaries</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <footer class="bg-slate-950 border-t border-slate-800 px-6 py-2.5 z-30 text-center md:flex md:justify-between md:items-center text-xs tracking-wide text-slate-400">
-        <p class="font-medium text-slate-300">This site was developed under the <span class="text-emerald-400 font-semibold">Kelani River Basin Management Plan Project</span>.</p>
-        <p class="mt-1 md:mt-0 uppercase text-[10px] tracking-widest text-slate-500 font-bold">Ministry of Agriculture</p>
-    </footer>
-
+    <script src="/assets/js/krwmp-global.js"></script>
+    <script src="/assets/js/layers-config.js"></script>
     <script>
-        // =============================================================
-        // 1. INITIALIZE INTERACTIVE MAP ENVIRONMENT BASE RASTER LAYERS
-        // =============================================================
-        const map = new maplibregl.Map({
-            container: 'map',
-            style: {
-                version: 8,
-                sources: {
-                    'osm-raster-tiles': {
-                        type: 'raster',
-                        tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-                        tileSize: 256,
-                        attribution: '&copy; OpenStreetMap contributors'
-                    }
-                },
-                layers: [{ id: 'osm-layer', type: 'raster', source: 'osm-raster-tiles', minzoom: 0, maxzoom: 19 }]
-            },
-            center: [80.20, 6.95], // Centered around the Kelani River Basin domain context
-            zoom: 9,
-            pitch: 0
+        let mapInstance = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 1. Initialize Global Workspace Wrappers and Nav Fragments
+            if (window.KRWMP_ENGINE) {
+                await window.KRWMP_ENGINE.assembleInterfaceContext('/sidebar.html', 'sidebar');
+                bindSidebarInterfaceInteractions();
+            }
+
+            // 2. Initialize MapLibre Engine over standard Sri Lankan Coordinate Centers
+            // RECTIFIED: Global handle references fixed from 'maplibre-gl' to 'maplibregl'
+            mapInstance = new maplibregl.Map({
+                container: 'map-canvas',
+                style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json', 
+                center: [80.20, 6.98], 
+                zoom: 9.2,
+                minZoom: 8,
+                maxZoom: 16
+            });
+
+            mapInstance.addControl(new maplibregl.NavigationControl(), 'top-left');
+
+            // 3. Compile Database PostGIS Ingestion Nodes once base tiles finish loading
+            mapInstance.on('load', () => {
+                console.log("🗺️ MapLibre Canvas Engine operational. Loading cloud boundary arrays...");
+                initializeSupabaseSpatialSources();
+            });
+
+            // 4. Intercept URL navigation instructions to auto-trigger floating sidebars
+            const urlParameters = new URLSearchParams(window.location.search);
+            if (urlParameters.get('action') === 'open_layers') {
+                document.getElementById('data-layers-panel').classList.remove('hidden');
+            }
         });
 
-        map.addControl(new maplibregl.NavigationControl(), 'top-right');
+        function initializeSupabaseSpatialSources() {
+            const config = window.KRWMP_LAYERS_CONFIG.boundaries;
 
-        // =============================================================
-        // 2. SYNCHRONIZED INTERFACE COMPILATION & VECTOR PIPELINE
-        // =============================================================
-        map.on('load', async () => {
-            console.log("🗺️ Map canvas style loaded. Resolving UI layout components...");
-            
-            try {
-                // Force engine to completely load structural sidebar markup into the active DOM layout
-                await window.KRWMP_ENGINE.assembleInterfaceContext('/sidebar.html', 'sidebar');
-                
-                // Construct dynamic layer checkbox components now that target nodes are guaranteed present
-                buildDynamicLayerControls();
-                console.log("✅ Layer controls safely injected into sidebar container.");
+            // Step sequentially through our standardized configuration matrices
+            Object.entries(config).forEach(([key, layerConfig]) => {
+                // Add the database feature layer API endpoint directly as a map data source
+                mapInstance.addSource(layerConfig.id, {
+                    type: 'geojson',
+                    data: layerConfig.url,
+                    promoteId: 'id' 
+                });
 
-                // Inject central vector registry data sources securely from layers-config.js
-                if (typeof krwmpLayersRegistry !== 'undefined') {
-                    krwmpLayersRegistry.forEach(layer => {
-                        // Prevent duplicate layout registration anomalies
-                        if (map.getSource(`${layer.id}-source`)) return;
-
-                        map.addSource(`${layer.id}-source`, { type: 'geojson', data: layer.url });
-                        const visibilityValue = layer.defaultVisible ? 'visible' : 'none';
-
-                        if (layer.type === 'polygon') {
-                            map.addLayer({
-                                id: `${layer.id}-fill`, 
-                                type: 'fill', 
-                                source: `${layer.id}-source`,
-                                layout: { 'visibility': visibilityValue },
-                                paint: { 'fill-color': layer.symbology.fillColor, 'fill-opacity': layer.symbology.fillOpacity }
-                            });
-                            
-                            map.addLayer({
-                                id: `${layer.id}-line`, 
-                                type: 'line', 
-                                source: `${layer.id}-source`,
-                                layout: { 'visibility': visibilityValue },
-                                paint: { 'line-color': layer.symbology.strokeColor, 'line-width': layer.symbology.strokeWidth }
-                            });
-                            
-                            attachMouseHoverControl(`${layer.id}-fill`);
-                            attachMouseHoverControl(`${layer.id}-line`);
-                        } 
-                        else if (layer.type === 'line') {
-                            map.addLayer({
-                                id: `${layer.id}-line`, 
-                                type: 'line', 
-                                source: `${layer.id}-source`,
-                                layout: { 'visibility': visibilityValue },
-                                paint: { 'line-color': layer.symbology.strokeColor, 'line-width': layer.symbology.strokeWidth }
-                            });
-                            attachMouseHoverControl(`${layer.id}-line`);
+                // Render matching geometric multi-polygon fills and borders
+                layerConfig.layers.forEach(layerStyle => {
+                    mapInstance.addLayer({
+                        id: layerStyle.id,
+                        type: layerStyle.type,
+                        source: layerConfig.id,
+                        paint: layerStyle.paint,
+                        layout: {
+                            // The basin outline displays immediately; sub-boundaries remain hidden until selected
+                            'visibility': key === 'basin' ? 'visible' : 'none'
                         }
                     });
-                    console.log("🚀 All GeoJSON spatial vectors successfully registered onto WebGL canvas.");
-                }
 
-            } catch (err) {
-                console.error("❌ Critical failure during spatial environment initialization:", err);
-            }
-        });
-
-        // =============================================================
-        // 3. DYNAMIC LAYER CONTROL SIDEBAR GENERATOR ENGINE
-        // =============================================================
-        function buildDynamicLayerControls() {
-            const container = document.getElementById('dynamicLayerContainer');
-            if (!container) {
-                console.warn("⚠️ Target layer container [#dynamicLayerContainer] not found in the sidebar DOM.");
-                return;
-            }
-
-            if (typeof krwmpLayersRegistry === 'undefined' || !Array.isArray(krwmpLayersRegistry)) {
-                console.error("❌ krwmpLayersRegistry is missing or invalid.");
-                return;
-            }
-
-            let htmlContent = '';
-            
-            krwmpLayersRegistry.forEach((layer, idx) => {
-                const isChecked = layer.defaultVisible ? 'checked' : '';
-                const paddingTopClass = idx === 0 ? 'pt-1' : 'pt-2';
-                
-                // Defensive fallbacks to shield engine against undefined registry elements
-                const symbology = layer.symbology || {};
-                const legendType = symbology.legendType || 'polygon';
-                const legendText = symbology.legendText || 'Layer Symbology Metrics';
-                const strokeColor = symbology.strokeColor || '#cbd5e1';
-                const fillColor = symbology.fillColor || '#94a3b8';
-
-                let legendGraphicHTML = '';
-                if (legendType === 'polygon') {
-                    legendGraphicHTML = `<div class="w-6 h-4 rounded-sm flex-shrink-0 border-2" style="border-color: ${strokeColor}; background-color: ${fillColor}33;"></div>`;
-                } else if (legendType === 'line') {
-                    legendGraphicHTML = `<div class="w-6 h-0.5 flex-shrink-0" style="background-color: ${strokeColor};"></div>`;
-                }
-
-                htmlContent += `
-                    <div class="${paddingTopClass}">
-                        <div class="flex items-center justify-between">
-                            <label class="flex items-center gap-3 text-sm cursor-pointer text-slate-400 hover:text-white transition-colors select-none">
-                                <input type="checkbox" id="checkbox-${layer.id}" ${isChecked} 
-                                    onchange="toggleRegistryLayer('${layer.id}')" 
-                                    class="rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-0 cursor-pointer">
-                                ${layer.name}
-                            </label>
-                            <button onclick="toggleSection('legend-${layer.id}', 'icon-${layer.id}')" class="text-slate-500 hover:text-emerald-400 p-1 transition" title="View Info">
-                                <svg id="icon-${layer.id}" class="h-4 w-4 rotate-icon collapsed" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div id="legend-${layer.id}" class="accordion-content collapsed ml-7">
-                            <div class="mt-2 flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/80">
-                                ${legendGraphicHTML}
-                                <div class="text-[10px] leading-tight text-slate-500 tracking-wide">
-                                    <span class="text-slate-400 font-bold block mb-0.5 uppercase tracking-wider text-[9px]">Symbology</span>
-                                    ${legendText}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            container.innerHTML = htmlContent;
-        }
-
-        // =============================================================
-        // 4. METADATA POPUP ENGINE (STABLE WHITE INFOMINERS WINDOW)
-        // =============================================================
-        const targetClickableLayers = [
-            'kelani-basin-fill', 'kelani-basin-line',
-            'dsd-boundary-fill', 'dsd-boundary-line',
-            'gnd-boundary-fill', 'gnd-boundary-line'
-        ];
-
-        map.on('click', (e) => {
-            const features = map.queryRenderedFeatures(e.point, { layers: targetClickableLayers });
-            if (!features || features.length === 0) return;
-
-            const clickedFeature = features.find(f => f.properties && Object.keys(f.properties).length > 0) || features[0];
-            const properties = clickedFeature.properties;
-
-            const layerId = clickedFeature.layer.id.replace(/-(fill|line)$/, '');
-            const layerMetadata = krwmpLayersRegistry.find(l => l.id === layerId) || { name: "Spatial Layer", popupFields: [] };
-
-            let popupHtmlContent = `
-                <div style="font-family: Arial, sans-serif; min-width: 240px; max-width: 320px; color: #1e293b;">
-                    <div style="font-weight: 700; font-size: 13px; text-transform: uppercase; color: #0f172a; border-bottom: 2px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 6px; letter-spacing: 0.025em;">
-                        ${layerMetadata.name}
-                    </div>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 11px; line-height: 1.4;">
-                        <tbody>
-            `;
-
-            if (layerMetadata.popupFields && layerMetadata.popupFields.length > 0) {
-                layerMetadata.popupFields.forEach(field => {
-                    const rawVal = properties[field.key];
-                    const cleanDisplayValue = (rawVal !== null && rawVal !== undefined) ? rawVal : 'N/A';
-                    popupHtmlContent += `
-                        <tr style="border-bottom: 1px solid #f1f5f9;">
-                            <td style="padding: 5px 0; font-weight: 600; color: #64748b; width: 45%; vertical-align: top;">${field.label}:</td>
-                            <td style="padding: 5px 0; font-weight: 500; color: #0f172a; text-align: right; word-break: break-all;">${cleanDisplayValue}</td>
-                        </tr>
-                    `;
+                    // Attach informational tooltip popup click handshakes for every custom boundary style loop
+                    if (layerStyle.type === 'fill') {
+                        attachInteractivePopupHandshake(layerStyle.id, key);
+                    }
                 });
-            } else {
-                for (const [key, value] of Object.entries(properties)) {
-                    const cleanKeyLabel = key.replace(/_/g, ' ');
-                    popupHtmlContent += `
-                        <tr style="border-bottom: 1px solid #f1f5f9;">
-                            <td style="padding: 5px 0; font-weight: 600; color: #64748b; text-transform: capitalize; width: 45%; vertical-align: top;">${cleanKeyLabel}:</td>
-                            <td style="padding: 5px 0; font-weight: 500; color: #0f172a; text-align: right; word-break: break-all;">${value !== null && value !== undefined ? value : 'N/A'}</td>
-                        </tr>
-                    `;
-                }
-            }
+            });
 
-            popupHtmlContent += `</tbody></table></div>`;
-
-            new maplibregl.Popup({ closeButton: true, closeOnClick: true, maxWidth: 'none' })
-                .setLngLat(e.lngLat)
-                .setHTML(popupHtmlContent)
-                .addTo(map);
-        });
-
-        // =============================================================
-        // 5. CORE CONTROLLERS & UTILITY INTERFACE INTERACTIONS
-        // =============================================================
-        function attachMouseHoverControl(layerTargetId) {
-            map.on('mouseenter', layerTargetId, () => { map.getCanvas().style.cursor = 'pointer'; });
-            map.on('mouseleave', layerTargetId, () => { map.getCanvas().style.cursor = ''; });
+            // Synchronize visibility toggle elements with checkbox state controls
+            bindCheckboxVisibilityToggle('chk-layer-basin', ['layer-basin-polygon', 'layer-basin-outline']);
+            bindCheckboxVisibilityToggle('chk-layer-dsd', ['layer-dsd-polygon', 'layer-dsd-outline']);
+            bindCheckboxVisibilityToggle('chk-layer-gnd', ['layer-gnd-polygon', 'layer-gnd-outline']);
         }
 
-        // Window sidebar sliding layout transition control
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('translate-x-0');
-            sidebar.classList.toggle('-translate-x-full');
-        }
-
-        // Accordion collapsing layout transition control
-        function toggleSection(contentId, iconId) {
-            const content = document.getElementById(contentId);
-            const icon = document.getElementById(iconId);
-            if (content && icon) {
-                content.classList.toggle('collapsed');
-                icon.classList.toggle('collapsed');
-            }
-        }
-
-        // Active layer toggle mapping layout visibility sync
-        function toggleRegistryLayer(layerId) {
-            const checkbox = document.getElementById(`checkbox-${layerId}`);
+        function bindCheckboxVisibilityToggle(checkboxId, targetLayerIds) {
+            const checkbox = document.getElementById(checkboxId);
             if (!checkbox) return;
-            
-            const visibilityState = checkbox.checked ? 'visible' : 'none';
 
-            if (map.getLayer(`${layerId}-line`)) {
-                map.setLayoutProperty(`${layerId}-line`, 'visibility', visibilityState);
-            }
-            if (map.getLayer(`${layerId}-fill`)) {
-                map.setLayoutProperty(`${layerId}-fill`, 'visibility', visibilityState);
+            checkbox.addEventListener('change', (e) => {
+                const targetVisibilitySetting = e.target.checked ? 'visible' : 'none';
+                targetLayerIds.forEach(layerId => {
+                    if (mapInstance.getLayer(layerId)) {
+                        mapInstance.setLayoutProperty(layerId, 'visibility', targetVisibilitySetting);
+                    }
+                });
+            });
+        }
+
+        function attachInteractivePopupHandshake(layerFillId, boundaryTypeKey) {
+            mapInstance.on('click', layerFillId, (e) => {
+                if (!e.features.length) return;
+                const props = e.features[0].properties;
+                
+                let titleLabel = '';
+                let descriptionHtml = '';
+
+                // Extract custom attribute keys based on the matching data table schemas
+                if (boundaryTypeKey === 'basin') {
+                    titleLabel = props.wshd_name || 'Kelani River Catchment';
+                    descriptionHtml = `
+                        <div class="space-y-1 mt-1 font-mono text-[10px] text-slate-400">
+                            <div>Watershed No: <span class="text-sky-400 font-bold">${props.washd_no}</span></div>
+                            <div>Total Area Hectares: <span class="text-slate-200">${parseFloat(props.hectares || 0).toLocaleString()} ha</span></div>
+                            <div>Computed Area SqKm: <span class="text-slate-200">${parseFloat(props.area_sqkm || 0).toFixed(2)} km²</span></div>
+                        </div>`;
+                } else if (boundaryTypeKey === 'dsd') {
+                    titleLabel = `${props.dsd_n || 'Unknown'} DSD`;
+                    descriptionHtml = `<div class="font-mono text-[10px] text-slate-400 mt-1">ID DSD Identifier: <span class="text-emerald-400 font-bold">${props.iddsd || 0}</span></div>`;
+                } else if (boundaryTypeKey === 'gnd') {
+                    titleLabel = `${props.gnd_name || 'Unknown'} GND Division`;
+                    descriptionHtml = `
+                        <div class="space-y-1 mt-1 font-mono text-[10px] text-slate-400">
+                            <div>Local Authority: <span class="text-slate-200">${props.la || 'N/A'}</span></div>
+                            <div>GND Division Code: <span class="text-amber-400 font-bold">${props.idgnd || 0}</span></div>
+                            <div>Registered Area: <span class="text-slate-200">${parseFloat(props.area_ha || 0).toFixed(2)} ha</span></div>
+                        </div>`;
+                }
+
+                // RECTIFIED: Corrected object construction handle from 'maplibre-gl.Popup' to 'maplibregl.Popup'
+                new maplibregl.Popup({ className: 'krwmp-spatial-popup' })
+                    .setLngLat(e.lngLat)
+                    .setHTML(`
+                        <div class="p-2 bg-slate-900 border border-slate-800 text-slate-100 rounded-lg text-xs min-w-[180px]">
+                            <div class="font-bold border-b border-slate-800 pb-1 text-slate-200">${titleLabel}</div>
+                            ${descriptionHtml}
+                        </div>
+                    `)
+                    .addTo(mapInstance);
+            });
+
+            // Adjust mouse cursor visibility states upon crossing polygon boundary arrays
+            mapInstance.on('mouseenter', layerFillId, () => { mapInstance.getCanvas().style.cursor = 'pointer'; });
+            mapInstance.on('mouseleave', layerFillId, () => { mapInstance.getCanvas().style.cursor = ''; });
+        }
+
+        function bindSidebarInterfaceInteractions() {
+            // Redirect the persistent sidebar button actions back to our internal sliding view panel
+            const dataLayersBtn = document.getElementById('menu-item-data-layers') || 
+                                 document.querySelector('[id*="data-layers"]') ||
+                                 document.querySelector('button[onclick*="Toggle"]');
+            
+            if (dataLayersBtn) {
+                dataLayersBtn.removeAttribute('onclick');
+                dataLayersBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const panel = document.getElementById('data-layers-panel');
+                    if (panel) panel.classList.toggle('hidden');
+                });
             }
         }
     </script>

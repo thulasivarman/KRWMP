@@ -6,18 +6,17 @@ if (!process.env.DATABASE_URL) {
 }
 
 /**
- * KRWMP PLATFORM - CENTRALIZED POSTGRESQL POOL CONTROLLER
- * Hardened for Supabase transaction pooler stability across remote clouds.
+ * KRWMP MANAGEMENT PORTAL - NATIVE POSTGRESQL POOL ENGINE
+ * Tailored for direct transactional cloud streaming capabilities.
  */
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
-        // Enforces SSL encryption layers to fulfill Supabase cloud validation constraints
-        rejectUnauthorized: false 
+        rejectUnauthorized: false // Required for remote cloud database cluster validation
     },
-    max: 10,
+    max: 20, // Increased threshold execution pool threads for large iterations like GND
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 5000
+    connectionTimeoutMillis: 10000
 });
 
 module.exports = pool;

@@ -138,31 +138,20 @@
     </div>
 
     <!-- SYSTEM ADMINISTRATION DASHBOARD PANEL (Visible to Admin Only) -->
-    <div id="section-user-management" class="bg-slate-950/20 border border-slate-800/60 rounded-xl p-3.5 shadow-sm hidden">
-        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800/50">
-            <div class="flex items-center gap-2">
-                <svg class="h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                <h3 class="text-xs font-bold tracking-wider text-slate-300 uppercase">Administration</h3>
-            </div>
+    <div id="section-user-management" class="hidden mt-4 pt-4 border-t border-slate-800/60">
+    <label class="px-4 block text-[9px] font-bold tracking-widest text-slate-500 uppercase mb-2">
+        System Administration
+    </label>
+    
+    <a href="/admin.html" id="sidebar-admin-link" class="mx-3 px-3 py-2 rounded-lg flex items-center gap-2.5 text-xs font-medium text-slate-400 hover:text-emerald-400 hover:bg-slate-950/40 border border-transparent hover:border-slate-800/40 transition-all group">
+        <div class="h-5 w-5 rounded-md bg-slate-950/60 border border-slate-800 flex items-center justify-center group-hover:border-emerald-500/20 group-hover:bg-emerald-500/5 transition">
+            <svg class="h-3 w-3 text-slate-500 group-hover:text-emerald-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+            </svg>
         </div>
-        <div class="pt-1">
-            <label class="block text-[10px] font-bold tracking-wide text-slate-500 uppercase mb-2">Assign Platform Access Rights</label>
-            <table class="w-full text-left">
-                <thead>
-                    <tr class="text-[9px] uppercase tracking-wider text-slate-500 border-b border-slate-800/60">
-                        <th class="pb-1 font-semibold">User</th>
-                        <th class="pb-1 font-semibold">Identifier</th>
-                        <th class="pb-1 font-semibold text-right">Role Allocation</th>
-                    </tr>
-                </thead>
-                <tbody id="user-admin-table-body" class="divide-y divide-slate-800/40">
-                    <!-- Loaded asynchronously by your KRWMP_ENGINE via loadUserManagementDashboard() -->
-                </tbody>
-            </table>
-        </div>
-    </div>
+        <span>User Management Hub</span>
+    </a>
+</div>
 
 </div>
 

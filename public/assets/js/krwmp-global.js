@@ -1,4 +1,3 @@
-// public/assets/js/krwmp-global.js
 /**
  * ==========================================================================
  * KRWMP MANAGEMENT PORTAL - CENTRALIZED GLOBAL RUNTIME ORCHESTRATOR
@@ -29,7 +28,6 @@ window.KRWMP_ENGINE = {
                 this.Session.user = JSON.parse(cachedUser);
                 this.Session.isAuthenticated = true;
             } else {
-                // Hard offline fallback metrics parameters
                 this.Session.user = {
                     name: "Kadampeswaran Thulasivarman",
                     designation: "Town Planner & Development Consultant",
@@ -75,15 +73,15 @@ window.KRWMP_ENGINE = {
             if (domNode) domNode.innerText = targetValue;
         }
 
-        // 2. Dynamic Menu Composition based on Role Permissions Matrix Maps
-        let allowedSections = [];
-        try {
-            allowedSections = typeof profile.visible_sections === 'string' 
-                ? JSON.parse(profile.visible_sections) 
-                : profile.visible_sections || [];
-        } catch(e) { 
-            allowedSections = profile.visible_sections || []; 
+        // 2. Map Portal Navigation Home Link Branding Anchor Adjustment
+        const brandAnchor = document.getElementById('sidebar-brand-title') || document.querySelector('.sidebar-brand-container a') || document.querySelector('aside h1 a');
+        if (brandAnchor) {
+            brandAnchor.setAttribute('href', '/map.html');
+            brandAnchor.classList.add('hover:text-emerald-400', 'transition-colors');
         }
+
+        // 3. Dynamic Menu Composition with Admin Workspace Filtering Rules
+        const isCurrentPageAdminWorkspace = window.location.pathname.endsWith('admin.html');
 
         const structuralSections = {
             'section-data-layers': 'data_layers',
@@ -93,76 +91,27 @@ window.KRWMP_ENGINE = {
             'section-user-management': 'user_management'
         };
 
+        let allowedSections = [];
+        try {
+            allowedSections = typeof profile.visible_sections === 'string' 
+                ? JSON.parse(profile.visible_sections) 
+                : profile.visible_sections || [];
+        } catch(e) { 
+            allowedSections = profile.visible_sections || []; 
+        }
+
         for (const [domId, sectionKey] of Object.entries(structuralSections)) {
             const containerNode = document.getElementById(domId);
             if (containerNode) {
-                if (allowedSections.includes(sectionKey)) {
+                // FILTER EXTENSION: If user is inside admin page, hide all map-specific control panels
+                if (isCurrentPageAdminWorkspace && sectionKey !== 'user_management') {
+                    containerNode.classList.add('hidden');
+                } else if (allowedSections.includes(sectionKey)) {
                     containerNode.classList.remove('hidden');
                 } else {
                     containerNode.classList.add('hidden');
                 }
             }
-        }
-
-        // 3. Render User Management Tables for Admins Exclusively
-        if (profile.role_name === 'admin' && document.getElementById('user-admin-table-body')) {
-            this.loadUserManagementDashboard();
-        }
-    },
-
-    loadUserManagementDashboard: async function() {
-        const tbody = document.getElementById('user-admin-table-body');
-        if (!tbody || tbody.dataset.loaded === 'true') return;
-
-        try {
-            const res = await fetch('/api/admin/users');
-            const data = await res.json();
-            if (!data.success) return;
-
-            let html = '';
-            data.users.forEach(u => {
-                let optionsHtml = '';
-                data.roles.forEach(r => {
-                    const selected = u.role_id === r.id ? 'selected' : '';
-                    optionsHtml += `<option value="${r.id}" ${selected}>${r.role_name.toUpperCase()}</option>`;
-                });
-
-                html += `
-                    <tr class="border-b border-slate-800/40 text-[11px]">
-                        <td class="py-2 text-slate-300 font-medium">${u.name}</td>
-                        <td class="py-2 text-slate-500">${u.identifier}</td>
-                        <td class="py-2 text-right">
-                            <select onchange="window.KRWMP_ENGINE.modifyUserRole('${u.identifier}', this.value)" 
-                                class="bg-slate-950 border border-slate-800 rounded px-1 py-0.5 text-[10px] text-emerald-400 focus:outline-none cursor-pointer">
-                                ${optionsHtml}
-                            </select>
-                        </td>
-                    </tr>
-                `;
-            });
-            tbody.innerHTML = html;
-            tbody.dataset.loaded = 'true';
-        } catch(err) { 
-            console.error("Error drawing administration table context:", err); 
-        }
-    },
-
-    modifyUserRole: async function(userIdentifier, newRoleId) {
-        try {
-            const res = await fetch('/api/admin/assign-role', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ targetUserIdentifier: userIdentifier, newRoleId: newRoleId })
-            });
-            const data = await res.json();
-            if (data.success) {
-                console.log(`User role context successfully modified for: ${userIdentifier}`);
-                if (userIdentifier === this.Session.user.identifier) {
-                    window.location.reload();
-                }
-            }
-        } catch(e) { 
-            alert("Error writing access role adjustments to database."); 
         }
     },
 
@@ -175,7 +124,7 @@ window.KRWMP_ENGINE = {
         modalOverlay.className = 'fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm animate-fade-in';
         
         modalOverlay.innerHTML = `
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 w-full max-w-md shadow-2xl transform scale-100 transition-all">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 w-full max-w-md shadow-2xl transform scale-100 transition-all text-xs">
                 <div class="flex items-center justify-between pb-3 border-b border-slate-800">
                     <h3 class="text-sm font-bold tracking-wider text-slate-200 uppercase">Modify Planning Profile</h3>
                     <button id="close-profile-modal" class="text-slate-400 hover:text-white text-lg transition">&times;</button>
@@ -184,23 +133,23 @@ window.KRWMP_ENGINE = {
                 <form id="profile-edit-form" class="mt-4 space-y-4">
                     <div>
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Full Name</label>
-                        <input type="text" id="input-profile-name" value="${profile.name || ''}" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/50" required>
+                        <input type="text" id="input-profile-name" value="${profile.name || ''}" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500/50" required>
                     </div>
                     <div>
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Professional Designation</label>
-                        <input type="text" id="input-profile-desc" value="${profile.designation || ''}" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/50" required>
+                        <input type="text" id="input-profile-desc" value="${profile.designation || ''}" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500/50" required>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Avatar Initials</label>
-                            <input type="text" id="input-profile-initials" value="${profile.initials || ''}" maxlength="3" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/50 uppercase" required>
+                            <input type="text" id="input-profile-initials" value="${profile.initials || ''}" maxlength="3" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500/50 uppercase" required>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">System Identifier</label>
-                            <input type="text" id="input-profile-id" value="${profile.identifier || 'thulasi'}" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs text-slate-400 focus:outline-none border-dashed bg-slate-950/40 cursor-not-allowed select-none" readonly disabled>
+                            <input type="text" id="input-profile-id" value="${profile.identifier || 'thulasi'}" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-slate-400 focus:outline-none border-dashed bg-slate-950/40 cursor-not-allowed select-none" readonly disabled>
                         </div>
                     </div>
-                    <div class="pt-2 flex justify-end gap-2 text-xs font-medium">
+                    <div class="pt-2 flex justify-end gap-2 font-medium">
                         <button type="button" id="cancel-profile-modal" class="bg-slate-800 hover:bg-slate-750 text-slate-300 px-4 py-2 rounded transition">Cancel</button>
                         <button type="submit" id="save-profile-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded transition shadow-lg shadow-emerald-950/20">Save Updates</button>
                     </div>
@@ -238,7 +187,6 @@ window.KRWMP_ENGINE = {
                 };
 
                 try {
-                    // SECURE TRANSMISSION MUTATION HOOK
                     const res = await fetch('/api/auth/profile/update', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -252,6 +200,9 @@ window.KRWMP_ENGINE = {
                         this.syncProfileMetadata();
                         dropModal();
                         console.log("✏️ User identity properties fully persisted to database layers.");
+                        if (window.location.pathname.endsWith('admin.html') && typeof window.refreshDirectoryData === 'function') {
+                            window.refreshDirectoryData();
+                        }
                     } else {
                         throw new Error(result.message || "Server verification refused updates.");
                     }
