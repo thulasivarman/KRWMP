@@ -56,63 +56,89 @@ body, html {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #10b981; /* Emerald Green hover color */
 }
-
 /* ==========================================================================
-   INTERACTIVE POPUP CONTAINER OVERRIDES (FIXED Layout)
+   INTERACTIVE SPATIAL POPUP STYLESHEET REVERSION
    ========================================================================== */
 
-/* 1. Kill the native MapLibre white background border & apply modern shadow configurations */
-.maplibregl-popup-content, .mapboxgl-popup-content {
-    background: transparent !important;
-    padding: 0 !important;
-    border-radius: 0.5rem !important; /* matches rounded-lg */
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.4) !important;
-    border: none !important;
-    pointer-events: auto !important; /* Ensures contents catch clicks safely */
+/* Restores layout sizing parameters across native WebGL map instances */
+.maplibregl-popup {
+    pointer-events: auto !important;
 }
 
-/* 2. Style the popup anchoring tip arrow to match the slate-950 background color */
-.maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: #020617 !important; }
-.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: #020617 !important; }
-.maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: #020617 !important; }
-.maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: #020617 !important; }
-.maplibregl-popup-anchor-top-left .maplibregl-popup-tip { border-bottom-color: #020617 !important; }
-.maplibregl-popup-anchor-top-right .maplibregl-popup-tip { border-bottom-color: #020617 !important; }
-.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip { border-top-color: #020617 !important; }
-.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip { border-top-color: #020617 !important; }
+.maplibregl-popup-content {
+    background: #ffffff !important;
+    color: #1e293b !important;
+    padding: 14px 16px 12px 14px !important;
+    border-radius: 6px !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
 
-/* 3. FIXED: Position the native close button on top of our custom layout */
 .maplibregl-popup-close-button {
-    color: #94a3b8 !important; /* slate-400 */
-    position: absolute !important;
-    top: 8px !important;
-    right: 8px !important;
-    padding: 2px 6px !important;
-    font-size: 14px !important;
+    color: #94a3b8 !important;
+    padding: 4px 8px !important;
+    font-size: 16px !important;
     font-weight: bold !important;
     background: transparent !important;
     border: none !important;
     cursor: pointer !important;
-    z-index: 99 !important; /* Forces it to sit cleanly above our scroll content */
-    outline: none !important;
-    transition: color 0.15s ease;
 }
+
 .maplibregl-popup-close-button:hover {
-    color: #ef4444 !important; /* light red */
+    background-color: #f1f5f9 !important;
+    color: #ef4444 !important;
+}
+/* ==========================================================================
+   SIDEBAR NAV COLLAPSIBLE CONTAINER ACCORDION TRANSITIONS
+   ========================================================================== */
+
+/* Toggle Arrow Matrix Transformations */
+.rotate-icon {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: rotate(0deg);
+}
+.rotate-icon.collapsed {
+    transform: rotate(-90deg);
 }
 
-/* 4. Implement Minimal Fade-In & Scale Entrance Animation */
-@keyframes popupEntrance {
-    from {
-        opacity: 0;
-        transform: scale(0.97) translateY(2px);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
+/* Structural Accordion Frame Clamping Matrix */
+.accordion-content {
+    max-height: 500px;
+    opacity: 1;
+    overflow: hidden;
+    transition: max-height 0.25s ease-out, opacity 0.2s ease-out, margin 0.2s ease-out;
+}
+.accordion-content.collapsed {
+    max-height: 0 !important;
+    opacity: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    pointer-events: none;
 }
 
-.maplibregl-popup {
-    animation: popupEntrance 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+/* Core Navigation Thin Scroll Track Layout rules */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 2px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
+/* ==========================================================================
+   GLOBAL FRAMEWORK MODAL TRANSITIONS
+   ========================================================================== */
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.18s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
