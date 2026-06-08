@@ -1,0 +1,164 @@
+:root {
+  --border: #d7dee8;
+  --text: #172033;
+  --muted: #5d6b82;
+  --bg: #f5f7fb;
+  --card: #ffffff;
+  --primary: #155eef;
+  --danger: #b42318;
+  --success-bg: #e9f8ef;
+  --error-bg: #fdecec;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.admin-page {
+  width: min(1180px, calc(100% - 32px));
+  margin: 24px auto 48px;
+}
+
+.page-header {
+  margin-bottom: 20px;
+}
+
+.page-header h1,
+.card h2,
+.layer-card h3 {
+  margin-top: 0;
+}
+
+.page-header p,
+.layer-card p {
+  color: var(--muted);
+}
+
+.card,
+.layer-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 6px 18px rgba(23, 32, 51, 0.05);
+}
+
+.card {
+  margin-bottom: 18px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+input,
+button {
+  min-height: 38px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  font: inherit;
+}
+
+input[type="color"] {
+  padding: 3px;
+}
+
+button {
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+button:hover {
+  filter: brightness(0.95);
+}
+
+button.danger {
+  background: var(--danger);
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-row input {
+  min-height: auto;
+}
+
+.form-actions,
+.layer-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.section-title-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.status-box {
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+}
+
+.status-box.success {
+  background: var(--success-bg);
+}
+
+.status-box.error {
+  background: var(--error-bg);
+}
+
+.layers-list {
+  display: grid;
+  gap: 14px;
+}
+
+.layer-card {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 2fr;
+  gap: 16px;
+}
+
+.style-form {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(90px, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.layer-actions {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+  .form-grid,
+  .layer-card,
+  .style-form {
+    grid-template-columns: 1fr;
+  }
+}
