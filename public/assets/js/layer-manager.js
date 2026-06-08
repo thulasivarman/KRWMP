@@ -1,6 +1,6 @@
 /**
  * KRWMP Layer Manager
- * Database-driven GIS layer manager plus admin uploaded GeoJSON layer loader.
+ * Database-driven GIS layer manager plus admin uploaded vector layer controls.
  */
 
 window.initializeSupabaseSpatialSources = function () {
@@ -10,16 +10,14 @@ window.initializeSupabaseSpatialSources = function () {
         console.warn('No dynamic GIS layers found. Check /api/layers and layer-registry.js.');
     }
 
+    renderDatabaseUploadedVectorLayerControls(layers.filter(layer => layer.category === 'uploaded_vector'));
+
     layers.forEach(layer => {
         if (!window.shouldLoadLayerGroup(layer.layer_key)) return;
         addDynamicSpatialLayer(layer);
     });
 
     bindAllLayerToggles();
-
-    if (window.initializeUploadedVectorLayers) {
-        window.initializeUploadedVectorLayers();
-    }
 };
 
 function showLayerLoading(message = 'Loading layer...') {
@@ -53,6 +51,7 @@ function addDynamicSpatialLayer(layer) {
             id: layer.fill_layer_id,
             type: 'fill',
             source: layer.source_id,
+            filter: ['any', ['==', ['geometry-type'], 'Polygon'], ['==', ['geometry-type'], 'MultiPolygon']],
             minzoom: Number(layer.min_zoom || 0),
             maxzoom: Number(layer.max_zoom || 22),
             paint: {
@@ -84,231 +83,48 @@ function addDynamicSpatialLayer(layer) {
                 visibility: window.getLayerInitialVisibility(layer.layer_key)
             }
         });
-    }
 
-    window.KRWMP_MAP.once('idle', hideLayerLoading);
-}
-
-window.initializeUploadedVectorLayers = async function () {
-    if (!window.KRWMP_MAP) return;
-
-    try {
-        const response = await fetch('/data/layers-config.json', { cache: 'no-store' });
-        if (!response.ok) return;
-
-        const config = await response.json();
-        const layers = Array.isArray(config.layers) ? config.layers : [];
-
-        layers.forEach(layer => addUploadedVectorLayer(layer));
-        renderUploadedVectorLayerControls(layers);
-    } catch (error) {
-        console.error('Failed to load uploaded vector layers:', error);
-    }
-};
-
-function addUploadedVectorLayer(layer) {
-    if (!window.KRWMP_MAP || !layer || !layer.id || !layer.url) return;
-
-    const sourceId = `uploaded-source-${layer.id}`;
-    const fillLayerId = `uploaded-fill-${layer.id}`;
-    const lineLayerId = `uploaded-line-${layer.id}`;
-    const circleLayerId = `uploaded-circle-${layer.id}`;
-    const visibility = layer.visible ? 'visible' : 'none';
-    const style = layer.style || {};
-
-    if (!window.KRWMP_MAP.getSource(sourceId)) {
-        window.KRWMP_MAP.addSource(sourceId, {
-            type: 'geojson',
-            data: layer.url,
-            promoteId: 'id'
-        });
-    }
-
-    if (!window.KRWMP_MAP.getLayer(fillLayerId)) {
-        window.KRWMP_MAP.addLayer({
-            id: fillLayerId,
-            type: 'fill',
-            source: sourceId,
-            filter: ['any', ['==', ['geometry-type'], 'Polygon'], ['==', ['geometry-type'], 'MultiPolygon']],
-            paint: {
-                'fill-color': style.fillColor || style.color || '#3388ff',
-                'fill-opacity': Number(style.fillOpacity ?? 0.2)
-            },
-            layout: { visibility }
-        });
-    }
-
-    if (!window.KRWMP_MAP.getLayer(lineLayerId)) {
-        window.KRWMP_MAP.addLayer({
-            id: lineLayerId,
-            type: 'line',
-            source: sourceId,
-            paint: {
-                'line-color': style.color || '#3388ff',
-                'line-width': Number(style.weight || 2),
-                'line-opacity': Number(style.opacity ?? 1)
-            },
-            layout: { visibility }
-        });
-    }
-
-    if (!window.KRWMP_MAP.getLayer(circleLayerId)) {
-        window.KRWMP_MAP.addLayer({
-            id: circleLayerId,
-            type: 'circle',
-            source: sourceId,
-            filter: ['any', ['==', ['geometry-type'], 'Point'], ['==', ['geometry-type'], 'MultiPoint']],
-            paint: {
-                'circle-color': style.fillColor || style.color || '#3388ff',
-                'circle-radius': Number(style.radius || 6),
-                'circle-stroke-color': style.color || '#1d4ed8',
-                'circle-stroke-width': Number(style.weight || 2),
-                'circle-opacity': Number(style.opacity ?? 1)
-            },
-            layout: { visibility }
-        });
-    }
-
-    [fillLayerId, lineLayerId, circleLayerId].forEach(mapLayerId => {
-        if (window.KRWMP_MAP.getLayer(mapLayerId)) {
-            attachUploadedVectorPopup(mapLayerId, layer);
+        if (window.attachInteractivePopupHandshake && layer.category === 'uploaded_vector') {
+            window.attachInteractivePopupHandshake(layer.line_layer_id, layer.popup_type || layer.layer_key);
         }
-    });
+    }
 
     window.KRWMP_MAP.once('idle', hideLayerLoading);
+    window.setTimeout(hideLayerLoading, 3500);
 }
 
-function attachUploadedVectorPopup(mapLayerId, layer) {
-    if (!window.KRWMP_MAP || !mapLayerId) return;
-
-    const eventKey = `popup-bound-${mapLayerId}`;
-    if (window.KRWMP_MAP[eventKey]) return;
-    window.KRWMP_MAP[eventKey] = true;
-
-    window.KRWMP_MAP.on('click', mapLayerId, event => {
-        if (!event.features || !event.features.length) return;
-
-        const feature = event.features[0];
-        const properties = feature.properties || {};
-        const popupData = buildUploadedVectorPopupData(properties, layer, mapLayerId);
-
-        new maplibregl.Popup({
-            className: 'krwmp-parcel-popup',
-            closeButton: true,
-            closeOnClick: true,
-            offset: 16,
-            maxWidth: '360px'
-        })
-            .setLngLat(event.lngLat)
-            .setHTML(`
-                <div class="krwmp-glass-popup">
-                    <div class="krwmp-glass-header">
-                        <div class="krwmp-glass-title">${popupData.title}</div>
-                        <div class="krwmp-glass-subtitle">${popupData.subtitle}</div>
-                    </div>
-                    <div class="krwmp-status-badge">
-                        <span class="krwmp-status-dot"></span>
-                        ${popupData.badge}
-                    </div>
-                    <div class="krwmp-attribute-table">
-                        ${popupData.rows}
-                    </div>
-                </div>
-            `)
-            .addTo(window.KRWMP_MAP);
-    });
-
-    window.KRWMP_MAP.on('mouseenter', mapLayerId, () => {
-        window.KRWMP_MAP.getCanvas().style.cursor = 'pointer';
-    });
-
-    window.KRWMP_MAP.on('mouseleave', mapLayerId, () => {
-        window.KRWMP_MAP.getCanvas().style.cursor = '';
-    });
-}
-
-function buildUploadedVectorPopupData(properties, layer, mapLayerId) {
-    const fields = Array.isArray(layer.popupFields) ? layer.popupFields : [];
-    const entries = fields.length
-        ? fields.map(field => [field, properties[field]])
-        : Object.entries(properties).slice(0, 12);
-
-    const rows = entries.length
-        ? entries.map(([key, value]) => uploadedPopupRow(key, value)).join('')
-        : uploadedPopupRow('Attribute Data', 'Not available');
-
-    const geometryLabel = mapLayerId.includes('-line-')
-        ? 'Uploaded Line Layer'
-        : mapLayerId.includes('-circle-')
-            ? 'Uploaded Point Layer'
-            : 'Uploaded Polygon Layer';
-
-    return {
-        title: escapeHtml(layer.name || layer.id),
-        subtitle: geometryLabel,
-        badge: 'ACTIVE LAYER',
-        rows
-    };
-}
-
-function uploadedPopupRow(label, value) {
-    return `
-        <div class="krwmp-attribute-row">
-            <span>${escapeHtml(label)}</span>
-            <strong>${escapeHtml(value ?? '-')}</strong>
-        </div>
-    `;
-}
-
-function escapeHtml(value) {
-    return String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
-
-function renderUploadedVectorLayerControls(layers) {
+function renderDatabaseUploadedVectorLayerControls(uploadedLayers) {
     const panel = document.getElementById('data-layers-panel');
-    if (!panel || !Array.isArray(layers) || !layers.length) return;
+    if (!panel || !Array.isArray(uploadedLayers) || !uploadedLayers.length) return;
 
     const container = panel.querySelector('.space-y-3');
-    if (!container || container.dataset.uploadedVectorControls === 'true') return;
+    if (!container || container.dataset.databaseUploadedVectorControls === 'true') return;
 
     const title = document.createElement('div');
     title.className = 'pt-2 mt-2 border-t border-slate-800 text-[10px] uppercase tracking-wider text-slate-500 font-bold';
-    title.textContent = 'Uploaded Vector Layers';
+    title.textContent = 'Uploaded Database Vector Layers';
     container.appendChild(title);
 
-    layers.forEach(layer => {
-        const checkboxId = `chk-uploaded-${layer.id}`;
+    uploadedLayers.forEach(layer => {
+        const checkboxId = getCheckboxIdFromConfigKey(layer.layer_key);
+        if (document.getElementById(checkboxId)) return;
+
         const label = document.createElement('label');
-        label.className = 'flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-sky-500/30 transition';
+        label.className = 'flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-emerald-500/30 transition';
         label.innerHTML = `
-            <input type="checkbox" id="${checkboxId}" ${layer.visible ? 'checked' : ''} class="accent-sky-500 h-4 w-4 cursor-pointer flex-shrink-0">
+            <input type="checkbox" id="${checkboxId}" ${isLayerDefaultVisible(layer) ? 'checked' : ''} class="accent-emerald-500 h-4 w-4 cursor-pointer flex-shrink-0">
             <div class="flex items-center justify-center w-8 flex-shrink-0">
-                <span class="inline-block h-4 w-6 rounded-sm border-2" style="border-color:${escapeHtml(layer.style?.color || '#3388ff')};background:${escapeHtml(layer.style?.fillColor || '#3388ff')}33"></span>
+                <span class="inline-block h-4 w-6 rounded-sm border-2" style="border-color:${escapeHtml(layer.line_color || '#10b981')};background:${escapeHtml(layer.fill_color || '#10b981')}33"></span>
             </div>
             <div class="min-w-0">
-                <div class="font-semibold text-slate-300">${escapeHtml(layer.name || layer.id)}</div>
-                <div class="text-[10px] text-slate-500">Admin uploaded GeoJSON</div>
+                <div class="font-semibold text-slate-300">${escapeHtml(layer.layer_name || layer.layer_key)}</div>
+                <div class="text-[10px] text-slate-500">Supabase/PostGIS uploaded layer</div>
             </div>
         `;
         container.appendChild(label);
-
-        const checkbox = label.querySelector('input');
-        checkbox.addEventListener('change', event => {
-            const visibility = event.target.checked ? 'visible' : 'none';
-            [`uploaded-fill-${layer.id}`, `uploaded-line-${layer.id}`, `uploaded-circle-${layer.id}`].forEach(layerId => {
-                if (window.KRWMP_MAP.getLayer(layerId)) {
-                    window.KRWMP_MAP.setLayoutProperty(layerId, 'visibility', visibility);
-                }
-            });
-        });
     });
 
-    container.dataset.uploadedVectorControls = 'true';
+    container.dataset.databaseUploadedVectorControls = 'true';
 }
 
 function bindAllLayerToggles() {
@@ -359,8 +175,7 @@ window.getLayerInitialVisibility = function (layerKey) {
         return checkbox.checked ? 'visible' : 'none';
     }
 
-    if (layer && layer.default_visible === true) return 'visible';
-    if (layer && layer.default_visible === 'true') return 'visible';
+    if (isLayerDefaultVisible(layer)) return 'visible';
 
     return 'none';
 };
@@ -374,8 +189,12 @@ window.shouldLoadLayerGroup = function (layerKey) {
         return checkbox.checked;
     }
 
-    return layer?.default_visible === true || layer?.default_visible === 'true';
+    return isLayerDefaultVisible(layer);
 };
+
+function isLayerDefaultVisible(layer) {
+    return layer?.default_visible === true || layer?.default_visible === 'true';
+}
 
 function getCheckboxIdFromConfigKey(layerKey) {
     return `chk-layer-${layerKey}`;
@@ -388,4 +207,13 @@ function getConfigKeyFromCheckboxId(checkboxId) {
 function getLayerDefinitionByKey(layerKey) {
     const layers = window.KRWMP_DYNAMIC_LAYERS || [];
     return layers.find(layer => layer.layer_key === layerKey);
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
