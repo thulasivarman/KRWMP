@@ -18,13 +18,10 @@
         <div class="flex-1 relative h-full">
             <div id="map-canvas" class="absolute inset-0 h-full w-full z-10"></div>
 
-// Loading indicator for map layers
-            <div id="map-loading-indicator"
-     class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900 text-white text-xs px-4 py-2 rounded-lg shadow-lg">
-    Loading layer...
-</div>
+            <div id="map-loading-indicator" class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900 text-white text-xs px-4 py-2 rounded-lg shadow-lg">
+                Loading layer...
+            </div>
 
-            <!-- MAP PRINT / EXPORT TOOLBAR -->
             <div id="map-export-toolbar" class="absolute bottom-6 right-6 z-20 flex gap-2 text-xs">
                 <button id="btn-map-print" type="button" class="bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-200 px-3 py-2 rounded-lg shadow-xl backdrop-blur-md flex items-center gap-1.5 transition" title="Print current map view">
                     <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -46,54 +43,14 @@
                     <button id="btn-close-layer-panel" class="text-slate-400 hover:text-white font-bold text-base">&times;</button>
                 </div>
 
-                <div class="space-y-3">
-                    <label class="flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-sky-500/30 transition">
-                        <input type="checkbox" id="chk-layer-basin" checked class="accent-sky-500 h-4 w-4 cursor-pointer flex-shrink-0">
-                        <div class="flex items-center justify-center w-8 flex-shrink-0" title="Basin boundary legend">
-                            <span class="inline-block h-4 w-6 rounded-sm border-2 border-sky-500 bg-sky-500/10 border-dashed"></span>
-                        </div>
-                        <div class="min-w-0">
-                            <div class="font-semibold text-slate-300">Watershed Catchment Perimeter</div>
-                            <div class="text-[10px] text-slate-500">Blue transparent polygon with dashed blue outline</div>
-                        </div>
-                    </label>
-
-                    <label class="flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-emerald-500/30 transition">
-                        <input type="checkbox" id="chk-layer-dsd" class="accent-emerald-500 h-4 w-4 cursor-pointer flex-shrink-0">
-                        <div class="flex items-center justify-center w-8 flex-shrink-0" title="DSD boundary legend">
-                            <span class="inline-block h-4 w-6 rounded-sm border-2 border-emerald-600 bg-emerald-500/10"></span>
-                        </div>
-                        <div class="min-w-0">
-                            <div class="font-semibold text-slate-300">Divisional Secretariats (DSD)</div>
-                            <div class="text-[10px] text-slate-500">Green transparent polygon with green boundary</div>
-                        </div>
-                    </label>
-
-                    <label class="flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-amber-500/30 transition">
-                        <input type="checkbox" id="chk-layer-gnd" class="accent-amber-500 h-4 w-4 cursor-pointer flex-shrink-0">
-                        <div class="flex items-center justify-center w-8 flex-shrink-0" title="GND boundary legend">
-                            <span class="inline-block h-4 w-6 rounded-sm border border-amber-500 bg-amber-500/10"></span>
-                        </div>
-                        <div class="min-w-0">
-                            <div class="font-semibold text-slate-300">Grama Niladhari Divisions (GND)</div>
-                            <div class="text-[10px] text-slate-500">Amber transparent polygon with thin amber boundary</div>
-                        </div>
-                    </label>
-
-                    <label class="flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-green-500/30 transition">
-    <input type="checkbox" id="chk-layer-forest" class="accent-green-500 h-4 w-4 cursor-pointer">
-    <div class="h-4 w-4 rounded-sm bg-green-600 border border-green-800"></div>
-    <div>
-        <div class="font-semibold text-slate-300">Forest Cover</div>
-        <div class="text-[10px] text-slate-500">Forest plantations and cover areas</div>
-    </div>
-</label>
+                <div id="dynamic-layer-control-list" class="space-y-3">
+                    <div class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Loading database layers...</div>
                 </div>
             </div>
         </div>
     </div>
 
-   <script src="/assets/js/krwmp-global.js"></script>
+<script src="/assets/js/krwmp-global.js"></script>
 <script src="/assets/js/layer-registry.js"></script>
 <script src="/assets/js/map-init.js"></script>
 <script src="/assets/js/popup-manager.js"></script>
