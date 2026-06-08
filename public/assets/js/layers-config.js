@@ -1,16 +1,18 @@
 /**
  * ==========================================================================
- * KRWMP MANAGEMENT PORTAL - CENTRALIZED GIS VECTOR LAYER ARRAYS CONFIGURATION
+ * KRWMP MANAGEMENT PORTAL
+ * Centralized GIS Vector Layer Configuration
  * ==========================================================================
  */
 
 window.KRWMP_LAYERS_CONFIG = {
-    // Spatial boundary definitions matrix mapping to dynamic cloud data stream blocks
     boundaries: {
+
         basin: {
             id: 'krwmp-basin-source',
-            url: '/api/spatial/basin', // Transferred to live dynamic database API stream
+            url: '/api/spatial/basin',
             type: 'geojson',
+            label: 'Kelani Watershed Boundary',
             layers: [
                 {
                     id: 'layer-basin-polygon',
@@ -25,46 +27,79 @@ window.KRWMP_LAYERS_CONFIG = {
                     type: 'line',
                     paint: {
                         'line-color': '#0284c7',
-                        'line-width': 2.5,
+                        'line-width': 2.8,
                         'line-dasharray': [2, 1]
                     }
                 }
             ]
         },
+
+        forest: {
+            id: 'krwmp-forest-source',
+            url: '/api/spatial/forest',
+            type: 'geojson',
+            label: 'Forest Cover',
+            layers: [
+                {
+                    id: 'layer-forest-polygon',
+                    type: 'fill',
+                    paint: {
+                        'fill-color': '#16a34a',
+                        'fill-opacity': 0.62
+                    }
+                },
+                {
+                    id: 'layer-forest-outline',
+                    type: 'line',
+                    paint: {
+                        'line-color': '#052e16',
+                        'line-width': 1.4,
+                        'line-opacity': 0.9
+                    }
+                }
+            ]
+        },
+
         dsd: {
             id: 'krwmp-dsd-source',
-            url: '/api/spatial/dsd', // Transferred to live dynamic database API stream
+            url: '/api/spatial/dsd',
             type: 'geojson',
+            label: 'Divisional Secretariat Divisions',
             layers: [
                 {
                     id: 'layer-dsd-polygon',
                     type: 'fill',
                     paint: {
                         'fill-color': '#10b981',
-                        'fill-opacity': 0.04
+                        'fill-opacity': 0.03
                     }
                 },
                 {
                     id: 'layer-dsd-outline',
                     type: 'line',
                     paint: {
-                        'line-color': '#059669',
-                        'line-width': 1.2
+                        'line-color': '#047857',
+                        'line-width': 1.2,
+                        'line-opacity': 0.8
                     }
                 }
             ]
         },
+
         gnd: {
             id: 'krwmp-gnd-source',
-            url: '/api/spatial/gnd', // Transferred to live dynamic database API stream
+            url: '/api/spatial/gnd',
             type: 'geojson',
+            label: 'Grama Niladhari Divisions',
             layers: [
                 {
                     id: 'layer-gnd-polygon',
                     type: 'fill',
+                    minzoom: 9,
+                    maxzoom: 18,
                     paint: {
                         'fill-color': '#f59e0b',
-                        'fill-opacity': 0.02
+                        'fill-opacity': 0.015
                     }
                 },
                 {
@@ -72,8 +107,8 @@ window.KRWMP_LAYERS_CONFIG = {
                     type: 'line',
                     paint: {
                         'line-color': '#d97706',
-                        'line-width': 0.6,
-                        'line-opacity': 0.7
+                        'line-width': 0.45,
+                        'line-opacity': 0.55
                     }
                 }
             ]

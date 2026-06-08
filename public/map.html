@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+    <link href="/vendor/maplibre/maplibre-gl.css" rel="stylesheet">
     <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-emerald-500/30 overflow-hidden">
@@ -17,190 +18,89 @@
         <div class="flex-1 relative h-full">
             <div id="map-canvas" class="absolute inset-0 h-full w-full z-10"></div>
 
+// Loading indicator for map layers
+            <div id="map-loading-indicator"
+     class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900 text-white text-xs px-4 py-2 rounded-lg shadow-lg">
+    Loading layer...
+</div>
+
+            <!-- MAP PRINT / EXPORT TOOLBAR -->
+            <div id="map-export-toolbar" class="absolute bottom-6 right-6 z-20 flex gap-2 text-xs">
+                <button id="btn-map-print" type="button" class="bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-200 px-3 py-2 rounded-lg shadow-xl backdrop-blur-md flex items-center gap-1.5 transition" title="Print current map view">
+                    <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z" />
+                    </svg>
+                    Print
+                </button>
+                <button id="btn-map-export" type="button" class="bg-emerald-600/90 hover:bg-emerald-500 border border-emerald-500/40 text-white px-3 py-2 rounded-lg shadow-xl backdrop-blur-md flex items-center gap-1.5 transition" title="Export current map view as PNG">
+                    <svg class="h-4 w-4 text-white/90" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M8 12l4 4m0 0l4-4m-4 4V4" />
+                    </svg>
+                    Export PNG
+                </button>
+            </div>
+
             <div id="data-layers-panel" class="hidden absolute top-6 right-6 w-80 bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-xl p-5 shadow-2xl z-20 text-xs">
                 <div class="flex items-center justify-between pb-2.5 border-b border-slate-800 mb-4">
                     <h3 class="font-bold tracking-wider uppercase text-slate-200">Kelani Basin Layer Matrix</h3>
-                    <button onclick="document.getElementById('data-layers-panel').classList.add('hidden')" class="text-slate-400 hover:text-white font-bold text-base">&times;</button>
+                    <button id="btn-close-layer-panel" class="text-slate-400 hover:text-white font-bold text-base">&times;</button>
                 </div>
+
                 <div class="space-y-3">
                     <label class="flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-sky-500/30 transition">
-                        <input type="checkbox" id="chk-layer-basin" checked class="accent-sky-500 h-4 w-4 cursor-pointer">
-                        <div>
+                        <input type="checkbox" id="chk-layer-basin" checked class="accent-sky-500 h-4 w-4 cursor-pointer flex-shrink-0">
+                        <div class="flex items-center justify-center w-8 flex-shrink-0" title="Basin boundary legend">
+                            <span class="inline-block h-4 w-6 rounded-sm border-2 border-sky-500 bg-sky-500/10 border-dashed"></span>
+                        </div>
+                        <div class="min-w-0">
                             <div class="font-semibold text-slate-300">Watershed Catchment Perimeter</div>
-                            <div class="text-[10px] text-slate-500">Outer Basin Morphological Limit</div>
+                            <div class="text-[10px] text-slate-500">Blue transparent polygon with dashed blue outline</div>
                         </div>
                     </label>
+
                     <label class="flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-emerald-500/30 transition">
-                        <input type="checkbox" id="chk-layer-dsd" class="accent-emerald-500 h-4 w-4 cursor-pointer">
-                        <div>
+                        <input type="checkbox" id="chk-layer-dsd" class="accent-emerald-500 h-4 w-4 cursor-pointer flex-shrink-0">
+                        <div class="flex items-center justify-center w-8 flex-shrink-0" title="DSD boundary legend">
+                            <span class="inline-block h-4 w-6 rounded-sm border-2 border-emerald-600 bg-emerald-500/10"></span>
+                        </div>
+                        <div class="min-w-0">
                             <div class="font-semibold text-slate-300">Divisional Secretariats (DSD)</div>
-                            <div class="text-[10px] text-slate-500">Secondary Administrative Boundaries</div>
+                            <div class="text-[10px] text-slate-500">Green transparent polygon with green boundary</div>
                         </div>
                     </label>
+
                     <label class="flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-amber-500/30 transition">
-                        <input type="checkbox" id="chk-layer-gnd" class="accent-amber-500 h-4 w-4 cursor-pointer">
-                        <div>
+                        <input type="checkbox" id="chk-layer-gnd" class="accent-amber-500 h-4 w-4 cursor-pointer flex-shrink-0">
+                        <div class="flex items-center justify-center w-8 flex-shrink-0" title="GND boundary legend">
+                            <span class="inline-block h-4 w-6 rounded-sm border border-amber-500 bg-amber-500/10"></span>
+                        </div>
+                        <div class="min-w-0">
                             <div class="font-semibold text-slate-300">Grama Niladhari Divisions (GND)</div>
-                            <div class="text-[10px] text-slate-500">Micro-Planning Administrative Boundaries</div>
+                            <div class="text-[10px] text-slate-500">Amber transparent polygon with thin amber boundary</div>
                         </div>
                     </label>
+
+                    <label class="flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-green-500/30 transition">
+    <input type="checkbox" id="chk-layer-forest" class="accent-green-500 h-4 w-4 cursor-pointer">
+    <div class="h-4 w-4 rounded-sm bg-green-600 border border-green-800"></div>
+    <div>
+        <div class="font-semibold text-slate-300">Forest Cover</div>
+        <div class="text-[10px] text-slate-500">Forest plantations and cover areas</div>
+    </div>
+</label>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="/assets/js/krwmp-global.js"></script>
-    <script src="/assets/js/layers-config.js"></script>
-    <script>
-        let mapInstance = null;
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            // 1. Initialize Global Workspace Wrappers and Nav Fragments
-            if (window.KRWMP_ENGINE) {
-                await window.KRWMP_ENGINE.assembleInterfaceContext('/sidebar.html', 'sidebar');
-                bindSidebarInterfaceInteractions();
-            }
-
-            // 2. Initialize MapLibre Engine over standard Sri Lankan Coordinate Centers
-            // RECTIFIED: Global handle references fixed from 'maplibre-gl' to 'maplibregl'
-            mapInstance = new maplibregl.Map({
-                container: 'map-canvas',
-                style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json', 
-                center: [80.20, 6.98], 
-                zoom: 9.2,
-                minZoom: 8,
-                maxZoom: 16
-            });
-
-            mapInstance.addControl(new maplibregl.NavigationControl(), 'top-left');
-
-            // 3. Compile Database PostGIS Ingestion Nodes once base tiles finish loading
-            mapInstance.on('load', () => {
-                console.log("🗺️ MapLibre Canvas Engine operational. Loading cloud boundary arrays...");
-                initializeSupabaseSpatialSources();
-            });
-
-            // 4. Intercept URL navigation instructions to auto-trigger floating sidebars
-            const urlParameters = new URLSearchParams(window.location.search);
-            if (urlParameters.get('action') === 'open_layers') {
-                document.getElementById('data-layers-panel').classList.remove('hidden');
-            }
-        });
-
-        function initializeSupabaseSpatialSources() {
-            const config = window.KRWMP_LAYERS_CONFIG.boundaries;
-
-            // Step sequentially through our standardized configuration matrices
-            Object.entries(config).forEach(([key, layerConfig]) => {
-                // Add the database feature layer API endpoint directly as a map data source
-                mapInstance.addSource(layerConfig.id, {
-                    type: 'geojson',
-                    data: layerConfig.url,
-                    promoteId: 'id' 
-                });
-
-                // Render matching geometric multi-polygon fills and borders
-                layerConfig.layers.forEach(layerStyle => {
-                    mapInstance.addLayer({
-                        id: layerStyle.id,
-                        type: layerStyle.type,
-                        source: layerConfig.id,
-                        paint: layerStyle.paint,
-                        layout: {
-                            // The basin outline displays immediately; sub-boundaries remain hidden until selected
-                            'visibility': key === 'basin' ? 'visible' : 'none'
-                        }
-                    });
-
-                    // Attach informational tooltip popup click handshakes for every custom boundary style loop
-                    if (layerStyle.type === 'fill') {
-                        attachInteractivePopupHandshake(layerStyle.id, key);
-                    }
-                });
-            });
-
-            // Synchronize visibility toggle elements with checkbox state controls
-            bindCheckboxVisibilityToggle('chk-layer-basin', ['layer-basin-polygon', 'layer-basin-outline']);
-            bindCheckboxVisibilityToggle('chk-layer-dsd', ['layer-dsd-polygon', 'layer-dsd-outline']);
-            bindCheckboxVisibilityToggle('chk-layer-gnd', ['layer-gnd-polygon', 'layer-gnd-outline']);
-        }
-
-        function bindCheckboxVisibilityToggle(checkboxId, targetLayerIds) {
-            const checkbox = document.getElementById(checkboxId);
-            if (!checkbox) return;
-
-            checkbox.addEventListener('change', (e) => {
-                const targetVisibilitySetting = e.target.checked ? 'visible' : 'none';
-                targetLayerIds.forEach(layerId => {
-                    if (mapInstance.getLayer(layerId)) {
-                        mapInstance.setLayoutProperty(layerId, 'visibility', targetVisibilitySetting);
-                    }
-                });
-            });
-        }
-
-        function attachInteractivePopupHandshake(layerFillId, boundaryTypeKey) {
-            mapInstance.on('click', layerFillId, (e) => {
-                if (!e.features.length) return;
-                const props = e.features[0].properties;
-                
-                let titleLabel = '';
-                let descriptionHtml = '';
-
-                // Extract custom attribute keys based on the matching data table schemas
-                if (boundaryTypeKey === 'basin') {
-                    titleLabel = props.wshd_name || 'Kelani River Catchment';
-                    descriptionHtml = `
-                        <div class="space-y-1 mt-1 font-mono text-[10px] text-slate-400">
-                            <div>Watershed No: <span class="text-sky-400 font-bold">${props.washd_no}</span></div>
-                            <div>Total Area Hectares: <span class="text-slate-200">${parseFloat(props.hectares || 0).toLocaleString()} ha</span></div>
-                            <div>Computed Area SqKm: <span class="text-slate-200">${parseFloat(props.area_sqkm || 0).toFixed(2)} km²</span></div>
-                        </div>`;
-                } else if (boundaryTypeKey === 'dsd') {
-                    titleLabel = `${props.dsd_n || 'Unknown'} DSD`;
-                    descriptionHtml = `<div class="font-mono text-[10px] text-slate-400 mt-1">ID DSD Identifier: <span class="text-emerald-400 font-bold">${props.iddsd || 0}</span></div>`;
-                } else if (boundaryTypeKey === 'gnd') {
-                    titleLabel = `${props.gnd_name || 'Unknown'} GND Division`;
-                    descriptionHtml = `
-                        <div class="space-y-1 mt-1 font-mono text-[10px] text-slate-400">
-                            <div>Local Authority: <span class="text-slate-200">${props.la || 'N/A'}</span></div>
-                            <div>GND Division Code: <span class="text-amber-400 font-bold">${props.idgnd || 0}</span></div>
-                            <div>Registered Area: <span class="text-slate-200">${parseFloat(props.area_ha || 0).toFixed(2)} ha</span></div>
-                        </div>`;
-                }
-
-                // RECTIFIED: Corrected object construction handle from 'maplibre-gl.Popup' to 'maplibregl.Popup'
-                new maplibregl.Popup({ className: 'krwmp-spatial-popup' })
-                    .setLngLat(e.lngLat)
-                    .setHTML(`
-                        <div class="p-2 bg-slate-900 border border-slate-800 text-slate-100 rounded-lg text-xs min-w-[180px]">
-                            <div class="font-bold border-b border-slate-800 pb-1 text-slate-200">${titleLabel}</div>
-                            ${descriptionHtml}
-                        </div>
-                    `)
-                    .addTo(mapInstance);
-            });
-
-            // Adjust mouse cursor visibility states upon crossing polygon boundary arrays
-            mapInstance.on('mouseenter', layerFillId, () => { mapInstance.getCanvas().style.cursor = 'pointer'; });
-            mapInstance.on('mouseleave', layerFillId, () => { mapInstance.getCanvas().style.cursor = ''; });
-        }
-
-        function bindSidebarInterfaceInteractions() {
-            // Redirect the persistent sidebar button actions back to our internal sliding view panel
-            const dataLayersBtn = document.getElementById('menu-item-data-layers') || 
-                                 document.querySelector('[id*="data-layers"]') ||
-                                 document.querySelector('button[onclick*="Toggle"]');
-            
-            if (dataLayersBtn) {
-                dataLayersBtn.removeAttribute('onclick');
-                dataLayersBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const panel = document.getElementById('data-layers-panel');
-                    if (panel) panel.classList.toggle('hidden');
-                });
-            }
-        }
-    </script>
+   <script src="/assets/js/krwmp-global.js"></script>
+<script src="/assets/js/layer-registry.js"></script>
+<script src="/assets/js/map-init.js"></script>
+<script src="/assets/js/popup-manager.js"></script>
+<script src="/assets/js/ui-manager.js"></script>
+<script src="/assets/js/layer-manager.js"></script>
+<script src="/assets/js/map-export.js"></script>
+<script src="/assets/js/app.js"></script>
+<script src="/vendor/maplibre/maplibre-gl.js"></script>
 </body>
 </html>

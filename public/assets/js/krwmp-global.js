@@ -42,6 +42,7 @@ window.KRWMP_ENGINE = {
         this.syncProfileMetadata();
     },
 
+
     assembleInterfaceContext: async function (sidebarUrl = '/sidebar.html', sidebarContainerId = 'sidebar') {
         await this.initSession();
         const sidebarContainer = document.getElementById(sidebarContainerId);
@@ -248,5 +249,40 @@ window.KRWMP_ENGINE = {
             dropModal();
             window.location.href = '/index.html';
         });
+    }
+};
+
+// =====================================================
+// Base Map Layers Initialization and Management
+// =====================================================
+window.KRWMP_BASEMAPS = {
+
+    light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+
+    dark: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+
+    terrain: 'https://demotiles.maplibre.org/style.json',
+
+    satellite: {
+        version: 8,
+
+        sources: {
+            satellite: {
+                type: 'raster',
+                tiles: [
+                    'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+                ],
+                tileSize: 256,
+                attribution: 'Esri'
+            }
+        },
+
+        layers: [
+            {
+                id: 'satellite-layer',
+                type: 'raster',
+                source: 'satellite'
+            }
+        ]
     }
 };
