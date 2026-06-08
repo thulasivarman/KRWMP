@@ -14,6 +14,18 @@ function isAdminUser(user) {
 
 const currentUser = getCurrentUser();
 
+async function initializeVectorLayerSidebar() {
+  if (window.KRWMP_ENGINE) {
+    await window.KRWMP_ENGINE.assembleInterfaceContext('/sidebar.html', 'sidebar');
+  }
+
+  const basemapSection = document.querySelector('.krwmp-panel-section');
+  if (basemapSection) basemapSection.classList.add('hidden');
+
+  const dataLayersSection = document.getElementById('section-data-layers');
+  if (dataLayersSection) dataLayersSection.classList.add('hidden');
+}
+
 if (!isAdminUser(currentUser)) {
   const authNotice = document.getElementById('authNotice');
   if (authNotice) authNotice.hidden = false;
@@ -134,7 +146,7 @@ async function saveStyle(form) {
 }
 
 async function deleteLayer(id, name) {
-  const confirmed = window.confirm(`Delete ${name}? This will remove the GeoJSON file and layer configuration.`);
+  const confirmed = window.confirm(`Delete ${name}? This will remove the GeoJSON table and layer registry.`);
   if (!confirmed) return;
 
   try {
@@ -173,6 +185,8 @@ uploadForm.addEventListener('submit', async event => {
 
 refreshBtn.addEventListener('click', loadLayers);
 
-if (isAdminUser(currentUser)) {
-  loadLayers();
-}
+initializeVectorLayerSidebar().then(() => {
+  if (isAdminUser(currentUser)) {
+    loadLayers();
+  }
+});
