@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vector Layer Management</title>
+  <link rel="stylesheet" href="/admin-vector-layers.css" />
+</head>
+<body>
+  <main class="admin-page">
+    <header class="page-header">
+      <h1>Vector Layer Management</h1>
+      <p>Upload GeoJSON layers, remove existing layers, and update map symbols.</p>
+    </header>
+
+    <section class="card">
+      <h2>Upload New GeoJSON Layer</h2>
+      <form id="uploadForm" class="form-grid">
+        <label>
+          Layer Name
+          <input type="text" name="name" required placeholder="Example: DSD Boundary" />
+        </label>
+        <label>
+          Layer ID
+          <input type="text" name="id" placeholder="Auto-generated if blank" />
+        </label>
+        <label>
+          GeoJSON File
+          <input type="file" name="geojson" accept=".geojson,.json,application/geo+json,application/json" required />
+        </label>
+        <label>
+          Line Color
+          <input type="color" name="color" value="#3388ff" />
+        </label>
+        <label>
+          Fill Color
+          <input type="color" name="fillColor" value="#3388ff" />
+        </label>
+        <label>
+          Line Width
+          <input type="number" name="weight" min="1" max="10" value="2" />
+        </label>
+        <label>
+          Fill Opacity
+          <input type="number" name="fillOpacity" min="0" max="1" step="0.1" value="0.2" />
+        </label>
+        <label>
+          Popup Fields
+          <input type="text" name="popupFields" placeholder="name, dsd_name, area" />
+        </label>
+        <label class="checkbox-row">
+          <input type="checkbox" name="visible" checked />
+          Show layer by default
+        </label>
+        <div class="form-actions">
+          <button type="submit">Upload Layer</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="section-title-row">
+        <h2>Existing Vector Layers</h2>
+        <button id="refreshBtn" type="button">Refresh</button>
+      </div>
+      <div id="statusBox" class="status-box" hidden></div>
+      <div id="layersList" class="layers-list"></div>
+    </section>
+  </main>
+
+  <template id="layerTemplate">
+    <article class="layer-card">
+      <div>
+        <h3 data-field="name"></h3>
+        <p data-field="meta"></p>
+      </div>
+      <form class="style-form">
+        <input type="hidden" name="id" />
+        <label>Line <input type="color" name="color" /></label>
+        <label>Fill <input type="color" name="fillColor" /></label>
+        <label>Width <input type="number" name="weight" min="1" max="10" /></label>
+        <label>Fill Opacity <input type="number" name="fillOpacity" min="0" max="1" step="0.1" /></label>
+        <label>Radius <input type="number" name="radius" min="1" max="30" /></label>
+        <label class="checkbox-row"><input type="checkbox" name="visible" /> Visible</label>
+        <div class="layer-actions">
+          <button type="submit">Save Symbol</button>
+          <button type="button" class="danger" data-action="delete">Delete</button>
+        </div>
+      </form>
+    </article>
+  </template>
+
+  <script src="/admin-vector-layers.js"></script>
+</body>
+</html>
