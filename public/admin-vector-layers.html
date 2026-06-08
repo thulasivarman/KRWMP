@@ -1,105 +1,77 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Vector Layer Management</title>
-  <link rel="stylesheet" href="/admin-vector-layers.css" />
-  <link rel="stylesheet" href="/admin-vector-layers-theme.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vector Layer Management - KRWMP Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/admin-vector-layers.css">
+    <link rel="stylesheet" href="/admin-vector-layers-theme.css">
 </head>
-<body>
-  <main class="admin-page">
-    <header class="page-header">
-      <div>
-        <p class="eyebrow">KRWMP Portal Administration</p>
-        <h1>Vector Layer Management</h1>
-        <p>Upload GeoJSON layers, remove existing layers, and update map symbols.</p>
-      </div>
-      <nav class="page-actions">
-        <a href="/map.html" class="ghost-link">Back to Map</a>
-        <a href="/admin.html" class="ghost-link">Admin Hub</a>
-      </nav>
-    </header>
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-emerald-500/30">
+    <div class="flex min-h-screen">
+        <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
 
-    <section id="authNotice" class="auth-notice" hidden>Login required. Redirecting...</section>
+        <main class="flex-1 p-8 space-y-8 max-w-6xl mx-auto">
+            <header class="border-b border-slate-800 pb-4 flex items-start justify-between gap-4">
+                <div>
+                    <h1 class="text-xl font-bold uppercase tracking-wider text-slate-200">Vector Layer Management</h1>
+                    <p class="text-xs text-slate-500 mt-1">Upload GeoJSON layers, remove existing layers, and update map symbols.</p>
+                </div>
+                <a href="/map.html" class="ghost-link">Back to Map</a>
+            </header>
 
-    <section class="card">
-      <h2>Upload New GeoJSON Layer</h2>
-      <form id="uploadForm" class="form-grid">
-        <label>
-          Layer Name
-          <input type="text" name="name" required placeholder="Example: DSD Boundary" />
-        </label>
-        <label>
-          Layer ID
-          <input type="text" name="id" placeholder="Auto-generated if blank" />
-        </label>
-        <label>
-          GeoJSON File
-          <input type="file" name="geojson" accept=".geojson,.json,application/geo+json,application/json" required />
-        </label>
-        <label>
-          Line Color
-          <input type="color" name="color" value="#10b981" />
-        </label>
-        <label>
-          Fill Color
-          <input type="color" name="fillColor" value="#10b981" />
-        </label>
-        <label>
-          Line Width
-          <input type="number" name="weight" min="1" max="10" value="2" />
-        </label>
-        <label>
-          Fill Opacity
-          <input type="number" name="fillOpacity" min="0" max="1" step="0.1" value="0.2" />
-        </label>
-        <label>
-          Popup Fields
-          <input type="text" name="popupFields" placeholder="name, dsd_name, area" />
-        </label>
-        <label class="checkbox-row">
-          <input type="checkbox" name="visible" checked />
-          Show layer by default
-        </label>
-        <div class="form-actions">
-          <button type="submit">Upload Layer</button>
-        </div>
-      </form>
-    </section>
+            <section id="authNotice" class="auth-notice" hidden>Login required. Redirecting...</section>
 
-    <section class="card">
-      <div class="section-title-row">
-        <h2>Existing Vector Layers</h2>
-        <button id="refreshBtn" type="button">Refresh</button>
-      </div>
-      <div id="statusBox" class="status-box" hidden></div>
-      <div id="layersList" class="layers-list"></div>
-    </section>
-  </main>
+            <section class="card">
+                <h2>Upload New GeoJSON Layer</h2>
+                <form id="uploadForm" class="form-grid">
+                    <label>Layer Name<input type="text" name="name" required placeholder="Example: DSD Boundary" /></label>
+                    <label>Layer ID<input type="text" name="id" placeholder="Auto-generated if blank" /></label>
+                    <label>GeoJSON File<input type="file" name="geojson" accept=".geojson,.json,application/geo+json,application/json" required /></label>
+                    <label>Line Color<input type="color" name="color" value="#10b981" /></label>
+                    <label>Fill Color<input type="color" name="fillColor" value="#10b981" /></label>
+                    <label>Line Width<input type="number" name="weight" min="1" max="10" value="2" /></label>
+                    <label>Fill Opacity<input type="number" name="fillOpacity" min="0" max="1" step="0.1" value="0.2" /></label>
+                    <label>Popup Fields<input type="text" name="popupFields" placeholder="name, dsd_name, area" /></label>
+                    <label class="checkbox-row"><input type="checkbox" name="visible" checked />Show layer by default</label>
+                    <div class="form-actions"><button type="submit">Upload Layer</button></div>
+                </form>
+            </section>
 
-  <template id="layerTemplate">
-    <article class="layer-card">
-      <div>
-        <h3 data-field="name"></h3>
-        <p data-field="meta"></p>
-      </div>
-      <form class="style-form">
-        <input type="hidden" name="id" />
-        <label>Line <input type="color" name="color" /></label>
-        <label>Fill <input type="color" name="fillColor" /></label>
-        <label>Width <input type="number" name="weight" min="1" max="10" /></label>
-        <label>Fill Opacity <input type="number" name="fillOpacity" min="0" max="1" step="0.1" /></label>
-        <label>Radius <input type="number" name="radius" min="1" max="30" /></label>
-        <label class="checkbox-row"><input type="checkbox" name="visible" /> Visible</label>
-        <div class="layer-actions">
-          <button type="submit">Save Symbol</button>
-          <button type="button" class="danger" data-action="delete">Delete</button>
-        </div>
-      </form>
-    </article>
-  </template>
+            <section class="card">
+                <div class="section-title-row">
+                    <h2>Existing Vector Layers</h2>
+                    <button id="refreshBtn" type="button">Refresh</button>
+                </div>
+                <div id="statusBox" class="status-box" hidden></div>
+                <div id="layersList" class="layers-list"></div>
+            </section>
+        </main>
+    </div>
 
-  <script src="/admin-vector-layers.js"></script>
+    <template id="layerTemplate">
+        <article class="layer-card">
+            <div><h3 data-field="name"></h3><p data-field="meta"></p></div>
+            <form class="style-form">
+                <input type="hidden" name="id" />
+                <label>Line <input type="color" name="color" /></label>
+                <label>Fill <input type="color" name="fillColor" /></label>
+                <label>Width <input type="number" name="weight" min="1" max="10" /></label>
+                <label>Fill Opacity <input type="number" name="fillOpacity" min="0" max="1" step="0.1" /></label>
+                <label>Radius <input type="number" name="radius" min="1" max="30" /></label>
+                <label class="checkbox-row"><input type="checkbox" name="visible" /> Visible</label>
+                <div class="layer-actions">
+                    <button type="submit">Save Symbol</button>
+                    <button type="button" class="danger" data-action="delete">Delete</button>
+                </div>
+            </form>
+        </article>
+    </template>
+
+    <script src="/assets/js/krwmp-global.js"></script>
+    <script src="/assets/js/ui-manager.js"></script>
+    <script src="/admin-vector-layers.js"></script>
 </body>
 </html>
