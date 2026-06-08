@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KRWMP Portal - Authentication Terminal</title>
+    <script>
+        try {
+            const cachedUser = localStorage.getItem('krwmp_user');
+            if (cachedUser) {
+                window.location.replace('/map.html');
+            }
+        } catch (error) {}
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="/assets/css/style.css" rel="stylesheet" />
 </head>
@@ -25,18 +33,15 @@
         <form id="portalLoginForm" class="space-y-4">
             <div>
                 <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">System Username</label>
-                <input type="text" id="loginUsername" placeholder="e.g., thulasi" 
-                    class="w-full bg-slate-900 border border-slate-800 rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/50" required>
+                <input type="text" id="loginUsername" placeholder="e.g., thulasi" class="w-full bg-slate-900 border border-slate-800 rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/50" required>
             </div>
 
             <div>
                 <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Passkey Password</label>
-                <input type="password" id="loginPassword" placeholder="••••••••" 
-                    class="w-full bg-slate-900 border border-slate-800 rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/50" required>
+                <input type="password" id="loginPassword" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-800 rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/50" required>
             </div>
 
-            <button type="submit" id="loginSubmitBtn" 
-                class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded text-xs transition shadow-lg shadow-emerald-950/20 mt-2">
+            <button type="submit" id="loginSubmitBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded text-xs transition shadow-lg shadow-emerald-950/20 mt-2">
                 Authenticate Secure Session
             </button>
         </form>
@@ -45,10 +50,8 @@
     <script>
         document.getElementById('portalLoginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const alertBox = document.getElementById('loginAlertBox');
             const submitBtn = document.getElementById('loginSubmitBtn');
-            
             const usernameInput = document.getElementById('loginUsername').value.trim();
             const passwordInput = document.getElementById('loginPassword').value.trim();
 
@@ -57,33 +60,23 @@
             submitBtn.innerText = "Verifying Credentials...";
 
             try {
-                // Must target your consolidated Fastify context prefix router
                 const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        username: usernameInput, 
-                        password: passwordInput 
-                    })
+                    body: JSON.stringify({ username: usernameInput, password: passwordInput })
                 });
 
                 const result = await response.json();
 
                 if (response.ok && result && result.success) {
-                    // Seed local storage cache safely for initial session fallback management
                     localStorage.setItem('krwmp_user', JSON.stringify(result.user));
-                    
-                    // Route user to the primary full-screen map interface view
                     window.location.href = '/map.html';
                 } else {
                     throw new Error(result.message || "Authentication rejected.");
                 }
-
             } catch (err) {
-                console.error("Login attempt halted:", err);
                 alertBox.innerText = err.message || "Failed to establish a link to the server.";
                 alertBox.classList.remove('hidden');
-                
                 submitBtn.disabled = false;
                 submitBtn.innerText = "Authenticate Secure Session";
             }
