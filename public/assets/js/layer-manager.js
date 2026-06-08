@@ -1,6 +1,6 @@
 /**
  * KRWMP Layer Manager
- * Database-driven GIS layer manager plus admin uploaded vector layer controls.
+ * Fully database-driven GIS layer manager.
  */
 
 window.initializeSupabaseSpatialSources = function () {
@@ -10,7 +10,7 @@ window.initializeSupabaseSpatialSources = function () {
         console.warn('No dynamic GIS layers found. Check /api/layers and layer-registry.js.');
     }
 
-    renderDatabaseUploadedVectorLayerControls(layers.filter(layer => layer.category === 'uploaded_vector'));
+    renderDatabaseLayerControls(layers);
 
     layers.forEach(layer => {
         if (!window.shouldLoadLayerGroup(layer.layer_key)) return;
@@ -84,7 +84,7 @@ function addDynamicSpatialLayer(layer) {
             }
         });
 
-        if (window.attachInteractivePopupHandshake && layer.category === 'uploaded_vector') {
+        if (window.attachInteractivePopupHandshake) {
             window.attachInteractivePopupHandshake(layer.line_layer_id, layer.popup_type || layer.layer_key);
         }
     }
@@ -93,38 +93,69 @@ function addDynamicSpatialLayer(layer) {
     window.setTimeout(hideLayerLoading, 3500);
 }
 
-function renderDatabaseUploadedVectorLayerControls(uploadedLayers) {
+function renderDatabaseLayerControls(layers) {
     const panel = document.getElementById('data-layers-panel');
-    if (!panel || !Array.isArray(uploadedLayers) || !uploadedLayers.length) return;
+    if (!panel || !Array.isArray(layers)) return;
 
-    const container = panel.querySelector('.space-y-3');
-    if (!container || container.dataset.databaseUploadedVectorControls === 'true') return;
+    const container = document.getElementById('dynamic-layer-control-list') || panel.querySelector('.space-y-3');
+    if (!container || container.dataset.databaseLayerControls === 'true') return;
 
-    const title = document.createElement('div');
-    title.className = 'pt-2 mt-2 border-t border-slate-800 text-[10px] uppercase tracking-wider text-slate-500 font-bold';
-    title.textContent = 'Uploaded Database Vector Layers';
-    container.appendChild(title);
+    container.innerHTML = '';
 
-    uploadedLayers.forEach(layer => {
-        const checkboxId = getCheckboxIdFromConfigKey(layer.layer_key);
-        if (document.getElementById(checkboxId)) return;
+    if (!layers.length) {
+        container.innerHTML = '<div class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">No database layers available</div>';
+        return;
+    }
 
-        const label = document.createElement('label');
-        label.className = 'flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-emerald-500/30 transition';
-        label.innerHTML = `
-            <input type="checkbox" id="${checkboxId}" ${isLayerDefaultVisible(layer) ? 'checked' : ''} class="accent-emerald-500 h-4 w-4 cursor-pointer flex-shrink-0">
-            <div class="flex items-center justify-center w-8 flex-shrink-0">
-                <span class="inline-block h-4 w-6 rounded-sm border-2" style="border-color:${escapeHtml(layer.line_color || '#10b981')};background:${escapeHtml(layer.fill_color || '#10b981')}33"></span>
-            </div>
-            <div class="min-w-0">
-                <div class="font-semibold text-slate-300">${escapeHtml(layer.layer_name || layer.layer_key)}</div>
-                <div class="text-[10px] text-slate-500">Supabase/PostGIS uploaded layer</div>
-            </div>
-        `;
-        container.appendChild(label);
+    const grouped = groupLayersByCategory(layers);
+
+    Object.keys(grouped).forEach(category => {
+        const title = document.createElement('div');
+        title.className = 'pt-2 mt-2 border-t border-slate-800 text-[10px] uppercase tracking-wider text-slate-500 font-bold first:border-t-0 first:mt-0 first:pt-0';
+        title.textContent = getCategoryTitle(category);
+        container.appendChild(title);
+
+        grouped[category].forEach(layer => {
+            const checkboxId = getCheckboxIdFromConfigKey(layer.layer_key);
+            const label = document.createElement('label');
+            label.className = 'flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-emerald-500/30 transition';
+            label.innerHTML = `
+                <input type="checkbox" id="${checkboxId}" ${isLayerDefaultVisible(layer) ? 'checked' : ''} class="accent-emerald-500 h-4 w-4 cursor-pointer flex-shrink-0">
+                <div class="flex items-center justify-center w-8 flex-shrink-0">
+                    <span class="inline-block h-4 w-6 rounded-sm border-2" style="border-color:${escapeHtml(layer.line_color || '#10b981')};background:${escapeHtml(layer.fill_color || '#10b981')}33"></span>
+                </div>
+                <div class="min-w-0">
+                    <div class="font-semibold text-slate-300">${escapeHtml(layer.layer_name || layer.layer_key)}</div>
+                    <div class="text-[10px] text-slate-500">${escapeHtml(getLayerDescription(layer))}</div>
+                </div>
+            `;
+            container.appendChild(label);
+        });
     });
 
-    container.dataset.databaseUploadedVectorControls = 'true';
+    container.dataset.databaseLayerControls = 'true';
+}
+
+function groupLayersByCategory(layers) {
+    return layers.reduce((groups, layer) => {
+        const category = layer.category || 'database_layers';
+        if (!groups[category]) groups[category] = [];
+        groups[category].push(layer);
+        return groups;
+    }, {});
+}
+
+function getCategoryTitle(category) {
+    if (category === 'uploaded_vector') return 'Uploaded Database Vector Layers';
+    if (category === 'boundary') return 'Boundary Layers';
+    if (category === 'environment') return 'Environmental Layers';
+    if (category === 'hydrology') return 'Hydrology Layers';
+    return String(category || 'Database Layers').replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function getLayerDescription(layer) {
+    if (layer.category === 'uploaded_vector') return 'Supabase/PostGIS uploaded layer';
+    return 'Database managed GIS layer';
 }
 
 function bindAllLayerToggles() {
