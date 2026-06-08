@@ -1,3 +1,16 @@
 {
-  "layers": []
+  "layers": [
+    {
+      "id": "1780920122108",
+      "name": "basin-boundary.geojson",
+      "url": "/data/vector-layers/1780920122108.geojson",
+      "visible": true,
+      "style": {
+        "color": "#3388ff",
+        "weight": 2,
+        "fillColor": "#3388ff",
+        "fillOpacity": 0.2
+      }
+    }
+  ]
 }

@@ -1,7 +1,7 @@
 require('dotenv').config();
 
-const fastify = require('fastify')({ logger: true });
 const path = require('path');
+const fastify = require('fastify')({ logger: true });
 const pool = require('../config/database');
 
 fastify.register(require('@fastify/static'), {
@@ -10,14 +10,16 @@ fastify.register(require('@fastify/static'), {
 });
 
 fastify.register(require('@fastify/compress'), {
-  global: true
+  global: true,
 });
 
+fastify.register(require('@fastify/multipart'));
+
+// API routes
 fastify.register(require('./routes/auth.routes'), { prefix: '/api' });
 fastify.register(require('./routes/admin.routes'), { prefix: '/api' });
 fastify.register(require('./routes/spatial.routes'), { prefix: '/api' });
 fastify.register(require('./routes/layers.routes'), { prefix: '/api' });
-fastify.register(require('@fastify/multipart'));
 fastify.register(require('./routes/vector-layer.routes'), { prefix: '/api' });
 
 fastify.setErrorHandler((error, request, reply) => {
@@ -36,7 +38,7 @@ fastify.setNotFoundHandler((request, reply) => {
     });
   }
 
-  reply.sendFile('map.html');
+  return reply.sendFile('map.html');
 });
 
 fastify.addHook('onClose', async () => {
