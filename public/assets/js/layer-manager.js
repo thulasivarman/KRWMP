@@ -22,14 +22,9 @@ window.initializeSupabaseSpatialSources = function () {
     }
 };
 
-// =====================================================
-// Loading indicator
-// =====================================================
-
 function showLayerLoading(message = 'Loading layer...') {
     const el = document.getElementById('map-loading-indicator');
     if (!el) return;
-
     el.textContent = message;
     el.classList.remove('hidden');
 }
@@ -37,13 +32,8 @@ function showLayerLoading(message = 'Loading layer...') {
 function hideLayerLoading() {
     const el = document.getElementById('map-loading-indicator');
     if (!el) return;
-
     el.classList.add('hidden');
 }
-
-// =====================================================
-// Dynamic source and layer loading
-// =====================================================
 
 function addDynamicSpatialLayer(layer) {
     if (!window.KRWMP_MAP || !layer) return;
@@ -63,25 +53,19 @@ function addDynamicSpatialLayer(layer) {
             id: layer.fill_layer_id,
             type: 'fill',
             source: layer.source_id,
-
             minzoom: Number(layer.min_zoom || 0),
             maxzoom: Number(layer.max_zoom || 22),
-
             paint: {
                 'fill-color': layer.fill_color || '#22c55e',
                 'fill-opacity': Number(layer.fill_opacity ?? 0.4)
             },
-
             layout: {
                 visibility: window.getLayerInitialVisibility(layer.layer_key)
             }
         });
 
         if (window.attachInteractivePopupHandshake) {
-            window.attachInteractivePopupHandshake(
-                layer.fill_layer_id,
-                layer.popup_type || layer.layer_key
-            );
+            window.attachInteractivePopupHandshake(layer.fill_layer_id, layer.popup_type || layer.layer_key);
         }
     }
 
@@ -90,15 +74,12 @@ function addDynamicSpatialLayer(layer) {
             id: layer.line_layer_id,
             type: 'line',
             source: layer.source_id,
-
             minzoom: Number(layer.min_zoom || 0),
             maxzoom: Number(layer.max_zoom || 22),
-
             paint: {
                 'line-color': layer.line_color || '#166534',
                 'line-width': Number(layer.line_width || 1)
             },
-
             layout: {
                 visibility: window.getLayerInitialVisibility(layer.layer_key)
             }
@@ -107,10 +88,6 @@ function addDynamicSpatialLayer(layer) {
 
     window.KRWMP_MAP.once('idle', hideLayerLoading);
 }
-
-// =====================================================
-// Admin uploaded vector layer loading
-// =====================================================
 
 window.initializeUploadedVectorLayers = async function () {
     if (!window.KRWMP_MAP) return;
@@ -209,13 +186,35 @@ function attachUploadedVectorPopup(mapLayerId, layer) {
     window.KRWMP_MAP[eventKey] = true;
 
     window.KRWMP_MAP.on('click', mapLayerId, event => {
-        const feature = event.features && event.features[0];
-        const properties = feature?.properties || {};
-        const html = buildUploadedVectorPopupHtml(properties, layer);
+        if (!event.features || !event.features.length) return;
 
-        new maplibregl.Popup()
+        const feature = event.features[0];
+        const properties = feature.properties || {};
+        const popupData = buildUploadedVectorPopupData(properties, layer, mapLayerId);
+
+        new maplibregl.Popup({
+            className: 'krwmp-parcel-popup',
+            closeButton: true,
+            closeOnClick: true,
+            offset: 16,
+            maxWidth: '360px'
+        })
             .setLngLat(event.lngLat)
-            .setHTML(html)
+            .setHTML(`
+                <div class="krwmp-glass-popup">
+                    <div class="krwmp-glass-header">
+                        <div class="krwmp-glass-title">${popupData.title}</div>
+                        <div class="krwmp-glass-subtitle">${popupData.subtitle}</div>
+                    </div>
+                    <div class="krwmp-status-badge">
+                        <span class="krwmp-status-dot"></span>
+                        ${popupData.badge}
+                    </div>
+                    <div class="krwmp-attribute-table">
+                        ${popupData.rows}
+                    </div>
+                </div>
+            `)
             .addTo(window.KRWMP_MAP);
     });
 
@@ -228,20 +227,35 @@ function attachUploadedVectorPopup(mapLayerId, layer) {
     });
 }
 
-function buildUploadedVectorPopupHtml(properties, layer) {
+function buildUploadedVectorPopupData(properties, layer, mapLayerId) {
     const fields = Array.isArray(layer.popupFields) ? layer.popupFields : [];
     const entries = fields.length
         ? fields.map(field => [field, properties[field]])
         : Object.entries(properties).slice(0, 12);
 
-    const rows = entries
-        .map(([key, value]) => `<div><strong>${escapeHtml(key)}</strong>: ${escapeHtml(value ?? '')}</div>`)
-        .join('');
+    const rows = entries.length
+        ? entries.map(([key, value]) => uploadedPopupRow(key, value)).join('')
+        : uploadedPopupRow('Attribute Data', 'Not available');
 
+    const geometryLabel = mapLayerId.includes('-line-')
+        ? 'Uploaded Line Layer'
+        : mapLayerId.includes('-circle-')
+            ? 'Uploaded Point Layer'
+            : 'Uploaded Polygon Layer';
+
+    return {
+        title: escapeHtml(layer.name || layer.id),
+        subtitle: geometryLabel,
+        badge: 'ACTIVE LAYER',
+        rows
+    };
+}
+
+function uploadedPopupRow(label, value) {
     return `
-        <div style="font-family: Arial, sans-serif; font-size: 12px; max-width: 260px;">
-            <div style="font-weight: 700; margin-bottom: 6px;">${escapeHtml(layer.name || layer.id)}</div>
-            ${rows || '<div>No attribute data</div>'}
+        <div class="krwmp-attribute-row">
+            <span>${escapeHtml(label)}</span>
+            <strong>${escapeHtml(value ?? '-')}</strong>
         </div>
     `;
 }
@@ -297,24 +311,13 @@ function renderUploadedVectorLayerControls(layers) {
     container.dataset.uploadedVectorControls = 'true';
 }
 
-// =====================================================
-// Checkbox bindings
-// =====================================================
-
 function bindAllLayerToggles() {
     const layers = window.KRWMP_DYNAMIC_LAYERS || [];
 
     layers.forEach(layer => {
         const checkboxId = getCheckboxIdFromConfigKey(layer.layer_key);
-        const targetLayerIds = [
-            layer.fill_layer_id,
-            layer.line_layer_id
-        ].filter(Boolean);
-
-        window.bindCheckboxVisibilityToggle(
-            checkboxId,
-            targetLayerIds
-        );
+        const targetLayerIds = [layer.fill_layer_id, layer.line_layer_id].filter(Boolean);
+        window.bindCheckboxVisibilityToggle(checkboxId, targetLayerIds);
     });
 }
 
@@ -327,13 +330,11 @@ window.bindCheckboxVisibilityToggle = function (checkboxId, targetLayerIds) {
     }
 
     if (checkbox.dataset.krwmpBound === 'true') return;
-
     checkbox.dataset.krwmpBound = 'true';
 
     checkbox.addEventListener('change', (e) => {
         const checked = e.target.checked;
         const visibility = checked ? 'visible' : 'none';
-
         const layerKey = getConfigKeyFromCheckboxId(checkboxId);
         const layer = getLayerDefinitionByKey(layerKey);
 
@@ -343,19 +344,11 @@ window.bindCheckboxVisibilityToggle = function (checkboxId, targetLayerIds) {
 
         targetLayerIds.forEach(layerId => {
             if (window.KRWMP_MAP.getLayer(layerId)) {
-                window.KRWMP_MAP.setLayoutProperty(
-                    layerId,
-                    'visibility',
-                    visibility
-                );
+                window.KRWMP_MAP.setLayoutProperty(layerId, 'visibility', visibility);
             }
         });
     });
 };
-
-// =====================================================
-// Visibility state helpers
-// =====================================================
 
 window.getLayerInitialVisibility = function (layerKey) {
     const checkboxId = getCheckboxIdFromConfigKey(layerKey);
@@ -366,13 +359,8 @@ window.getLayerInitialVisibility = function (layerKey) {
         return checkbox.checked ? 'visible' : 'none';
     }
 
-    if (layer && layer.default_visible === true) {
-        return 'visible';
-    }
-
-    if (layer && layer.default_visible === 'true') {
-        return 'visible';
-    }
+    if (layer && layer.default_visible === true) return 'visible';
+    if (layer && layer.default_visible === 'true') return 'visible';
 
     return 'none';
 };
@@ -388,10 +376,6 @@ window.shouldLoadLayerGroup = function (layerKey) {
 
     return layer?.default_visible === true || layer?.default_visible === 'true';
 };
-
-// =====================================================
-// Mapping helpers
-// =====================================================
 
 function getCheckboxIdFromConfigKey(layerKey) {
     return `chk-layer-${layerKey}`;
