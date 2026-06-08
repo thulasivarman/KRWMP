@@ -13,7 +13,12 @@ fastify.register(require('@fastify/compress'), {
   global: true,
 });
 
-fastify.register(require('@fastify/multipart'));
+fastify.register(require('@fastify/multipart'), {
+  limits: {
+    fileSize: Number(process.env.MAX_GEOJSON_UPLOAD_SIZE || 75 * 1024 * 1024),
+    files: 1,
+  },
+});
 
 // API routes
 fastify.register(require('./routes/auth.routes'), { prefix: '/api' });
