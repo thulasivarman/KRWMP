@@ -1,5 +1,9 @@
 const pool = require('../../config/database');
 
+function isSafeIdentifier(value) {
+    return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(String(value || ''));
+}
+
 async function getActiveLayers() {
     const sql = `
         SELECT
@@ -35,7 +39,7 @@ async function getActiveLayers() {
 async function getLayerGeoJSON(layerKey) {
     const layerResult = await pool.query(
         `
-        SELECT table_name, geom_column
+        SELECT table_name, geom_column, managed_by_admin
         FROM public.gis_layers
         WHERE layer_key = $1
           AND active = true
@@ -55,8 +59,17 @@ async function getLayerGeoJSON(layerKey) {
         'gnd_boundary'
     ];
 
-    if (!allowedTables.includes(layer.table_name)) {
+    const isAdminUploadedTable =
+        layer.managed_by_admin === true &&
+        String(layer.table_name || '').startsWith('uploaded_') &&
+        isSafeIdentifier(layer.table_name);
+
+    if (!allowedTables.includes(layer.table_name) && !isAdminUploadedTable) {
         throw new Error('Unauthorized spatial table');
+    }
+
+    if (!isSafeIdentifier(layer.geom_column)) {
+        throw new Error('Unauthorized geometry column');
     }
 
     const sql = `
