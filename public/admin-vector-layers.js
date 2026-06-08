@@ -1,10 +1,40 @@
 const API_BASE = '/api';
 
+function getCurrentUser() {
+  try {
+    return JSON.parse(localStorage.getItem('krwmp_user') || 'null');
+  } catch (error) {
+    return null;
+  }
+}
+
+function isAdminUser(user) {
+  return String(user?.role_name || user?.role || '').toLowerCase() === 'admin';
+}
+
+const currentUser = getCurrentUser();
+
+if (!isAdminUser(currentUser)) {
+  const authNotice = document.getElementById('authNotice');
+  if (authNotice) authNotice.hidden = false;
+  window.setTimeout(() => {
+    window.location.href = '/index.html';
+  }, 800);
+}
+
 const uploadForm = document.getElementById('uploadForm');
 const layersList = document.getElementById('layersList');
 const refreshBtn = document.getElementById('refreshBtn');
 const statusBox = document.getElementById('statusBox');
 const layerTemplate = document.getElementById('layerTemplate');
+
+function adminHeaders(extra = {}) {
+  return {
+    ...extra,
+    'X-KRWMP-User': currentUser?.identifier || currentUser?.username || currentUser?.name || 'admin',
+    'X-KRWMP-Role': currentUser?.role_name || currentUser?.role || 'admin',
+  };
+}
 
 function showStatus(message, isError = false) {
   statusBox.hidden = false;
@@ -17,6 +47,7 @@ function normalizeHex(value, fallback) {
 }
 
 async function requestJson(url, options = {}) {
+  options.headers = adminHeaders(options.headers || {});
   const response = await fetch(url, options);
   const payload = await response.json().catch(() => ({}));
 
@@ -91,7 +122,7 @@ async function saveStyle(form) {
   try {
     await requestJson(`${API_BASE}/vector-layers/${encodeURIComponent(id)}/style`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: adminHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(payload),
     });
 
@@ -103,7 +134,7 @@ async function saveStyle(form) {
 }
 
 async function deleteLayer(id, name) {
-  const confirmed = window.confirm(`Delete ${name}? This will remove the GeoJSON file and layer configuration from GitHub.`);
+  const confirmed = window.confirm(`Delete ${name}? This will remove the GeoJSON file and layer configuration.`);
   if (!confirmed) return;
 
   try {
@@ -127,8 +158,8 @@ uploadForm.addEventListener('submit', async event => {
     });
 
     uploadForm.reset();
-    uploadForm.color.value = '#3388ff';
-    uploadForm.fillColor.value = '#3388ff';
+    uploadForm.color.value = '#10b981';
+    uploadForm.fillColor.value = '#10b981';
     uploadForm.weight.value = 2;
     uploadForm.fillOpacity.value = 0.2;
     uploadForm.visible.checked = true;
@@ -141,4 +172,7 @@ uploadForm.addEventListener('submit', async event => {
 });
 
 refreshBtn.addEventListener('click', loadLayers);
-loadLayers();
+
+if (isAdminUser(currentUser)) {
+  loadLayers();
+}
