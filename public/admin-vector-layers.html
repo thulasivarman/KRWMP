@@ -5,13 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Vector Layer Management</title>
   <link rel="stylesheet" href="/admin-vector-layers.css" />
+  <link rel="stylesheet" href="/admin-vector-layers-theme.css" />
 </head>
 <body>
   <main class="admin-page">
     <header class="page-header">
-      <h1>Vector Layer Management</h1>
-      <p>Upload GeoJSON layers, remove existing layers, and update map symbols.</p>
+      <div>
+        <p class="eyebrow">KRWMP Portal Administration</p>
+        <h1>Vector Layer Management</h1>
+        <p>Upload GeoJSON layers, remove existing layers, and update map symbols.</p>
+      </div>
+      <nav class="page-actions">
+        <a href="/map.html" class="ghost-link">Back to Map</a>
+        <a href="/admin.html" class="ghost-link">Admin Hub</a>
+      </nav>
     </header>
+
+    <section id="authNotice" class="auth-notice" hidden>Login required. Redirecting...</section>
 
     <section class="card">
       <h2>Upload New GeoJSON Layer</h2>
@@ -30,11 +40,11 @@
         </label>
         <label>
           Line Color
-          <input type="color" name="color" value="#3388ff" />
+          <input type="color" name="color" value="#10b981" />
         </label>
         <label>
           Fill Color
-          <input type="color" name="fillColor" value="#3388ff" />
+          <input type="color" name="fillColor" value="#10b981" />
         </label>
         <label>
           Line Width
