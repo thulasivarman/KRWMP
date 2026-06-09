@@ -33,9 +33,7 @@ function addRasterLayerToMap(layer) {
     const layerId = `raster-layer-${layer.layer_key}`;
 
     if (!window.KRWMP_MAP.getSource(sourceId)) {
-        const bounds = Array.isArray(layer.bounds) && layer.bounds.length === 4
-            ? layer.bounds
-            : [79.5, 6.4, 80.8, 7.6];
+        const bounds = getRasterBounds(layer);
 
         window.KRWMP_MAP.addSource(sourceId, {
             type: 'image',
@@ -68,6 +66,13 @@ function addRasterLayerToMap(layer) {
     }
 }
 
+function getRasterBounds(layer) {
+    if (Array.isArray(layer.bounds) && layer.bounds.length === 4) {
+        return layer.bounds.map(Number);
+    }
+    return [79.5, 6.4, 80.8, 7.6];
+}
+
 function setRasterVisibility(layer, visible) {
     const layerId = `raster-layer-${layer.layer_key}`;
 
@@ -79,6 +84,28 @@ function setRasterVisibility(layer, visible) {
     if (window.KRWMP_MAP.getLayer(layerId)) {
         window.KRWMP_MAP.setLayoutProperty(layerId, 'visibility', 'none');
     }
+}
+
+function setRasterOpacity(layer, opacity) {
+    const layerId = `raster-layer-${layer.layer_key}`;
+    const value = Math.max(0, Math.min(1, Number(opacity)));
+
+    if (!window.KRWMP_MAP.getLayer(layerId)) {
+        addRasterLayerToMap(layer);
+    }
+
+    if (window.KRWMP_MAP.getLayer(layerId)) {
+        window.KRWMP_MAP.setPaintProperty(layerId, 'raster-opacity', value);
+    }
+}
+
+function zoomToRaster(layer) {
+    if (!window.KRWMP_MAP) return;
+    const bounds = getRasterBounds(layer);
+    window.KRWMP_MAP.fitBounds([[bounds[0], bounds[1]], [bounds[2], bounds[3]]], {
+        padding: 40,
+        duration: 800
+    });
 }
 
 function renderRasterLayerControls(layers) {
@@ -96,25 +123,51 @@ function renderRasterLayerControls(layers) {
     }
 
     layers.forEach(layer => {
-        const checkboxId = `chk-raster-${layer.layer_key}`;
-        const label = document.createElement('label');
-        label.className = 'flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-emerald-500/30 transition';
-        label.innerHTML = `
-            <input type="checkbox" id="${checkboxId}" ${layer.default_visible ? 'checked' : ''} class="accent-emerald-500 h-4 w-4 cursor-pointer flex-shrink-0">
-            <div class="flex items-center justify-center w-8 flex-shrink-0">
-                <span class="inline-block h-4 w-6 rounded-sm border-2 border-emerald-500 bg-emerald-500/20"></span>
+        const checked = layer.default_visible === true || layer.default_visible === 'true';
+        const opacity = Number(layer.opacity ?? 0.7);
+        const card = document.createElement('div');
+        card.className = 'bg-slate-950/50 border border-slate-800 rounded-lg p-3 space-y-3';
+        card.innerHTML = `
+            <div class="flex items-start justify-between gap-3">
+                <label class="flex items-start gap-3 cursor-pointer min-w-0">
+                    <input type="checkbox" ${checked ? 'checked' : ''} class="raster-visible accent-emerald-500 h-4 w-4 mt-0.5 cursor-pointer flex-shrink-0">
+                    <div class="min-w-0">
+                        <div class="font-semibold text-slate-200 leading-tight">${escapeRasterHtml(layer.layer_name || layer.layer_key)}</div>
+                        <div class="text-[10px] text-slate-500 mt-0.5 truncate">${escapeRasterHtml(layer.file_name || layer.file_url || '')}</div>
+                    </div>
+                </label>
+                <button type="button" class="raster-zoom text-[10px] px-2 py-1 rounded bg-slate-800 hover:bg-emerald-600 text-slate-200 transition flex-shrink-0">Zoom</button>
             </div>
-            <div class="min-w-0">
-                <div class="font-semibold text-slate-300">${escapeRasterHtml(layer.layer_name || layer.layer_key)}</div>
-                <div class="text-[10px] text-slate-500">Raster overlay · opacity ${Number(layer.opacity ?? 0.7)}</div>
+            <div>
+                <div class="flex items-center justify-between text-[10px] text-slate-500 mb-1">
+                    <span>Opacity</span>
+                    <span class="raster-opacity-value">${Math.round(opacity * 100)}%</span>
+                </div>
+                <input type="range" min="0" max="1" step="0.05" value="${opacity}" class="raster-opacity w-full accent-emerald-500">
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-[10px] text-slate-500">
+                <div>Min Zoom: <span class="text-slate-300">${Number(layer.min_zoom || 0)}</span></div>
+                <div>Max Zoom: <span class="text-slate-300">${Number(layer.max_zoom || 22)}</span></div>
             </div>
         `;
-        container.appendChild(label);
 
-        const checkbox = label.querySelector('input');
-        checkbox.addEventListener('change', event => {
+        const visibleInput = card.querySelector('.raster-visible');
+        const opacityInput = card.querySelector('.raster-opacity');
+        const opacityValue = card.querySelector('.raster-opacity-value');
+        const zoomButton = card.querySelector('.raster-zoom');
+
+        visibleInput.addEventListener('change', event => {
             setRasterVisibility(layer, event.target.checked);
         });
+
+        opacityInput.addEventListener('input', event => {
+            const value = Number(event.target.value);
+            opacityValue.textContent = `${Math.round(value * 100)}%`;
+            setRasterOpacity(layer, value);
+        });
+
+        zoomButton.addEventListener('click', () => zoomToRaster(layer));
+        container.appendChild(card);
     });
 }
 
