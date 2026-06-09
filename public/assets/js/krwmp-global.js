@@ -32,7 +32,7 @@ window.KRWMP_ENGINE = {
                     initials: "KT",
                     identifier: "thulasi",
                     role_name: "admin",
-                    visible_sections: ["data_layers", "spatial_analysis", "modeling_results", "implementations", "user_management"]
+                    visible_sections: ["data_layers", "raster_layers", "user_management"]
                 };
                 this.Session.isAuthenticated = false;
             }
@@ -71,13 +71,14 @@ window.KRWMP_ENGINE = {
         }
 
         const currentPath = window.location.pathname;
-        const isCurrentPageAdminWorkspace = currentPath.endsWith('admin.html') || currentPath.endsWith('admin-vector-layers.html');
+        const isCurrentPageAdminWorkspace =
+            currentPath.endsWith('admin.html') ||
+            currentPath.endsWith('admin-vector-layers.html') ||
+            currentPath.endsWith('admin-raster-layers.html');
 
         const structuralSections = {
             'section-data-layers': 'data_layers',
-            'section-spatial-analysis': 'spatial_analysis',
-            'section-modeling-results': 'modeling_results',
-            'section-implementations': 'implementations',
+            'section-raster-layers': 'raster_layers',
             'section-user-management': 'user_management'
         };
 
@@ -88,6 +89,10 @@ window.KRWMP_ENGINE = {
                 : profile.visible_sections || [];
         } catch (e) {
             allowedSections = profile.visible_sections || [];
+        }
+
+        if (String(profile.role_name || '').toLowerCase() === 'admin') {
+            allowedSections = Array.from(new Set([...allowedSections, 'data_layers', 'raster_layers', 'user_management']));
         }
 
         for (const [domId, sectionKey] of Object.entries(structuralSections)) {
