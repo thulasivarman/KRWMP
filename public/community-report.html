@@ -5,32 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Report Catchment Issue - KRWMP Portal</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
-  <main class="max-w-4xl mx-auto p-6 space-y-6">
-    <header class="border-b border-slate-800 pb-4">
-      <p class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Community Participation</p>
-      <h1 class="text-2xl font-bold mt-2">Report a Catchment Issue</h1>
-      <p class="text-sm text-slate-400 mt-1">Submit environmental issues with location and photo evidence for KRWMP review.</p>
-    </header>
+  <div class="flex min-h-screen">
+    <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
+    <main class="flex-1 p-6 space-y-6 max-w-5xl mx-auto w-full">
+      <header class="border-b border-slate-800 pb-4">
+        <p class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Community Participation</p>
+        <h1 class="text-2xl font-bold mt-2">Report a Catchment Issue</h1>
+        <p class="text-sm text-slate-400 mt-1">Submit environmental issues with location and photo evidence for KRWMP review.</p>
+      </header>
 
-    <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
+      <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
 
-    <form id="communityReportForm" class="bg-slate-900 border border-slate-800 rounded-xl p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-      <label class="text-sm font-semibold">Issue Category<select name="category_id" id="categorySelect" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" required></select></label>
-      <label class="text-sm font-semibold">Severity<select name="severity_level" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></label>
-      <label class="text-sm font-semibold md:col-span-2">Issue Title<input name="issue_title" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" required placeholder="Example: Wastewater discharge into stream"></label>
-      <label class="text-sm font-semibold md:col-span-2">Description<textarea name="description" rows="4" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="Describe the issue, likely source, visible impacts, and urgency"></textarea></label>
-      <label class="text-sm font-semibold">Latitude<input name="latitude" id="latitudeInput" type="number" step="any" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" required></label>
-      <label class="text-sm font-semibold">Longitude<input name="longitude" id="longitudeInput" type="number" step="any" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" required></label>
-      <div class="md:col-span-2 flex gap-2"><button type="button" id="useLocationBtn" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded text-sm font-bold">Use My Location</button><a href="/map.html" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded text-sm font-bold">Open Map</a></div>
-      <label class="text-sm font-semibold md:col-span-2">Location Description<input name="location_description" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="Village, road, landmark, stream name"></label>
-      <label class="text-sm font-semibold">Reporter Name<input name="reporter_name" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
-      <label class="text-sm font-semibold">Contact Number<input name="reporter_contact" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
-      <label class="text-sm font-semibold md:col-span-2">Photo Evidence<input name="photo" type="file" accept="image/*" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
-      <div class="md:col-span-2"><button type="submit" class="bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 rounded font-bold">Submit Issue Report</button></div>
-    </form>
-  </main>
+      <form id="communityReportForm" class="bg-slate-900 border border-slate-800 rounded-xl p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <label class="text-sm font-semibold">Issue Category<select name="category_id" id="categorySelect" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" required></select></label>
+        <label class="text-sm font-semibold">Severity<select name="severity_level" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></label>
+        <label class="text-sm font-semibold md:col-span-2">Issue Title<input name="issue_title" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" required placeholder="Example: Wastewater discharge into stream"></label>
+        <label class="text-sm font-semibold md:col-span-2">Description<textarea name="description" rows="4" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="Describe the issue, likely source, visible impacts, and urgency"></textarea></label>
+        <label class="text-sm font-semibold">Latitude<input name="latitude" id="latitudeInput" type="number" step="any" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" required></label>
+        <label class="text-sm font-semibold">Longitude<input name="longitude" id="longitudeInput" type="number" step="any" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" required></label>
+        <div class="md:col-span-2 flex gap-2"><button type="button" id="useLocationBtn" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded text-sm font-bold">Use My Location</button><a href="/map.html" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded text-sm font-bold">Open Map</a></div>
+        <label class="text-sm font-semibold md:col-span-2">Location Description<input name="location_description" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="Village, road, landmark, stream name"></label>
+        <label class="text-sm font-semibold">Reporter Name<input name="reporter_name" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
+        <label class="text-sm font-semibold">Contact Number<input name="reporter_contact" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
+        <label class="text-sm font-semibold md:col-span-2">Photo Evidence<input name="photo" type="file" accept="image/*" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
+        <div class="md:col-span-2"><button type="submit" class="bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 rounded font-bold">Submit Issue Report</button></div>
+      </form>
+    </main>
+  </div>
+  <script src="/assets/js/krwmp-global.js"></script>
   <script src="/community-report.js"></script>
 </body>
 </html>
