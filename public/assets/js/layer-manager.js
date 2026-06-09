@@ -46,7 +46,30 @@ function addDynamicSpatialLayer(layer) {
         });
     }
 
-    if (layer.fill_layer_id && !window.KRWMP_MAP.getLayer(layer.fill_layer_id)) {
+    if (isPointLayer(layer) && layer.fill_layer_id && !window.KRWMP_MAP.getLayer(layer.fill_layer_id)) {
+        window.KRWMP_MAP.addLayer({
+            id: layer.fill_layer_id,
+            type: 'circle',
+            source: layer.source_id,
+            filter: ['any', ['==', ['geometry-type'], 'Point'], ['==', ['geometry-type'], 'MultiPoint']],
+            minzoom: Number(layer.min_zoom || 0),
+            maxzoom: Number(layer.max_zoom || 22),
+            paint: {
+                'circle-radius': 7,
+                'circle-color': ['match', ['get', 'severity_level'], 'high', '#ef4444', 'medium', '#f59e0b', 'low', '#22c55e', layer.fill_color || '#38bdf8'],
+                'circle-stroke-color': layer.line_color || '#ffffff',
+                'circle-stroke-width': Number(layer.line_width || 1.5),
+                'circle-opacity': Number(layer.fill_opacity ?? 0.9)
+            },
+            layout: {
+                visibility: window.getLayerInitialVisibility(layer.layer_key)
+            }
+        });
+
+        attachCommunityComplaintPopup(layer.fill_layer_id);
+    }
+
+    if (!isPointLayer(layer) && layer.fill_layer_id && !window.KRWMP_MAP.getLayer(layer.fill_layer_id)) {
         window.KRWMP_MAP.addLayer({
             id: layer.fill_layer_id,
             type: 'fill',
@@ -91,6 +114,33 @@ function addDynamicSpatialLayer(layer) {
 
     window.KRWMP_MAP.once('idle', hideLayerLoading);
     window.setTimeout(hideLayerLoading, 3500);
+}
+
+function isPointLayer(layer) {
+    return layer.layer_key === 'community_complaints' || layer.popup_type === 'community_complaints' || String(layer.fill_layer_id || '').includes('_circle');
+}
+
+function attachCommunityComplaintPopup(layerId) {
+    if (!window.KRWMP_MAP || !layerId || window.KRWMP_MAP.__communityComplaintPopupBound) return;
+    window.KRWMP_MAP.__communityComplaintPopupBound = true;
+
+    window.KRWMP_MAP.on('click', layerId, (event) => {
+        const feature = event.features && event.features[0];
+        if (!feature) return;
+        const p = feature.properties || {};
+        const html = `
+            <div style="font-family:Arial;min-width:230px;max-width:300px">
+                <strong>${escapeHtml(p.issue_title || 'Community complaint')}</strong><br>
+                <small>${escapeHtml(p.report_code || '')} · ${escapeHtml(p.status || '')} · ${escapeHtml(p.severity_level || '')}</small>
+                <p style="margin:8px 0 6px 0">${escapeHtml(p.description || '')}</p>
+                <div style="font-size:11px;color:#64748b">${escapeHtml(p.category_name || '')}</div>
+                ${p.photo_url ? `<a href="${escapeHtml(p.photo_url)}" target="_blank" style="font-size:12px;color:#059669">View photo evidence</a>` : ''}
+            </div>`;
+        new maplibregl.Popup().setLngLat(event.lngLat).setHTML(html).addTo(window.KRWMP_MAP);
+    });
+
+    window.KRWMP_MAP.on('mouseenter', layerId, () => { window.KRWMP_MAP.getCanvas().style.cursor = 'pointer'; });
+    window.KRWMP_MAP.on('mouseleave', layerId, () => { window.KRWMP_MAP.getCanvas().style.cursor = ''; });
 }
 
 function renderDatabaseLayerControls(layers) {
@@ -146,6 +196,7 @@ function groupLayersByCategory(layers) {
 }
 
 function getCategoryTitle(category) {
+    if (category === 'community_participation') return 'Community Participation';
     if (category === 'uploaded_vector') return 'Uploaded Database Vector Layers';
     if (category === 'boundary') return 'Boundary Layers';
     if (category === 'environment') return 'Environmental Layers';
@@ -154,6 +205,7 @@ function getCategoryTitle(category) {
 }
 
 function getLayerDescription(layer) {
+    if (layer.layer_key === 'community_complaints') return 'Public catchment issue reports';
     if (layer.category === 'uploaded_vector') return 'Supabase/PostGIS uploaded layer';
     return 'Database managed GIS layer';
 }
@@ -170,12 +222,7 @@ function bindAllLayerToggles() {
 
 window.bindCheckboxVisibilityToggle = function (checkboxId, targetLayerIds) {
     const checkbox = document.getElementById(checkboxId);
-
-    if (!checkbox) {
-        console.warn(`Checkbox not found: ${checkboxId}`);
-        return;
-    }
-
+    if (!checkbox) return;
     if (checkbox.dataset.krwmpBound === 'true') return;
     checkbox.dataset.krwmpBound = 'true';
 
@@ -185,9 +232,7 @@ window.bindCheckboxVisibilityToggle = function (checkboxId, targetLayerIds) {
         const layerKey = getConfigKeyFromCheckboxId(checkboxId);
         const layer = getLayerDefinitionByKey(layerKey);
 
-        if (checked && layer) {
-            addDynamicSpatialLayer(layer);
-        }
+        if (checked && layer) addDynamicSpatialLayer(layer);
 
         targetLayerIds.forEach(layerId => {
             if (window.KRWMP_MAP.getLayer(layerId)) {
@@ -201,13 +246,8 @@ window.getLayerInitialVisibility = function (layerKey) {
     const checkboxId = getCheckboxIdFromConfigKey(layerKey);
     const checkbox = document.getElementById(checkboxId);
     const layer = getLayerDefinitionByKey(layerKey);
-
-    if (checkbox) {
-        return checkbox.checked ? 'visible' : 'none';
-    }
-
+    if (checkbox) return checkbox.checked ? 'visible' : 'none';
     if (isLayerDefaultVisible(layer)) return 'visible';
-
     return 'none';
 };
 
@@ -215,11 +255,7 @@ window.shouldLoadLayerGroup = function (layerKey) {
     const checkboxId = getCheckboxIdFromConfigKey(layerKey);
     const checkbox = document.getElementById(checkboxId);
     const layer = getLayerDefinitionByKey(layerKey);
-
-    if (checkbox) {
-        return checkbox.checked;
-    }
-
+    if (checkbox) return checkbox.checked;
     return isLayerDefaultVisible(layer);
 };
 
@@ -227,24 +263,7 @@ function isLayerDefaultVisible(layer) {
     return layer?.default_visible === true || layer?.default_visible === 'true';
 }
 
-function getCheckboxIdFromConfigKey(layerKey) {
-    return `chk-layer-${layerKey}`;
-}
-
-function getConfigKeyFromCheckboxId(checkboxId) {
-    return checkboxId.replace('chk-layer-', '');
-}
-
-function getLayerDefinitionByKey(layerKey) {
-    const layers = window.KRWMP_DYNAMIC_LAYERS || [];
-    return layers.find(layer => layer.layer_key === layerKey);
-}
-
-function escapeHtml(value) {
-    return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
+function getCheckboxIdFromConfigKey(layerKey) { return `chk-layer-${layerKey}`; }
+function getConfigKeyFromCheckboxId(checkboxId) { return checkboxId.replace('chk-layer-', ''); }
+function getLayerDefinitionByKey(layerKey) { return (window.KRWMP_DYNAMIC_LAYERS || []).find(layer => layer.layer_key === layerKey); }
+function escapeHtml(value) { return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
