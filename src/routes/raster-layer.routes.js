@@ -64,6 +64,20 @@ async function rasterLayerRoutes(fastify) {
     };
   });
 
+  fastify.post('/raster-layers/:id/process', async (request, reply) => {
+    const result = await rasterLayerService.processRasterLayerForTiles(request.params.id, request.body || {});
+
+    if (!result) {
+      return reply.status(404).send({ success: false, message: 'Raster layer not found' });
+    }
+
+    return {
+      success: result.success !== false,
+      message: result.message,
+      result,
+    };
+  });
+
   fastify.put('/raster-layers/:id', async (request, reply) => {
     const layer = await rasterLayerService.updateRasterLayer(request.params.id, request.body || {});
 
