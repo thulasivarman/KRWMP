@@ -32,9 +32,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.initializeBasemapSwitcher();
     }
 
-    if (window.KRWMP_MAP && window.initializeRasterLayerControls) {
+    if (window.KRWMP_MAP) {
         window.KRWMP_MAP.on('load', () => {
-            window.initializeRasterLayerControls();
+            if (window.initializeRasterLayerControls) window.initializeRasterLayerControls();
+            if (window.initializeCommunityIssueLayer) window.initializeCommunityIssueLayer();
         });
     }
 });
