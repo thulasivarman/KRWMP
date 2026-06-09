@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Community Issue Review - KRWMP Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div class="flex min-h-screen">
+    <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
+    <main class="flex-1 p-8 space-y-6 max-w-7xl mx-auto">
+      <header class="border-b border-slate-800 pb-4">
+        <h1 class="text-xl font-bold uppercase tracking-wider text-slate-200">Community Issue Review</h1>
+        <p class="text-xs text-slate-500 mt-1">Review public reports, assign solutions, and update response status.</p>
+      </header>
+      <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
+      <section class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <div class="flex justify-between items-center mb-4"><h2 class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Submitted Reports</h2><button id="refreshBtn" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-sm font-bold">Refresh</button></div>
+        <div id="reportsList" class="space-y-4"></div>
+      </section>
+    </main>
+  </div>
+  <template id="reportTemplate">
+    <article class="bg-slate-950/60 border border-slate-800 rounded-lg p-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="lg:col-span-2 space-y-2"><h3 data-field="title" class="font-bold text-slate-100"></h3><p data-field="meta" class="text-xs text-slate-500"></p><p data-field="description" class="text-sm text-slate-300"></p><a data-field="photo" class="text-xs text-emerald-400 hidden" target="_blank">View photo evidence</a></div>
+      <form class="review-form space-y-2"><input type="hidden" name="id"><select name="status" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm"><option value="submitted">Submitted</option><option value="under_review">Under Review</option><option value="verified">Verified</option><option value="action_required">Action Required</option><option value="resolved">Resolved</option><option value="rejected">Rejected</option></select><select name="assigned_solution_id" class="solution-select w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm"><option value="">No solution assigned</option></select><textarea name="admin_notes" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm" placeholder="Admin notes"></textarea><button class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-sm font-bold">Save Review</button></form>
+    </article>
+  </template>
+  <script src="/assets/js/krwmp-global.js"></script><script src="/admin-community-issues.js"></script>
+</body>
+</html>
