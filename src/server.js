@@ -20,13 +20,13 @@ fastify.register(require('@fastify/multipart'), {
   },
 });
 
-// API routes
 fastify.register(require('./routes/auth.routes'), { prefix: '/api' });
 fastify.register(require('./routes/admin.routes'), { prefix: '/api' });
 fastify.register(require('./routes/spatial.routes'), { prefix: '/api' });
 fastify.register(require('./routes/layers.routes'), { prefix: '/api' });
 fastify.register(require('./routes/vector-layer.routes'), { prefix: '/api' });
 fastify.register(require('./routes/raster-layer.routes'), { prefix: '/api' });
+fastify.register(require('./routes/community-issues.routes'), { prefix: '/api' });
 
 fastify.setErrorHandler((error, request, reply) => {
   fastify.log.error(error);
