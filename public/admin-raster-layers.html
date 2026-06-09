@@ -16,24 +16,24 @@
         <main class="flex-1 p-8 space-y-8 max-w-6xl mx-auto">
             <header class="border-b border-slate-800 pb-4">
                 <h1 class="text-xl font-bold uppercase tracking-wider text-slate-200">Raster Layer Management</h1>
-                <p class="text-xs text-slate-500 mt-1">Upload, register, display, and remove raster overlays for the map window.</p>
+                <p class="text-xs text-slate-500 mt-1">Upload GeoTIFF rasters. The system stores the original GeoTIFF, extracts bounds, and generates a PNG preview for browser map overlay.</p>
             </header>
 
             <section id="authNotice" class="auth-notice" hidden>Login required. Redirecting...</section>
 
             <section class="card vector-card">
-                <h2>Upload New Raster Layer</h2>
+                <h2>Upload New GeoTIFF Raster Layer</h2>
                 <form id="uploadRasterForm" class="form-grid">
                     <label>Layer Name<input type="text" name="name" required placeholder="Example: Land Surface Temperature" /></label>
                     <label>Layer ID<input type="text" name="id" placeholder="Auto-generated if blank" /></label>
-                    <label>Raster File<input type="file" name="raster" accept=".tif,.tiff,.png,.jpg,.jpeg,.webp,image/tiff,image/png,image/jpeg,image/webp" required /></label>
+                    <label>GeoTIFF File<input type="file" name="raster" accept=".tif,.tiff,image/tiff" required /></label>
                     <label>Opacity<input type="number" name="opacity" min="0" max="1" step="0.1" value="0.7" /></label>
                     <label>Min Zoom<input type="number" name="minZoom" min="0" max="22" value="0" /></label>
                     <label>Max Zoom<input type="number" name="maxZoom" min="0" max="22" value="22" /></label>
-                    <label>Bounds<input type="text" name="bounds" placeholder="[79.8,6.6,80.6,7.4] optional" /></label>
+                    <label>Optional Bounds Override<input type="text" name="bounds" placeholder="[79.8,6.6,80.6,7.4] only if required" /></label>
                     <label>Attribution<input type="text" name="attribution" placeholder="Source / year / notes" /></label>
                     <label class="checkbox-row"><input type="checkbox" name="visible" />Show layer by default</label>
-                    <div class="form-actions"><button type="submit">Upload Raster</button></div>
+                    <div class="form-actions"><button type="submit">Upload GeoTIFF</button></div>
                 </form>
             </section>
 
