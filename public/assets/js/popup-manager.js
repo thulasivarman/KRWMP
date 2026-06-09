@@ -26,7 +26,7 @@ window.attachInteractivePopupHandshake = function (layerFillId, boundaryTypeKey)
 
                     <div class="krwmp-status-badge">
                         <span class="krwmp-status-dot"></span>
-                        ACTIVE LAYER
+                        ${popupData.badge || 'ACTIVE LAYER'}
                     </div>
 
                     <div class="krwmp-attribute-table">
@@ -82,6 +82,21 @@ function buildPopupData(type, props) {
         };
     }
 
+    if (type === 'community_complaints') {
+        return {
+            title: escapePopup(props.issue_title || 'Community Complaint'),
+            subtitle: `${escapePopup(props.category_name || 'Public Issue')} · ${escapePopup(props.report_code || '-')}`,
+            badge: `${String(props.severity_level || 'medium').toUpperCase()} SEVERITY`,
+            rows: `
+                ${popupRow('Status', escapePopup(props.status || '-'))}
+                ${popupRow('Severity', escapePopup(props.severity_level || '-'))}
+                ${popupRow('Description', escapePopup(props.description || '-'))}
+                ${popupRow('Submitted', formatDate(props.submitted_at))}
+                ${props.photo_url ? popupRow('Photo Evidence', `<a href="${escapePopup(props.photo_url)}" target="_blank" style="color:#34d399;font-weight:700">Open Photo</a>`) : ''}
+            `
+        };
+    }
+
     return {
         title: 'Spatial Feature',
         subtitle: 'GIS Layer',
@@ -96,6 +111,22 @@ function popupRow(label, value) {
             <strong>${value}</strong>
         </div>
     `;
+}
+
+function escapePopup(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function formatDate(value) {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    return date.toLocaleString();
 }
 
 function formatNumber(value) {
