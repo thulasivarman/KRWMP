@@ -3,12 +3,15 @@ const path = require('path');
 const pool = require('../../config/database');
 
 const RASTER_DIR = path.join(__dirname, '../../public/data/raster-layers');
+const PREVIEW_DIR = path.join(__dirname, '../../public/data/raster-previews');
 const RASTER_URL_PREFIX = '/data/raster-layers';
+const PREVIEW_URL_PREFIX = '/data/raster-previews';
+const MAX_PREVIEW_SIZE = 1200;
 
 function ensureRasterStorage() {
-  if (!fs.existsSync(RASTER_DIR)) {
-    fs.mkdirSync(RASTER_DIR, { recursive: true });
-  }
+  [RASTER_DIR, PREVIEW_DIR].forEach(dir => {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  });
 }
 
 function sanitizeIdentifier(value, fallback = 'raster_layer') {
@@ -18,15 +21,12 @@ function sanitizeIdentifier(value, fallback = 'raster_layer') {
     .replace(/[^a-z0-9_]+/g, '_')
     .replace(/_+/g, '_')
     .replace(/^_|_$/g, '');
-
   const safe = cleaned || fallback;
   return /^[a-z_]/.test(safe) ? safe : `layer_${safe}`;
 }
 
 function safeFileName(value) {
-  return String(value || 'raster.tif')
-    .replace(/[^a-zA-Z0-9._-]/g, '_')
-    .replace(/_+/g, '_');
+  return String(value || 'raster.tif').replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_+/g, '_');
 }
 
 function normalizeBoolean(value, fallback = false) {
@@ -42,12 +42,9 @@ function normalizeNumber(value, fallback) {
 
 function parseBounds(value) {
   if (!value) return null;
-
   try {
     const parsed = typeof value === 'string' ? JSON.parse(value) : value;
-    if (Array.isArray(parsed) && parsed.length === 4) {
-      return parsed.map(Number);
-    }
+    if (Array.isArray(parsed) && parsed.length === 4) return parsed.map(Number);
     return parsed;
   } catch (error) {
     return null;
@@ -78,6 +75,19 @@ async function ensureRasterTables() {
   `);
 
   await pool.query(`
+    ALTER TABLE public.raster_layers
+    ADD COLUMN IF NOT EXISTS original_file_name text,
+    ADD COLUMN IF NOT EXISTS original_file_url text,
+    ADD COLUMN IF NOT EXISTS preview_file_name text,
+    ADD COLUMN IF NOT EXISTS preview_file_url text,
+    ADD COLUMN IF NOT EXISTS crs text,
+    ADD COLUMN IF NOT EXISTS raster_width integer,
+    ADD COLUMN IF NOT EXISTS raster_height integer,
+    ADD COLUMN IF NOT EXISTS pixel_size_x numeric,
+    ADD COLUMN IF NOT EXISTS pixel_size_y numeric;
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS public.raster_layer_upload_audit (
       id bigserial PRIMARY KEY,
       layer_key text NOT NULL,
@@ -90,9 +100,109 @@ async function ensureRasterTables() {
   `);
 }
 
+function validateGeoTiffFile(filename) {
+  const ext = path.extname(filename || '').toLowerCase();
+  if (!['.tif', '.tiff'].includes(ext)) {
+    throw new Error('Only GeoTIFF files are allowed for raster upload. Please upload .tif or .tiff.');
+  }
+}
+
+function getGeoKeysDirectory(image) {
+  try {
+    return image.getGeoKeys ? image.getGeoKeys() : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function getCrsLabel(image) {
+  const geoKeys = getGeoKeysDirectory(image);
+  if (geoKeys.ProjectedCSTypeGeoKey) return `EPSG:${geoKeys.ProjectedCSTypeGeoKey}`;
+  if (geoKeys.GeographicTypeGeoKey) return `EPSG:${geoKeys.GeographicTypeGeoKey}`;
+  return 'Unknown';
+}
+
+async function createGeoTiffPreview(inputPath, previewPath) {
+  const { fromFile } = require('geotiff');
+  const { PNG } = require('pngjs');
+
+  const tiff = await fromFile(inputPath);
+  const image = await tiff.getImage();
+  const sourceWidth = image.getWidth();
+  const sourceHeight = image.getHeight();
+  const bbox = image.getBoundingBox();
+  const resolution = image.getResolution ? image.getResolution() : null;
+
+  if (!bbox || bbox.length !== 4 || bbox.some(value => !Number.isFinite(Number(value)))) {
+    throw new Error('GeoTIFF bounds could not be extracted. Please provide a valid georeferenced GeoTIFF.');
+  }
+
+  const scale = Math.min(1, MAX_PREVIEW_SIZE / Math.max(sourceWidth, sourceHeight));
+  const previewWidth = Math.max(1, Math.round(sourceWidth * scale));
+  const previewHeight = Math.max(1, Math.round(sourceHeight * scale));
+
+  const raster = await image.readRasters({ width: previewWidth, height: previewHeight, interleave: false });
+  const bands = Array.isArray(raster) ? raster : [raster];
+  const png = new PNG({ width: previewWidth, height: previewHeight });
+
+  const primary = bands[0];
+  let min = Infinity;
+  let max = -Infinity;
+
+  for (let i = 0; i < primary.length; i += 1) {
+    const value = Number(primary[i]);
+    if (Number.isFinite(value)) {
+      if (value < min) min = value;
+      if (value > max) max = value;
+    }
+  }
+
+  if (!Number.isFinite(min) || !Number.isFinite(max) || min === max) {
+    min = 0;
+    max = 255;
+  }
+
+  for (let i = 0; i < previewWidth * previewHeight; i += 1) {
+    const idx = i * 4;
+    if (bands.length >= 3) {
+      png.data[idx] = normalizeBandValue(bands[0][i]);
+      png.data[idx + 1] = normalizeBandValue(bands[1][i]);
+      png.data[idx + 2] = normalizeBandValue(bands[2][i]);
+    } else {
+      const gray = Math.round(((Number(primary[i]) - min) / (max - min)) * 255);
+      const value = Math.max(0, Math.min(255, gray));
+      png.data[idx] = value;
+      png.data[idx + 1] = value;
+      png.data[idx + 2] = value;
+    }
+    png.data[idx + 3] = 255;
+  }
+
+  await new Promise((resolve, reject) => {
+    png.pack().pipe(fs.createWriteStream(previewPath)).on('finish', resolve).on('error', reject);
+  });
+
+  return {
+    bounds: bbox.map(Number),
+    crs: getCrsLabel(image),
+    sourceWidth,
+    sourceHeight,
+    previewWidth,
+    previewHeight,
+    pixelSizeX: resolution ? Math.abs(Number(resolution[0])) : null,
+    pixelSizeY: resolution ? Math.abs(Number(resolution[1])) : null,
+  };
+}
+
+function normalizeBandValue(value) {
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue)) return 0;
+  if (numberValue <= 1 && numberValue >= 0) return Math.round(numberValue * 255);
+  return Math.max(0, Math.min(255, Math.round(numberValue)));
+}
+
 async function listRasterLayers({ activeOnly = true } = {}) {
   await ensureRasterTables();
-
   const result = await pool.query(`
     SELECT
       layer_key AS id,
@@ -100,6 +210,10 @@ async function listRasterLayers({ activeOnly = true } = {}) {
       layer_name,
       file_name,
       file_url,
+      original_file_name,
+      original_file_url,
+      preview_file_name,
+      preview_file_url,
       file_type,
       attribution,
       default_visible,
@@ -107,6 +221,11 @@ async function listRasterLayers({ activeOnly = true } = {}) {
       min_zoom,
       max_zoom,
       bounds,
+      crs,
+      raster_width,
+      raster_height,
+      pixel_size_x,
+      pixel_size_y,
       active,
       uploaded_by,
       uploaded_at,
@@ -116,28 +235,32 @@ async function listRasterLayers({ activeOnly = true } = {}) {
     WHERE ($1::boolean = false OR active = true)
     ORDER BY sort_order ASC, uploaded_at DESC;
   `, [activeOnly]);
-
   return result.rows;
 }
 
 async function uploadRasterLayer({ fileBuffer, filename, mimeType, fields = {}, uploadedBy = 'admin' }) {
   ensureRasterStorage();
   await ensureRasterTables();
+  validateGeoTiffFile(filename);
 
   const rawName = fields.name || filename?.replace(/\.[^.]+$/i, '') || 'Raster Layer';
   const layerKey = sanitizeIdentifier(fields.id || rawName, 'raster_layer');
   const originalName = safeFileName(filename || `${layerKey}.tif`);
-  const ext = path.extname(originalName) || '.tif';
+  const ext = path.extname(originalName).toLowerCase() || '.tif';
   const finalFileName = `${layerKey}${ext}`;
+  const previewFileName = `${layerKey}.png`;
   const filePath = path.join(RASTER_DIR, finalFileName);
-  const fileUrl = `${RASTER_URL_PREFIX}/${finalFileName}`;
+  const previewPath = path.join(PREVIEW_DIR, previewFileName);
+  const originalFileUrl = `${RASTER_URL_PREFIX}/${finalFileName}`;
+  const previewFileUrl = `${PREVIEW_URL_PREFIX}/${previewFileName}`;
 
   fs.writeFileSync(filePath, fileBuffer);
 
+  const metadata = await createGeoTiffPreview(filePath, previewPath);
+  const bounds = parseBounds(fields.bounds) || metadata.bounds;
+
   const sortResult = await pool.query('SELECT COALESCE(MAX(sort_order), 100) + 1 AS sort_order FROM public.raster_layers;');
   const sortOrder = sortResult.rows[0].sort_order;
-
-  const bounds = parseBounds(fields.bounds);
 
   const result = await pool.query(`
     INSERT INTO public.raster_layers (
@@ -145,6 +268,10 @@ async function uploadRasterLayer({ fileBuffer, filename, mimeType, fields = {}, 
       layer_name,
       file_name,
       file_url,
+      original_file_name,
+      original_file_url,
+      preview_file_name,
+      preview_file_url,
       file_type,
       attribution,
       default_visible,
@@ -152,19 +279,30 @@ async function uploadRasterLayer({ fileBuffer, filename, mimeType, fields = {}, 
       min_zoom,
       max_zoom,
       bounds,
+      crs,
+      raster_width,
+      raster_height,
+      pixel_size_x,
+      pixel_size_y,
       active,
       uploaded_by,
       uploaded_at,
       updated_at,
       sort_order
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, true, $12, now(), now(), $13
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+      $11, $12, $13, $14, $15::jsonb, $16, $17, $18, $19, $20,
+      true, $21, now(), now(), $22
     )
     ON CONFLICT (layer_key)
     DO UPDATE SET
       layer_name = EXCLUDED.layer_name,
       file_name = EXCLUDED.file_name,
       file_url = EXCLUDED.file_url,
+      original_file_name = EXCLUDED.original_file_name,
+      original_file_url = EXCLUDED.original_file_url,
+      preview_file_name = EXCLUDED.preview_file_name,
+      preview_file_url = EXCLUDED.preview_file_url,
       file_type = EXCLUDED.file_type,
       attribution = EXCLUDED.attribution,
       default_visible = EXCLUDED.default_visible,
@@ -172,6 +310,11 @@ async function uploadRasterLayer({ fileBuffer, filename, mimeType, fields = {}, 
       min_zoom = EXCLUDED.min_zoom,
       max_zoom = EXCLUDED.max_zoom,
       bounds = EXCLUDED.bounds,
+      crs = EXCLUDED.crs,
+      raster_width = EXCLUDED.raster_width,
+      raster_height = EXCLUDED.raster_height,
+      pixel_size_x = EXCLUDED.pixel_size_x,
+      pixel_size_y = EXCLUDED.pixel_size_y,
       active = true,
       uploaded_by = EXCLUDED.uploaded_by,
       updated_at = now()
@@ -179,15 +322,24 @@ async function uploadRasterLayer({ fileBuffer, filename, mimeType, fields = {}, 
   `, [
     layerKey,
     rawName,
+    previewFileName,
+    previewFileUrl,
     finalFileName,
-    fileUrl,
-    mimeType || fields.fileType || 'application/octet-stream',
+    originalFileUrl,
+    previewFileName,
+    previewFileUrl,
+    mimeType || 'image/tiff',
     fields.attribution || null,
     normalizeBoolean(fields.visible, false),
     normalizeNumber(fields.opacity, 0.7),
     normalizeNumber(fields.minZoom, 0),
     normalizeNumber(fields.maxZoom, 22),
     bounds ? JSON.stringify(bounds) : null,
+    metadata.crs,
+    metadata.sourceWidth,
+    metadata.sourceHeight,
+    metadata.pixelSizeX,
+    metadata.pixelSizeY,
     uploadedBy,
     sortOrder,
   ]);
@@ -195,14 +347,13 @@ async function uploadRasterLayer({ fileBuffer, filename, mimeType, fields = {}, 
   await pool.query(`
     INSERT INTO public.raster_layer_upload_audit (layer_key, file_name, file_url, uploaded_by, action)
     VALUES ($1, $2, $3, $4, 'upload');
-  `, [layerKey, finalFileName, fileUrl, uploadedBy]);
+  `, [layerKey, finalFileName, originalFileUrl, uploadedBy]);
 
   return result.rows[0];
 }
 
 async function updateRasterLayer(layerKey, body = {}) {
   await ensureRasterTables();
-
   const result = await pool.query(`
     UPDATE public.raster_layers
     SET
@@ -226,29 +377,25 @@ async function updateRasterLayer(layerKey, body = {}) {
     body.attribution || null,
     body.bounds ? JSON.stringify(parseBounds(body.bounds)) : null,
   ]);
-
   return result.rows[0] || null;
 }
 
 async function deleteRasterLayer(layerKey, deletedBy = 'admin') {
   await ensureRasterTables();
-
   const result = await pool.query('SELECT * FROM public.raster_layers WHERE layer_key = $1 LIMIT 1;', [layerKey]);
   if (!result.rows.length) return false;
 
   const layer = result.rows[0];
-  const filePath = path.join(RASTER_DIR, path.basename(layer.file_name));
-
-  if (fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath);
-  }
+  [layer.original_file_name, layer.preview_file_name, layer.file_name].filter(Boolean).forEach(fileName => {
+    const filePath = fileName.endsWith('.png') ? path.join(PREVIEW_DIR, path.basename(fileName)) : path.join(RASTER_DIR, path.basename(fileName));
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  });
 
   await pool.query('DELETE FROM public.raster_layers WHERE layer_key = $1;', [layerKey]);
   await pool.query(`
     INSERT INTO public.raster_layer_upload_audit (layer_key, file_name, file_url, uploaded_by, action)
     VALUES ($1, $2, $3, $4, 'delete');
-  `, [layerKey, layer.file_name, layer.file_url, deletedBy]);
-
+  `, [layerKey, layer.original_file_name || layer.file_name, layer.original_file_url || layer.file_url, deletedBy]);
   return true;
 }
 
