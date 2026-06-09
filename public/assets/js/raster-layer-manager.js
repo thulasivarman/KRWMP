@@ -15,40 +15,59 @@ window.loadRasterLayerRegistry = async function () {
 
 window.initializeRasterLayerControls = async function () {
     if (!window.KRWMP_MAP) return;
-
     const layers = await window.loadRasterLayerRegistry();
     renderRasterLayerControls(layers);
-
     layers.forEach(layer => {
-        if (layer.default_visible === true || layer.default_visible === 'true') {
-            addRasterLayerToMap(layer);
-        }
+        if (layer.default_visible === true || layer.default_visible === 'true') addRasterLayerToMap(layer);
     });
 };
 
+function getRasterRenderMode(layer) {
+    if (layer.tile_url_template) return 'tiles';
+    if (layer.preview_file_url || layer.file_url) return 'image';
+    return 'none';
+}
+
 function getRasterImageUrl(layer) {
-    return layer.preview_file_url || layer.file_url;
+    const previewUrl = layer.preview_file_url || layer.file_url || '';
+    if (/\.(png|jpg|jpeg|webp)$/i.test(previewUrl)) return previewUrl;
+    return null;
 }
 
 function addRasterLayerToMap(layer) {
-    if (!window.KRWMP_MAP || !layer || !layer.layer_key || !getRasterImageUrl(layer)) return;
-
+    if (!window.KRWMP_MAP || !layer || !layer.layer_key) return;
+    const mode = getRasterRenderMode(layer);
     const sourceId = `raster-source-${layer.layer_key}`;
     const layerId = `raster-layer-${layer.layer_key}`;
 
     if (!window.KRWMP_MAP.getSource(sourceId)) {
-        const bounds = getRasterBounds(layer);
-
-        window.KRWMP_MAP.addSource(sourceId, {
-            type: 'image',
-            url: getRasterImageUrl(layer),
-            coordinates: [
-                [bounds[0], bounds[3]],
-                [bounds[2], bounds[3]],
-                [bounds[2], bounds[1]],
-                [bounds[0], bounds[1]]
-            ]
-        });
+        if (mode === 'tiles') {
+            window.KRWMP_MAP.addSource(sourceId, {
+                type: 'raster',
+                tiles: [layer.tile_url_template],
+                tileSize: 256,
+                bounds: getRasterBounds(layer),
+                minzoom: Number(layer.tile_min_zoom ?? layer.min_zoom ?? 0),
+                maxzoom: Number(layer.tile_max_zoom ?? layer.max_zoom ?? 14)
+            });
+        } else if (mode === 'image') {
+            const imageUrl = getRasterImageUrl(layer);
+            if (!imageUrl) return;
+            const bounds = getRasterBounds(layer);
+            window.KRWMP_MAP.addSource(sourceId, {
+                type: 'image',
+                url: imageUrl,
+                coordinates: [
+                    [bounds[0], bounds[3]],
+                    [bounds[2], bounds[3]],
+                    [bounds[2], bounds[1]],
+                    [bounds[0], bounds[1]]
+                ]
+            });
+        } else {
+            console.warn(`Raster layer ${layer.layer_key} has no tile or preview source.`);
+            return;
+        }
     }
 
     if (!window.KRWMP_MAP.getLayer(layerId)) {
@@ -58,12 +77,8 @@ function addRasterLayerToMap(layer) {
             source: sourceId,
             minzoom: Number(layer.min_zoom || 0),
             maxzoom: Number(layer.max_zoom || 22),
-            paint: {
-                'raster-opacity': Number(layer.opacity ?? 0.7)
-            },
-            layout: {
-                visibility: 'visible'
-            }
+            paint: { 'raster-opacity': Number(layer.opacity ?? 0.7) },
+            layout: { visibility: 'visible' }
         });
     } else {
         window.KRWMP_MAP.setLayoutProperty(layerId, 'visibility', 'visible');
@@ -95,14 +110,9 @@ function zoomToRaster(layer) {
 }
 
 function renderRasterLayerControls(layers) {
-    const panel = document.getElementById('raster-layers-panel');
-    if (!panel) return;
-
     const container = document.getElementById('raster-layer-control-list');
     if (!container) return;
-
     container.innerHTML = '';
-
     if (!layers.length) {
         container.innerHTML = '<div class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">No raster layers available</div>';
         return;
@@ -111,7 +121,7 @@ function renderRasterLayerControls(layers) {
     layers.forEach(layer => {
         const checked = layer.default_visible === true || layer.default_visible === 'true';
         const opacity = Number(layer.opacity ?? 0.7);
-        const crs = layer.crs || 'Unknown CRS';
+        const mode = getRasterRenderMode(layer);
         const card = document.createElement('div');
         card.className = 'bg-slate-950/50 border border-slate-800 rounded-lg p-3 space-y-3';
         card.innerHTML = `
@@ -121,6 +131,7 @@ function renderRasterLayerControls(layers) {
                     <div class="min-w-0">
                         <div class="font-semibold text-slate-200 leading-tight">${escapeRasterHtml(layer.layer_name || layer.layer_key)}</div>
                         <div class="text-[10px] text-slate-500 mt-0.5 truncate">${escapeRasterHtml(layer.original_file_name || layer.file_name || '')}</div>
+                        <div class="text-[10px] text-emerald-400 mt-1 uppercase tracking-wide">${mode === 'tiles' ? 'Tile rendering' : 'Preview rendering'}</div>
                     </div>
                 </label>
                 <button type="button" class="raster-zoom text-[10px] px-2 py-1 rounded bg-slate-800 hover:bg-emerald-600 text-slate-200 transition flex-shrink-0">Zoom</button>
@@ -133,34 +144,24 @@ function renderRasterLayerControls(layers) {
                 <input type="range" min="0" max="1" step="0.05" value="${opacity}" class="raster-opacity w-full accent-emerald-500">
             </div>
             <div class="grid grid-cols-2 gap-2 text-[10px] text-slate-500">
-                <div>CRS: <span class="text-slate-300">${escapeRasterHtml(crs)}</span></div>
+                <div>CRS: <span class="text-slate-300">${escapeRasterHtml(layer.crs || 'Unknown')}</span></div>
                 <div>Size: <span class="text-slate-300">${Number(layer.raster_width || 0)} × ${Number(layer.raster_height || 0)}</span></div>
                 <div>Min Zoom: <span class="text-slate-300">${Number(layer.min_zoom || 0)}</span></div>
                 <div>Max Zoom: <span class="text-slate-300">${Number(layer.max_zoom || 22)}</span></div>
-            </div>
-        `;
-
-        const visibleInput = card.querySelector('.raster-visible');
+            </div>`;
+        card.querySelector('.raster-visible').addEventListener('change', event => setRasterVisibility(layer, event.target.checked));
         const opacityInput = card.querySelector('.raster-opacity');
         const opacityValue = card.querySelector('.raster-opacity-value');
-        const zoomButton = card.querySelector('.raster-zoom');
-
-        visibleInput.addEventListener('change', event => setRasterVisibility(layer, event.target.checked));
         opacityInput.addEventListener('input', event => {
             const value = Number(event.target.value);
             opacityValue.textContent = `${Math.round(value * 100)}%`;
             setRasterOpacity(layer, value);
         });
-        zoomButton.addEventListener('click', () => zoomToRaster(layer));
+        card.querySelector('.raster-zoom').addEventListener('click', () => zoomToRaster(layer));
         container.appendChild(card);
     });
 }
 
 function escapeRasterHtml(value) {
-    return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+    return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
