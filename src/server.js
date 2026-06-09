@@ -15,7 +15,7 @@ fastify.register(require('@fastify/compress'), {
 
 fastify.register(require('@fastify/multipart'), {
   limits: {
-    fileSize: Number(process.env.MAX_GEOJSON_UPLOAD_SIZE || 75 * 1024 * 1024),
+    fileSize: Number(process.env.MAX_LAYER_UPLOAD_SIZE || process.env.MAX_RASTER_UPLOAD_SIZE || 250 * 1024 * 1024),
     files: 1,
   },
 });
@@ -26,6 +26,7 @@ fastify.register(require('./routes/admin.routes'), { prefix: '/api' });
 fastify.register(require('./routes/spatial.routes'), { prefix: '/api' });
 fastify.register(require('./routes/layers.routes'), { prefix: '/api' });
 fastify.register(require('./routes/vector-layer.routes'), { prefix: '/api' });
+fastify.register(require('./routes/raster-layer.routes'), { prefix: '/api' });
 
 fastify.setErrorHandler((error, request, reply) => {
   fastify.log.error(error);
