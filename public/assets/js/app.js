@@ -22,8 +22,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await window.initializeInterface();
 
-    await loadOptionalScript('/assets/js/uploaded-vector-layer-loader.js');
-
     window.initializeMap();
 
     if (window.initializeMapExportControls) {
@@ -32,5 +30,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (window.initializeBasemapSwitcher) {
         window.initializeBasemapSwitcher();
+    }
+
+    if (window.KRWMP_MAP && window.initializeRasterLayerControls) {
+        window.KRWMP_MAP.on('load', () => {
+            window.initializeRasterLayerControls();
+        });
     }
 });
