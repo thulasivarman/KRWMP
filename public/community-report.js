@@ -2,6 +2,15 @@ const statusBox = document.getElementById('statusBox');
 const form = document.getElementById('communityReportForm');
 const categorySelect = document.getElementById('categorySelect');
 
+async function initializeCommunityReportSidebar() {
+  if (window.KRWMP_ENGINE) {
+    await window.KRWMP_ENGINE.assembleInterfaceContext('/sidebar.html', 'sidebar');
+  }
+  document.querySelector('.krwmp-panel-section')?.classList.add('hidden');
+  document.getElementById('section-data-layers')?.classList.add('hidden');
+  document.getElementById('section-raster-layers')?.classList.add('hidden');
+}
+
 function showStatus(message, error = false) {
   statusBox.className = `rounded-lg p-3 text-sm ${error ? 'bg-rose-500/10 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'}`;
   statusBox.textContent = message;
@@ -44,4 +53,7 @@ form.addEventListener('submit', async event => {
   }
 });
 
-loadCategories().catch(() => showStatus('Unable to load issue categories.', true));
+(async () => {
+  await initializeCommunityReportSidebar();
+  await loadCategories();
+})().catch(() => showStatus('Unable to load issue categories.', true));
