@@ -35,7 +35,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (window.KRWMP_MAP) {
         window.KRWMP_MAP.on('load', () => {
             if (window.initializeRasterLayerControls) window.initializeRasterLayerControls();
-            if (window.initializeCommunityIssueLayer) window.initializeCommunityIssueLayer();
         });
     }
 });
