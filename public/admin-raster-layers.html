@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raster Layer Management - KRWMP Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/admin-vector-layers.css">
+    <link rel="stylesheet" href="/admin-vector-layers-theme.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-emerald-500/30">
+    <div class="flex min-h-screen">
+        <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
+
+        <main class="flex-1 p-8 space-y-8 max-w-6xl mx-auto">
+            <header class="border-b border-slate-800 pb-4">
+                <h1 class="text-xl font-bold uppercase tracking-wider text-slate-200">Raster Layer Management</h1>
+                <p class="text-xs text-slate-500 mt-1">Upload, register, display, and remove raster overlays for the map window.</p>
+            </header>
+
+            <section id="authNotice" class="auth-notice" hidden>Login required. Redirecting...</section>
+
+            <section class="card vector-card">
+                <h2>Upload New Raster Layer</h2>
+                <form id="uploadRasterForm" class="form-grid">
+                    <label>Layer Name<input type="text" name="name" required placeholder="Example: Land Surface Temperature" /></label>
+                    <label>Layer ID<input type="text" name="id" placeholder="Auto-generated if blank" /></label>
+                    <label>Raster File<input type="file" name="raster" accept=".tif,.tiff,.png,.jpg,.jpeg,.webp,image/tiff,image/png,image/jpeg,image/webp" required /></label>
+                    <label>Opacity<input type="number" name="opacity" min="0" max="1" step="0.1" value="0.7" /></label>
+                    <label>Min Zoom<input type="number" name="minZoom" min="0" max="22" value="0" /></label>
+                    <label>Max Zoom<input type="number" name="maxZoom" min="0" max="22" value="22" /></label>
+                    <label>Bounds<input type="text" name="bounds" placeholder="[79.8,6.6,80.6,7.4] optional" /></label>
+                    <label>Attribution<input type="text" name="attribution" placeholder="Source / year / notes" /></label>
+                    <label class="checkbox-row"><input type="checkbox" name="visible" />Show layer by default</label>
+                    <div class="form-actions"><button type="submit">Upload Raster</button></div>
+                </form>
+            </section>
+
+            <section class="card vector-card">
+                <div class="section-title-row">
+                    <h2>Existing Raster Layers</h2>
+                    <button id="refreshRasterBtn" type="button">Refresh</button>
+                </div>
+                <div id="statusBox" class="status-box" hidden></div>
+                <div id="rasterLayersList" class="layers-list"></div>
+            </section>
+        </main>
+    </div>
+
+    <template id="rasterLayerTemplate">
+        <article class="layer-card">
+            <div><h3 data-field="name"></h3><p data-field="meta"></p></div>
+            <form class="style-form">
+                <input type="hidden" name="id" />
+                <label>Opacity<input type="number" name="opacity" min="0" max="1" step="0.1" /></label>
+                <label>Min Zoom<input type="number" name="minZoom" min="0" max="22" /></label>
+                <label>Max Zoom<input type="number" name="maxZoom" min="0" max="22" /></label>
+                <label class="checkbox-row"><input type="checkbox" name="visible" /> Visible</label>
+                <div class="layer-actions">
+                    <button type="submit">Save Raster Settings</button>
+                    <button type="button" class="danger" data-action="delete">Delete</button>
+                </div>
+            </form>
+        </article>
+    </template>
+
+    <script src="/assets/js/krwmp-global.js"></script>
+    <script src="/assets/js/ui-manager.js"></script>
+    <script src="/admin-raster-layers.js"></script>
+</body>
+</html>
