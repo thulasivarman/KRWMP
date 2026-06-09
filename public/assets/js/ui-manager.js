@@ -1,6 +1,6 @@
 /**
  * KRWMP UI Manager
- * Responsible for sidebar, floating layer panel, URL actions,
+ * Responsible for sidebar, floating layer panels, URL actions,
  * basemap switching, and overlay restoration after style changes.
  */
 
@@ -14,66 +14,67 @@ window.initializeInterface = async function () {
     window.handleUrlActions();
 };
 
-// =====================================================
-// Layer panel behaviour
-// =====================================================
-
 window.bindLayerPanelCloseButton = function () {
-    const closeButton = document.getElementById('btn-close-layer-panel');
-    const panel = document.getElementById('data-layers-panel');
+    const vectorCloseButton = document.getElementById('btn-close-layer-panel');
+    const vectorPanel = document.getElementById('data-layers-panel');
+    if (vectorCloseButton && vectorPanel) {
+        vectorCloseButton.addEventListener('click', () => vectorPanel.classList.add('hidden'));
+    }
 
-    if (!closeButton || !panel) return;
-
-    closeButton.addEventListener('click', () => {
-        panel.classList.add('hidden');
-    });
+    const rasterCloseButton = document.getElementById('btn-close-raster-layer-panel');
+    const rasterPanel = document.getElementById('raster-layers-panel');
+    if (rasterCloseButton && rasterPanel) {
+        rasterCloseButton.addEventListener('click', () => rasterPanel.classList.add('hidden'));
+    }
 };
 
 window.bindSidebarInterfaceInteractions = function () {
-    const dataLayersBtn =
-        document.getElementById('menu-item-data-layers') ||
-        document.querySelector('[id*="data-layers"]') ||
-        document.querySelector('button[onclick*="Toggle"]');
+    const dataLayersBtn = document.getElementById('menu-item-data-layers');
+    const rasterLayersBtn = document.getElementById('menu-item-raster-layers');
 
-    if (!dataLayersBtn) return;
+    if (dataLayersBtn && dataLayersBtn.dataset.krwmpBound !== 'true') {
+        dataLayersBtn.dataset.krwmpBound = 'true';
+        dataLayersBtn.removeAttribute('onclick');
+        dataLayersBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const panel = document.getElementById('data-layers-panel');
+            const rasterPanel = document.getElementById('raster-layers-panel');
+            if (rasterPanel) rasterPanel.classList.add('hidden');
+            if (panel) panel.classList.toggle('hidden');
+        });
+    }
 
-    if (dataLayersBtn.dataset.krwmpBound === 'true') return;
-    dataLayersBtn.dataset.krwmpBound = 'true';
-
-    dataLayersBtn.removeAttribute('onclick');
-
-    dataLayersBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-
-        const panel = document.getElementById('data-layers-panel');
-
-        if (panel) {
-            panel.classList.toggle('hidden');
-        }
-    });
+    if (rasterLayersBtn && rasterLayersBtn.dataset.krwmpBound !== 'true') {
+        rasterLayersBtn.dataset.krwmpBound = 'true';
+        rasterLayersBtn.removeAttribute('onclick');
+        rasterLayersBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const panel = document.getElementById('raster-layers-panel');
+            const vectorPanel = document.getElementById('data-layers-panel');
+            if (vectorPanel) vectorPanel.classList.add('hidden');
+            if (panel) panel.classList.toggle('hidden');
+        });
+    }
 };
 
 window.handleUrlActions = function () {
     const urlParameters = new URLSearchParams(window.location.search);
-    const panel = document.getElementById('data-layers-panel');
+    const vectorPanel = document.getElementById('data-layers-panel');
+    const rasterPanel = document.getElementById('raster-layers-panel');
 
-    if (urlParameters.get('action') === 'open_layers' && panel) {
-        panel.classList.remove('hidden');
+    if (urlParameters.get('action') === 'open_layers' && vectorPanel) {
+        vectorPanel.classList.remove('hidden');
+    }
+
+    if (urlParameters.get('action') === 'open_raster_layers' && rasterPanel) {
+        rasterPanel.classList.remove('hidden');
     }
 };
-
-// =====================================================
-// Basemap switcher
-// =====================================================
 
 window.initializeBasemapSwitcher = function () {
     const selector = document.getElementById('basemap-selector');
 
-    if (!selector) {
-        console.warn('Basemap selector not found.');
-        return;
-    }
-
+    if (!selector) return;
     if (selector.dataset.krwmpBound === 'true') return;
     selector.dataset.krwmpBound = 'true';
 
@@ -84,17 +85,10 @@ window.initializeBasemapSwitcher = function () {
 };
 
 window.switchBasemap = function (selected) {
-    if (!window.KRWMP_MAP) {
-        console.warn('KRWMP map is not initialized.');
-        return;
-    }
+    if (!window.KRWMP_MAP) return;
 
     const nextStyle = window.getBasemapStyle(selected);
-
-    if (!nextStyle) {
-        console.warn(`Basemap style not found: ${selected}`);
-        return;
-    }
+    if (!nextStyle) return;
 
     const currentView = {
         center: window.KRWMP_MAP.getCenter(),
@@ -103,33 +97,18 @@ window.switchBasemap = function (selected) {
         pitch: window.KRWMP_MAP.getPitch()
     };
 
-    const layerVisibilityState = window.captureOverlayVisibilityState();
-
     window.KRWMP_MAP.setStyle(nextStyle);
 
     window.KRWMP_MAP.once('style.load', () => {
         window.KRWMP_MAP.jumpTo(currentView);
-
-        if (window.initializeSupabaseSpatialSources) {
-            window.initializeSupabaseSpatialSources();
-        }
-
-        window.restoreOverlayVisibilityState(layerVisibilityState);
+        if (window.initializeSupabaseSpatialSources) window.initializeSupabaseSpatialSources();
+        if (window.initializeRasterLayerControls) window.initializeRasterLayerControls();
     });
 };
 
-// =====================================================
-// Basemap style definitions
-// =====================================================
-
 window.getBasemapStyle = function (selected) {
-    if (selected === 'light') {
-        return 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
-    }
-
-    if (selected === 'dark') {
-        return 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
-    }
+    if (selected === 'light') return 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+    if (selected === 'dark') return 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
     if (selected === 'satellite') {
         return {
@@ -137,20 +116,12 @@ window.getBasemapStyle = function (selected) {
             sources: {
                 'esri-satellite': {
                     type: 'raster',
-                    tiles: [
-                        'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-                    ],
+                    tiles: ['https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
                     tileSize: 256,
                     attribution: 'Esri World Imagery'
                 }
             },
-            layers: [
-                {
-                    id: 'esri-satellite-layer',
-                    type: 'raster',
-                    source: 'esri-satellite'
-                }
-            ]
+            layers: [{ id: 'esri-satellite-layer', type: 'raster', source: 'esri-satellite' }]
         };
     }
 
@@ -160,20 +131,12 @@ window.getBasemapStyle = function (selected) {
             sources: {
                 'esri-topo': {
                     type: 'raster',
-                    tiles: [
-                        'https://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}'
-                    ],
+                    tiles: ['https://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}'],
                     tileSize: 256,
                     attribution: 'Esri World Topographic Map'
                 }
             },
-            layers: [
-                {
-                    id: 'esri-topo-layer',
-                    type: 'raster',
-                    source: 'esri-topo'
-                }
-            ]
+            layers: [{ id: 'esri-topo-layer', type: 'raster', source: 'esri-topo' }]
         };
     }
 
@@ -183,60 +146,17 @@ window.getBasemapStyle = function (selected) {
             sources: {
                 'esri-shaded-relief': {
                     type: 'raster',
-                    tiles: [
-                        'https://services.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}'
-                    ],
+                    tiles: ['https://services.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}'],
                     tileSize: 256,
                     attribution: 'Esri World Shaded Relief'
                 }
             },
-            layers: [
-                {
-                    id: 'esri-shaded-relief-layer',
-                    type: 'raster',
-                    source: 'esri-shaded-relief'
-                }
-            ]
+            layers: [{ id: 'esri-shaded-relief-layer', type: 'raster', source: 'esri-shaded-relief' }]
         };
     }
 
     return null;
 };
 
-// =====================================================
-// Overlay visibility state management
-// =====================================================
-
-window.captureOverlayVisibilityState = function () {
-    return {
-        basin: document.getElementById('chk-layer-basin')?.checked || false,
-        forest: document.getElementById('chk-layer-forest')?.checked || false,
-        dsd: document.getElementById('chk-layer-dsd')?.checked || false,
-        gnd: document.getElementById('chk-layer-gnd')?.checked || false
-    };
-};
-
-window.restoreOverlayVisibilityState = function (state) {
-    if (!state) return;
-
-    const layerGroups = {
-        basin: ['layer-basin-polygon', 'layer-basin-outline'],
-        forest: ['layer-forest-polygon', 'layer-forest-outline'],
-        dsd: ['layer-dsd-polygon', 'layer-dsd-outline'],
-        gnd: ['layer-gnd-polygon', 'layer-gnd-outline']
-    };
-
-    Object.entries(layerGroups).forEach(([key, layerIds]) => {
-        const visibility = state[key] ? 'visible' : 'none';
-
-        layerIds.forEach(layerId => {
-            if (window.KRWMP_MAP.getLayer(layerId)) {
-                window.KRWMP_MAP.setLayoutProperty(
-                    layerId,
-                    'visibility',
-                    visibility
-                );
-            }
-        });
-    });
-};
+window.captureOverlayVisibilityState = function () { return {}; };
+window.restoreOverlayVisibilityState = function () { return; };
