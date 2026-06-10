@@ -101,6 +101,13 @@ async function interventionRoutes(fastify) {
     return { success: true, intervention };
   });
 
+  fastify.delete('/interventions/registry/:id', async (request, reply) => {
+    if (!requireOfficer(request, reply)) return;
+    const deleted = await service.deleteRegistry(request.params.id);
+    if (!deleted) return reply.status(404).send({ success: false, message: 'Intervention not found' });
+    return { success: true, deleted: request.params.id };
+  });
+
   fastify.post('/interventions/registry/:id/timeline', async (request, reply) => {
     if (!requireOfficer(request, reply)) return;
     const action = await service.createTimeline(request.params.id, request.body || {}, getUser(request));
