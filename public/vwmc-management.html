@@ -23,8 +23,8 @@
           <label class="text-sm font-semibold">VWMC Name<input name="committee_name" required class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
           <label class="text-sm font-semibold">Village<input name="village_name" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
           <label class="text-sm font-semibold">Status<select name="status" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
-          <label class="text-sm font-semibold">DSD<input name="dsd_name" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
-          <label class="text-sm font-semibold">GND<input name="gnd_name" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
+          <label class="text-sm font-semibold">DSD<select name="dsd_name" id="vwmcDsdSelect" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"><option value="">Select DSD</option></select></label>
+          <label class="text-sm font-semibold">GND<select name="gnd_name" id="vwmcGndSelect" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"><option value="">Select DSD first</option></select></label>
           <label class="text-sm font-semibold">Address<input name="address" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
           <label class="text-sm font-semibold">Latitude<input name="latitude" id="latitudeInput" type="number" step="any" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
           <label class="text-sm font-semibold">Longitude<input name="longitude" id="longitudeInput" type="number" step="any" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
@@ -38,12 +38,6 @@
       </section>
     </main>
   </div>
-  <template id="committeeTemplate">
-    <article class="bg-slate-950/60 border border-slate-800 rounded-lg p-4 space-y-4">
-      <div class="flex justify-between gap-4"><div><h3 data-field="name" class="font-bold text-slate-100"></h3><p data-field="meta" class="text-xs text-slate-500 mt-1"></p><p data-field="audit" class="text-[10px] text-slate-600 mt-1"></p></div><div class="manage-actions flex gap-2 hidden"><button data-action="edit" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded text-xs font-bold">Edit</button><button data-action="delete" class="bg-rose-700 hover:bg-rose-600 px-3 py-1.5 rounded text-xs font-bold">Delete</button></div></div>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4"><div><h4 class="text-xs uppercase tracking-widest text-emerald-400 font-bold mb-2">Members</h4><div data-field="members" class="space-y-2"></div></div><form class="member-form manage-actions hidden bg-slate-900/70 border border-slate-800 rounded-lg p-3 grid grid-cols-1 md:grid-cols-2 gap-2"><input type="hidden" name="committee_id"><input name="member_name" required placeholder="Member name" class="bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm"><select name="member_type" class="bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm"><option value="government_representative">Government Representative</option><option value="village_representative">Village Representative</option></select><input name="organization" placeholder="Institute / Organization" class="bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm"><input name="designation" placeholder="Designation" class="bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm"><input name="phone" placeholder="Contact No" class="bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm"><input name="email" placeholder="Email" class="bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm"><input name="role_in_committee" placeholder="Committee role" class="bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm"><button class="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded text-sm font-bold">Add Member</button></form></div>
-    </article>
-  </template>
   <script src="/assets/js/krwmp-global.js"></script><script src="/vwmc-management.js"></script>
 </body>
 </html>
