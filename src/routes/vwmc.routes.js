@@ -1,3 +1,4 @@
+const pool = require('../../config/database');
 const service = require('../services/vwmc.service');
 
 function getUser(request) {
@@ -21,7 +22,40 @@ function requireManage(request, reply) {
   return true;
 }
 
+async function getVwmcGeoJson() {
+  const result = await pool.query(`
+    SELECT jsonb_build_object('type','FeatureCollection','features',COALESCE(jsonb_agg(feature),'[]'::jsonb)) AS geojson
+    FROM (
+      SELECT jsonb_build_object(
+        'type','Feature',
+        'id', c.id,
+        'geometry', ST_AsGeoJSON(c.geom)::jsonb,
+        'properties', jsonb_build_object(
+          'id', c.id,
+          'committee_code', c.committee_code,
+          'committee_name', c.committee_name,
+          'village_name', c.village_name,
+          'dsd_name', c.dsd_name,
+          'gnd_name', c.gnd_name,
+          'address', c.address,
+          'status', c.status,
+          'member_count', (SELECT COUNT(*) FROM public.vwmc_members m WHERE m.committee_id = c.id AND m.active = true),
+          'created_by', c.created_by,
+          'created_at', c.created_at,
+          'updated_by', c.updated_by,
+          'updated_at', c.updated_at
+        )
+      ) AS feature
+      FROM public.vwmc_committees c
+      WHERE c.geom IS NOT NULL
+    ) x;
+  `);
+  return result.rows[0].geojson;
+}
+
 async function vwmcRoutes(fastify) {
+  fastify.get('/vwmc/committees.geojson', async () => getVwmcGeoJson());
+
   fastify.get('/vwmc/committees', async () => {
     const committees = await service.listCommittees();
     return { success: true, committees };
