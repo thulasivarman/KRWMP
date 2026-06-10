@@ -62,6 +62,11 @@ async function updateRegistry(id, body = {}, user = 'system') {
   return result.rows[0] || null;
 }
 
+async function deleteRegistry(id) {
+  const result = await pool.query('DELETE FROM public.intervention_registry WHERE id = $1 RETURNING id;', [id]);
+  return result.rowCount > 0;
+}
+
 async function createTimeline(interventionId, body = {}, user = 'system') {
   const result = await pool.query(`
     INSERT INTO public.intervention_action_timeline (intervention_id, action_date, action_title, action_description, action_status, progress_percent, officer_name, officer_contact, created_by, updated_by)
@@ -90,4 +95,4 @@ async function getGeoJson() {
   return result.rows[0].geojson;
 }
 
-module.exports = { listLibrary, createLibrary, updateLibrary, listRegistry, createRegistry, updateRegistry, createTimeline, createOfficer, getGeoJson };
+module.exports = { listLibrary, createLibrary, updateLibrary, listRegistry, createRegistry, updateRegistry, deleteRegistry, createTimeline, createOfficer, getGeoJson };
