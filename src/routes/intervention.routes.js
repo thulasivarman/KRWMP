@@ -17,10 +17,10 @@ function requireOfficer(request, reply) { if (!canOfficerManage(request)) { repl
 async function interventionRoutes(fastify) {
   fastify.get('/interventions/lookups/dsds', async () => {
     const result = await pool.query(`
-      SELECT DISTINCT dsd_n AS dsd_name
-      FROM public.dsd_boundary
-      WHERE dsd_n IS NOT NULL AND trim(dsd_n) <> ''
-      ORDER BY dsd_n;
+      SELECT DISTINCT d.dsd_n AS dsd_name
+      FROM public.dsd_boundary AS d
+      WHERE d.dsd_n IS NOT NULL AND trim(d.dsd_n) <> ''
+      ORDER BY d.dsd_n;
     `);
     return { success: true, dsds: result.rows };
   });
@@ -28,11 +28,17 @@ async function interventionRoutes(fastify) {
   fastify.get('/interventions/lookups/gnds', async (request) => {
     const dsdName = request.query?.dsd_name || null;
     const result = await pool.query(`
-      SELECT DISTINCT gnd_name
-      FROM public.gnd_boundary
-      WHERE gnd_name IS NOT NULL AND trim(gnd_name) <> ''
-        AND ($1::text IS NULL OR dsd_n = $1)
-      ORDER BY gnd_name;
+      SELECT DISTINCT g.gnd_name
+      FROM public.gnd_boundary AS g
+      LEFT JOIN public.dsd_boundary AS d
+        ON d.dsd_n = $1::text
+       AND g.geom IS NOT NULL
+       AND d.geom IS NOT NULL
+       AND ST_Intersects(g.geom, d.geom)
+      WHERE g.gnd_name IS NOT NULL
+        AND trim(g.gnd_name) <> ''
+        AND ($1::text IS NULL OR d.id IS NOT NULL)
+      ORDER BY g.gnd_name;
     `, [dsdName]);
     return { success: true, gnds: result.rows };
   });
