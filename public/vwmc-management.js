@@ -52,21 +52,32 @@ function renderCommittee(c) {
   node.querySelector('[data-field="name"]').textContent = `${c.committee_name} (${c.committee_code})`;
   node.querySelector('[data-field="meta"]').textContent = `${c.village_name || '-'} | ${c.gnd_name || '-'} | ${c.dsd_name || '-'} | ${c.latitude || '-'}, ${c.longitude || '-'} | ${c.status}`;
   node.querySelector('[data-field="audit"]').textContent = `Created by ${c.created_by || '-'} on ${formatDate(c.created_at)} | Updated by ${c.updated_by || '-'} on ${formatDate(c.updated_at)}`;
+
   const membersBox = node.querySelector('[data-field="members"]');
   (c.members || []).forEach(m => {
     const row = document.createElement('div');
     row.className = 'bg-slate-900/70 border border-slate-800 rounded p-2 text-xs text-slate-300';
-    row.innerHTML = `<div class="font-bold text-slate-100">${escapeHtml(m.member_name)} <span class="text-emerald-400">${escapeHtml(m.role_in_committee || '')}</span></div><div>${escapeHtml(m.member_type || '')} | ${escapeHtml(m.organization || '')} | ${escapeHtml(m.designation || '')}</div><div>${escapeHtml(m.phone || '-')} | ${escapeHtml(m.email || '-')}</div><div class="text-[10px] text-slate-600">Updated by ${escapeHtml(m.updated_by || '-')} on ${formatDate(m.updated_at)}</div>${canManage ? `<button data-member-delete="${m.id}" class="mt-1 text-rose-400 hover:text-rose-300">Delete Member</button>` : ''}`;
+    row.innerHTML = `<div class="font-bold text-slate-100">${escapeHtml(m.member_name)} <span class="text-emerald-400">${escapeHtml(m.role_in_committee || '')}</span></div><div>${escapeHtml(m.member_type || '')} | ${escapeHtml(m.organization || '')} | ${escapeHtml(m.designation || '')}</div><div>${escapeHtml(m.phone || '-')} | ${escapeHtml(m.email || '-')}</div><div class="text-[10px] text-slate-600">Updated by ${escapeHtml(m.updated_by || '-')} on ${formatDate(m.updated_at)}</div>${canManage ? `<div class="mt-1 flex gap-3"><button data-member-edit="${m.id}" class="text-emerald-400 hover:text-emerald-300">Edit Member</button><button data-member-delete="${m.id}" class="text-rose-400 hover:text-rose-300">Delete Member</button></div>` : ''}`;
     membersBox.appendChild(row);
   });
   if (!(c.members || []).length) membersBox.innerHTML = '<p class="text-xs text-slate-500">No members recorded.</p>';
+
   node.querySelector('[data-action="edit"]').addEventListener('click', () => fillCommitteeForm(c));
   node.querySelector('[data-action="delete"]').addEventListener('click', async () => deleteCommittee(c.id));
+
   const memberForm = node.querySelector('.member-form');
   memberForm.committee_id.value = c.id;
-  memberForm.addEventListener('submit', async e => addMember(e, c.id));
+  memberForm.dataset.editMemberId = '';
+  memberForm.addEventListener('submit', async e => saveMember(e, c.id));
+
   committeeList.appendChild(node);
-  document.querySelectorAll('[data-member-delete]').forEach(btn => btn.addEventListener('click', async e => deleteMember(e.target.dataset.memberDelete)));
+
+  document.querySelectorAll('[data-member-delete]').forEach(btn => btn.onclick = async e => deleteMember(e.target.dataset.memberDelete));
+  document.querySelectorAll('[data-member-edit]').forEach(btn => btn.onclick = e => {
+    const memberId = Number(e.target.dataset.memberEdit);
+    const member = (c.members || []).find(item => Number(item.id) === memberId);
+    if (member) fillMemberForm(memberForm, member);
+  });
 }
 
 function fillCommitteeForm(c) {
@@ -81,6 +92,18 @@ function fillCommitteeForm(c) {
   committeeForm.status.value = c.status || 'active';
   committeeForm.remarks.value = c.remarks || '';
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function fillMemberForm(form, m) {
+  form.dataset.editMemberId = m.id;
+  form.member_name.value = m.member_name || '';
+  form.member_type.value = m.member_type || 'village_representative';
+  form.organization.value = m.organization || '';
+  form.designation.value = m.designation || '';
+  form.phone.value = m.phone || '';
+  form.email.value = m.email || '';
+  form.role_in_committee.value = m.role_in_committee || '';
+  showStatus('Member loaded for editing. Update details and click Save Member.');
 }
 
 committeeForm.addEventListener('submit', async e => {
@@ -102,15 +125,23 @@ committeeForm.addEventListener('submit', async e => {
   } catch (error) { showStatus(error.message, true); }
 });
 
-async function addMember(event, committeeId) {
+async function saveMember(event, committeeId) {
   event.preventDefault();
   if (!canManage) return showStatus('You have view-only permission.', true);
-  const body = Object.fromEntries(new FormData(event.target));
+  const form = event.target;
+  const body = Object.fromEntries(new FormData(form));
   delete body.committee_id;
+  const editMemberId = form.dataset.editMemberId;
   try {
-    await json(`/api/vwmc/committees/${committeeId}/members`, { method: 'POST', headers: headers({ 'Content-Type': 'application/json' }), body: JSON.stringify(body) });
-    showStatus('Member added successfully.');
-    event.target.reset();
+    if (editMemberId) {
+      await json(`/api/vwmc/members/${editMemberId}`, { method: 'PUT', headers: headers({ 'Content-Type': 'application/json' }), body: JSON.stringify(body) });
+      showStatus('Member updated successfully.');
+    } else {
+      await json(`/api/vwmc/committees/${committeeId}/members`, { method: 'POST', headers: headers({ 'Content-Type': 'application/json' }), body: JSON.stringify(body) });
+      showStatus('Member added successfully.');
+    }
+    form.reset();
+    form.dataset.editMemberId = '';
     await loadCommittees();
   } catch (error) { showStatus(error.message, true); }
 }
