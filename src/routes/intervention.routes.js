@@ -1,3 +1,4 @@
+const pool = require('../../config/database');
 const service = require('../services/intervention.service');
 
 function getUser(request) {
@@ -8,32 +9,56 @@ function getRole(request) {
   return String(request.headers['x-krwmp-role'] || request.headers['x-role'] || '').trim().toLowerCase();
 }
 
-function isAdmin(request) {
-  return getRole(request) === 'admin';
-}
-
-function canOfficerManage(request) {
-  const role = getRole(request);
-  return role === 'admin' || role === 'officer' || role === 'officers';
-}
-
-function requireAdmin(request, reply) {
-  if (!isAdmin(request)) {
-    reply.status(403).send({ success: false, message: 'Only admin users can manage the Intervention Library.' });
-    return false;
-  }
-  return true;
-}
-
-function requireOfficer(request, reply) {
-  if (!canOfficerManage(request)) {
-    reply.status(403).send({ success: false, message: 'Only admin and officer users can manage intervention registry records.' });
-    return false;
-  }
-  return true;
-}
+function isAdmin(request) { return getRole(request) === 'admin'; }
+function canOfficerManage(request) { const role = getRole(request); return role === 'admin' || role === 'officer' || role === 'officers'; }
+function requireAdmin(request, reply) { if (!isAdmin(request)) { reply.status(403).send({ success: false, message: 'Only admin users can manage the Intervention Library.' }); return false; } return true; }
+function requireOfficer(request, reply) { if (!canOfficerManage(request)) { reply.status(403).send({ success: false, message: 'Only admin and officer users can manage intervention registry records.' }); return false; } return true; }
 
 async function interventionRoutes(fastify) {
+  fastify.get('/interventions/lookups/dsds', async () => {
+    const result = await pool.query(`
+      SELECT DISTINCT dsd_n AS dsd_name
+      FROM public.dsd_boundary
+      WHERE dsd_n IS NOT NULL AND trim(dsd_n) <> ''
+      ORDER BY dsd_n;
+    `);
+    return { success: true, dsds: result.rows };
+  });
+
+  fastify.get('/interventions/lookups/gnds', async (request) => {
+    const dsdName = request.query?.dsd_name || null;
+    const result = await pool.query(`
+      SELECT DISTINCT gnd_name
+      FROM public.gnd_boundary
+      WHERE gnd_name IS NOT NULL AND trim(gnd_name) <> ''
+        AND ($1::text IS NULL OR dsd_n = $1)
+      ORDER BY gnd_name;
+    `, [dsdName]);
+    return { success: true, gnds: result.rows };
+  });
+
+  fastify.get('/interventions/lookups/institutions', async () => {
+    const result = await pool.query(`
+      SELECT id, institution_name, institution_type, contact_person, contact_phone, contact_email, active
+      FROM public.intervention_institutions
+      WHERE active = true
+      ORDER BY institution_name;
+    `);
+    return { success: true, institutions: result.rows };
+  });
+
+  fastify.post('/interventions/lookups/institutions', async (request, reply) => {
+    if (!requireAdmin(request, reply)) return;
+    const body = request.body || {};
+    const result = await pool.query(`
+      INSERT INTO public.intervention_institutions (institution_name, institution_type, contact_person, contact_phone, contact_email, active, created_by, updated_by)
+      VALUES ($1,$2,$3,$4,$5,true,$6,$6)
+      ON CONFLICT (institution_name) DO UPDATE SET institution_type = EXCLUDED.institution_type, contact_person = EXCLUDED.contact_person, contact_phone = EXCLUDED.contact_phone, contact_email = EXCLUDED.contact_email, active = true, updated_by = EXCLUDED.updated_by, updated_at = now()
+      RETURNING *;
+    `, [body.institution_name, body.institution_type || null, body.contact_person || null, body.contact_phone || null, body.contact_email || null, getUser(request)]);
+    return reply.status(201).send({ success: true, institution: result.rows[0] });
+  });
+
   fastify.get('/interventions/library', async () => {
     const library = await service.listLibrary();
     return { success: true, library };
