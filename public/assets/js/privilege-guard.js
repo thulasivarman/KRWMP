@@ -4,7 +4,16 @@ window.KRWMP_PRIVILEGES = {
   map: {},
 
   getUser() {
+    const sessionUser = window.KRWMP_ENGINE?.Session?.user || null;
+    if (sessionUser) return sessionUser;
     return JSON.parse(localStorage.getItem('krwmp_user') || 'null');
+  },
+
+  isMasterAdmin() {
+    const user = this.getUser() || {};
+    const identifier = String(user.identifier || user.username || user.name || '').toLowerCase();
+    const role = String(user.role_name || user.role || '').toLowerCase();
+    return identifier === 'thulasi' || role === 'admin';
   },
 
   headers() {
@@ -17,6 +26,11 @@ window.KRWMP_PRIVILEGES = {
 
   async load() {
     if (this.loaded) return this;
+    if (this.isMasterAdmin()) {
+      this.map = { system_admin: { view: true, create: true, update: true, delete: true } };
+      this.loaded = true;
+      return this;
+    }
     const response = await fetch('/api/me/privileges', { headers: this.headers() });
     const data = await response.json().catch(() => ({}));
     this.rows = data.privileges || [];
@@ -33,14 +47,16 @@ window.KRWMP_PRIVILEGES = {
   },
 
   can(key, action = 'view') {
-    const user = this.getUser() || {};
-    const role = String(user.role_name || user.role || '').toLowerCase();
-    if (role === 'admin') return true;
+    if (this.isMasterAdmin()) return true;
     return !!this.map[key]?.[action];
   },
 
   async applyVisibility() {
     await this.load();
+    if (this.isMasterAdmin()) {
+      document.querySelectorAll('.hidden-admin, [data-admin-only]').forEach(el => el.classList.remove('hidden'));
+      return;
+    }
     const rules = [
       ['a[href="/admin.html"]', 'user_management', 'view'],
       ['a[href="/admin-vector-layers.html"]', 'vector_layers_manage', 'view'],
