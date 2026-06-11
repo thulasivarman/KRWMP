@@ -37,7 +37,19 @@ window.KRWMP_ENGINE = {
                 this.Session.isAuthenticated = false;
             }
         }
+        this.normalizeMasterAdminSession();
         this.syncProfileMetadata();
+    },
+
+    normalizeMasterAdminSession: function () {
+        const profile = this.Session.user || {};
+        const identifier = String(profile.identifier || profile.username || '').trim().toLowerCase();
+        if (identifier === 'thulasi') {
+            profile.role_name = 'admin';
+            profile.visible_sections = Array.from(new Set([...(profile.visible_sections || []), 'data_layers', 'raster_layers', 'user_management']));
+            this.Session.user = profile;
+            localStorage.setItem('krwmp_user', JSON.stringify(profile));
+        }
     },
 
     assembleInterfaceContext: async function (sidebarUrl = '/sidebar.html', sidebarContainerId = 'sidebar') {
@@ -59,9 +71,13 @@ window.KRWMP_ENGINE = {
         const profile = this.Session.user;
         if (!profile) return;
 
+        const identifier = String(profile.identifier || profile.username || '').trim().toLowerCase();
+        const roleName = String(profile.role_name || profile.role || '').trim().toLowerCase();
+        const isMasterAdmin = identifier === 'thulasi' || roleName === 'admin';
+
         const elementsMap = {
             'userNameLabel': profile.name,
-            'userDesignationLabel': `${profile.designation} (${String(profile.role_name || '').toUpperCase()})`,
+            'userDesignationLabel': `${profile.designation || ''} (${isMasterAdmin ? 'ADMIN' : String(profile.role_name || '').toUpperCase()})`,
             'userInitialsLabel': profile.initials
         };
 
@@ -91,7 +107,7 @@ window.KRWMP_ENGINE = {
             allowedSections = profile.visible_sections || [];
         }
 
-        if (String(profile.role_name || '').toLowerCase() === 'admin') {
+        if (isMasterAdmin) {
             allowedSections = Array.from(new Set([...allowedSections, 'data_layers', 'raster_layers', 'user_management']));
         }
 
@@ -106,6 +122,11 @@ window.KRWMP_ENGINE = {
             } else {
                 containerNode.classList.add('hidden');
             }
+        }
+
+        if (isMasterAdmin) {
+            const adminSection = document.getElementById('section-user-management');
+            if (adminSection) adminSection.classList.remove('hidden');
         }
 
         const basemapSection = document.getElementById('basemap-selector')?.closest('.krwmp-panel-section');
