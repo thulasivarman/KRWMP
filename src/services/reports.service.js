@@ -31,11 +31,29 @@ async function communityComplaints(query = {}) {
   `;
   const rowsSql = `
     SELECT r.report_code, r.issue_title, r.description, r.status, r.severity_level,
-      r.latitude, r.longitude, r.submitted_at,
+      r.latitude, r.longitude, r.location_description, r.submitted_at,
+      r.reporter_name AS submitter_name,
       c.category_name,
-      NULL::text AS solution_title
+      s.solution_title,
+      d.dsd_name,
+      g.gnd_name
     FROM public.community_issue_reports r
     LEFT JOIN public.issue_categories c ON c.id = r.category_id
+    LEFT JOIN public.solution_library s ON s.id = r.assigned_solution_id
+    LEFT JOIN LATERAL (
+      SELECT db.dsd_n AS dsd_name
+      FROM public.dsd_boundary db
+      WHERE r.geom IS NOT NULL AND db.geom IS NOT NULL AND ST_Intersects(r.geom, db.geom)
+      ORDER BY db.id ASC
+      LIMIT 1
+    ) d ON true
+    LEFT JOIN LATERAL (
+      SELECT gb.gnd_name AS gnd_name
+      FROM public.gnd_boundary gb
+      WHERE r.geom IS NOT NULL AND gb.geom IS NOT NULL AND ST_Intersects(r.geom, gb.geom)
+      ORDER BY gb.id ASC
+      LIMIT 1
+    ) g ON true
     ${where}
     ORDER BY r.submitted_at DESC NULLS LAST
     LIMIT 500;
