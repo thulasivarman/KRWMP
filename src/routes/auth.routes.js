@@ -1,4 +1,5 @@
 const authService = require('../services/auth.service');
+const { getRequestUser } = require('../middleware/privilege.middleware');
 
 async function authRoutes(fastify) {
   fastify.post('/login', async (request, reply) => {
@@ -21,7 +22,16 @@ async function authRoutes(fastify) {
   });
 
   fastify.get('/auth/profile', async (request, reply) => {
-    const profile = await authService.getProfile('thulasi');
+    const userIdentifier = getRequestUser(request);
+
+    if (!userIdentifier) {
+      return reply.status(401).send({
+        success: false,
+        message: 'Authentication required',
+      });
+    }
+
+    const profile = await authService.getProfile(userIdentifier);
 
     if (!profile) {
       return reply.status(404).send({
@@ -36,7 +46,11 @@ async function authRoutes(fastify) {
     };
   });
 
-  fastify.post('/auth/profile/update', async (request) => {
+  fastify.post('/auth/profile/update', async (request, reply) => {
+    const userIdentifier = getRequestUser(request);
+    if (!userIdentifier) {
+      return reply.status(401).send({ success: false, message: 'Authentication required' });
+    }
     await authService.updateProfile(request.body);
     return {
       success: true,
