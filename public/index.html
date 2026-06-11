@@ -1,86 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KRWMP Portal - Authentication Terminal</title>
-    <script>
-        try {
-            const cachedUser = localStorage.getItem('krwmp_user');
-            if (cachedUser) {
-                window.location.replace('/map.html');
-            }
-        } catch (error) {}
-    </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="/assets/css/style.css" rel="stylesheet" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Watershed Intelligence System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans antialiased flex items-center justify-center h-screen">
-
-    <div class="bg-slate-950 border border-slate-800 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
-        <div class="text-center mb-6">
-            <div class="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-3">
-                <svg class="h-5 w-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-            </div>
-            <h2 class="text-base font-bold tracking-wider text-slate-200 uppercase">System Terminal</h2>
-            <p class="text-[11px] text-slate-500 tracking-wide mt-0.5">Kelani River Basin Management Portal</p>
+<body class="bg-[#f7f8f3] text-slate-900 antialiased">
+  <header class="fixed top-0 left-0 right-0 z-50 bg-[#f7f8f3]/90 backdrop-blur-xl border-b border-emerald-900/10">
+    <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      <a href="/index.html" class="flex items-center gap-3">
+        <div class="h-12 w-12 rounded-2xl bg-emerald-700 text-white grid place-items-center font-black">WIS</div>
+        <div>
+          <div class="font-semibold">Watershed Intelligence System</div>
+          <div class="text-xs text-slate-500">Government watershed management platform</div>
         </div>
-
-        <div id="loginAlertBox" class="hidden bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs p-3 rounded-lg mb-4 text-center"></div>
-
-        <form id="portalLoginForm" class="space-y-4">
-            <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">System Username</label>
-                <input type="text" id="loginUsername" placeholder="e.g., thulasi" class="w-full bg-slate-900 border border-slate-800 rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/50" required>
-            </div>
-
-            <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Passkey Password</label>
-                <input type="password" id="loginPassword" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-800 rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/50" required>
-            </div>
-
-            <button type="submit" id="loginSubmitBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded text-xs transition shadow-lg shadow-emerald-950/20 mt-2">
-                Authenticate Secure Session
-            </button>
-        </form>
+      </a>
+      <nav class="hidden md:flex gap-8 text-sm text-slate-700">
+        <a href="#about">About</a>
+        <a href="#features">Features</a>
+        <a href="#participation">Participation</a>
+        <a href="#sdg">SDG</a>
+      </nav>
+      <a href="/login.html" class="px-5 py-2.5 rounded-full bg-slate-950 text-white text-sm font-semibold">Login</a>
     </div>
+  </header>
 
-    <script>
-        document.getElementById('portalLoginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const alertBox = document.getElementById('loginAlertBox');
-            const submitBtn = document.getElementById('loginSubmitBtn');
-            const usernameInput = document.getElementById('loginUsername').value.trim();
-            const passwordInput = document.getElementById('loginPassword').value.trim();
+  <main>
+    <section class="pt-32 pb-16">
+      <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-10 items-center">
+        <div>
+          <p class="text-sm uppercase tracking-[0.35em] text-emerald-700 font-semibold mb-5">Kelani River Basin Management</p>
+          <h1 class="text-5xl md:text-7xl font-semibold tracking-tight leading-none">Smarter watersheds. Stronger communities.</h1>
+          <p class="mt-7 text-lg text-slate-600 leading-8">A clean geospatial platform for watershed planning, public participation, intervention tracking, VWMC coordination and decision-ready reporting.</p>
+          <div class="mt-9 flex gap-3">
+            <a href="/login.html" class="px-6 py-3.5 rounded-full bg-emerald-700 text-white font-semibold">Enter Portal</a>
+            <a href="/community-report.html" class="px-6 py-3.5 rounded-full bg-white border border-slate-200 text-slate-800 font-semibold">Report Issue</a>
+          </div>
+        </div>
+        <div class="min-h-[520px] rounded-[2.5rem] bg-gradient-to-br from-emerald-900 via-emerald-500 to-lime-100 shadow-2xl relative overflow-hidden">
+          <div class="absolute inset-8 rounded-[2rem] border border-white/30"></div>
+          <div class="absolute bottom-6 left-6 right-6 bg-white/90 rounded-[1.75rem] p-6 grid grid-cols-3 gap-4 text-center">
+            <div><div class="text-2xl font-semibold text-emerald-800">GIS</div><div class="text-xs text-slate-500">Spatial Layers</div></div>
+            <div><div class="text-2xl font-semibold text-emerald-800">VWMC</div><div class="text-xs text-slate-500">Committees</div></div>
+            <div><div class="text-2xl font-semibold text-emerald-800">SDG</div><div class="text-xs text-slate-500">Aligned</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-            alertBox.classList.add('hidden');
-            submitBtn.disabled = true;
-            submitBtn.innerText = "Verifying Credentials...";
+    <section id="about" class="py-16">
+      <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
+        <div class="h-[420px] rounded-[2rem] bg-gradient-to-br from-lime-100 via-sky-100 to-emerald-100"></div>
+        <div>
+          <p class="text-sm uppercase tracking-[0.3em] text-emerald-700 font-semibold mb-4">What WIS does</p>
+          <h2 class="text-4xl md:text-5xl font-semibold tracking-tight">One platform for evidence-based watershed management.</h2>
+          <p class="mt-6 text-slate-600 leading-8">The system brings together vector layers, raster layers, community issues, intervention registry, reports and role-based access for technical officers, decision makers and local communities.</p>
+        </div>
+      </div>
+    </section>
 
-            try {
-                const response = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: usernameInput, password: passwordInput })
-                });
+    <section id="features" class="py-16 bg-white">
+      <div class="max-w-7xl mx-auto px-6">
+        <p class="text-sm uppercase tracking-[0.3em] text-emerald-700 font-semibold mb-4">System Features</p>
+        <h2 class="text-4xl font-semibold tracking-tight mb-10">Simple tools. Clear decisions.</h2>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <article class="rounded-[1.75rem] bg-[#f7f8f3] p-7"><h3 class="text-xl font-semibold">Spatial Data</h3><p class="mt-3 text-slate-600">Manage watershed GIS datasets.</p></article>
+          <article class="rounded-[1.75rem] bg-[#f7f8f3] p-7"><h3 class="text-xl font-semibold">Raster Intelligence</h3><p class="mt-3 text-slate-600">Visualize raster layers and heat maps.</p></article>
+          <article class="rounded-[1.75rem] bg-[#f7f8f3] p-7"><h3 class="text-xl font-semibold">Intervention Registry</h3><p class="mt-3 text-slate-600">Track watershed interventions.</p></article>
+          <article class="rounded-[1.75rem] bg-[#f7f8f3] p-7"><h3 class="text-xl font-semibold">VWMC Management</h3><p class="mt-3 text-slate-600">Coordinate village committees.</p></article>
+          <article class="rounded-[1.75rem] bg-[#f7f8f3] p-7"><h3 class="text-xl font-semibold">Reports</h3><p class="mt-3 text-slate-600">Generate concise management reports.</p></article>
+          <article class="rounded-[1.75rem] bg-[#f7f8f3] p-7"><h3 class="text-xl font-semibold">Role-Based Access</h3><p class="mt-3 text-slate-600">Protect data and workflows.</p></article>
+        </div>
+      </div>
+    </section>
 
-                const result = await response.json();
+    <section id="participation" class="py-16">
+      <div class="max-w-7xl mx-auto px-6 rounded-[2.5rem] bg-emerald-950 text-white p-10 md:p-16">
+        <p class="text-sm uppercase tracking-[0.3em] text-emerald-200 font-semibold mb-4">Public Participation</p>
+        <h2 class="text-4xl md:text-5xl font-semibold tracking-tight max-w-3xl">People are part of the watershed solution.</h2>
+        <p class="mt-6 text-emerald-50/80 leading-8 max-w-3xl">Citizens can report erosion, pollution, flooding, drainage blockages and other watershed issues. Local knowledge helps officers verify problems and monitor action.</p>
+        <a href="/community-report.html" class="mt-8 inline-flex px-6 py-3.5 rounded-full bg-white text-emerald-950 font-semibold">Report a Watershed Issue</a>
+      </div>
+    </section>
 
-                if (response.ok && result && result.success) {
-                    localStorage.setItem('krwmp_user', JSON.stringify(result.user));
-                    window.location.href = '/map.html';
-                } else {
-                    throw new Error(result.message || "Authentication rejected.");
-                }
-            } catch (err) {
-                alertBox.innerText = err.message || "Failed to establish a link to the server.";
-                alertBox.classList.remove('hidden');
-                submitBtn.disabled = false;
-                submitBtn.innerText = "Authenticate Secure Session";
-            }
-        });
-    </script>
+    <section id="sdg" class="py-16 bg-white">
+      <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-3 gap-8">
+        <div><p class="text-sm uppercase tracking-[0.3em] text-emerald-700 font-semibold mb-4">SDG Contribution</p><h2 class="text-4xl font-semibold tracking-tight">Aligned with sustainable development goals.</h2></div>
+        <div class="lg:col-span-2 grid sm:grid-cols-2 gap-5">
+          <div class="rounded-[1.5rem] p-6 bg-[#f7f8f3]"><strong class="text-emerald-700">SDG 6</strong><h3 class="mt-2 font-semibold">Clean Water and Sanitation</h3><p class="mt-2 text-sm text-slate-600">Water monitoring and pollution response.</p></div>
+          <div class="rounded-[1.5rem] p-6 bg-[#f7f8f3]"><strong class="text-emerald-700">SDG 11</strong><h3 class="mt-2 font-semibold">Sustainable Communities</h3><p class="mt-2 text-sm text-slate-600">Community participation and resilience.</p></div>
+          <div class="rounded-[1.5rem] p-6 bg-[#f7f8f3]"><strong class="text-emerald-700">SDG 13</strong><h3 class="mt-2 font-semibold">Climate Action</h3><p class="mt-2 text-sm text-slate-600">Climate-sensitive watershed planning.</p></div>
+          <div class="rounded-[1.5rem] p-6 bg-[#f7f8f3]"><strong class="text-emerald-700">SDG 15</strong><h3 class="mt-2 font-semibold">Life on Land</h3><p class="mt-2 text-sm text-slate-600">Ecosystem protection and restoration.</p></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="py-10 border-t border-slate-200"><div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between gap-4 text-sm text-slate-500"><div><strong class="text-slate-900">Watershed Intelligence System</strong><br>Government watershed management platform</div><div class="flex gap-5"><a href="/login.html">Login</a><a href="/community-report.html">Public Report</a><a href="#sdg">SDG</a></div></div></footer>
 </body>
 </html>
