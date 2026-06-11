@@ -28,6 +28,7 @@ fastify.register(require('./routes/vector-layer.routes'), { prefix: '/api' });
 fastify.register(require('./routes/raster-layer.routes'), { prefix: '/api' });
 fastify.register(require('./routes/community-issues.routes'), { prefix: '/api' });
 fastify.register(require('./routes/vwmc.routes'), { prefix: '/api' });
+fastify.register(require('./routes/intervention.routes'), { prefix: '/api' });
 
 fastify.setErrorHandler((error, request, reply) => {
   fastify.log.error(error);
