@@ -153,7 +153,7 @@ window.KRWMP_ENGINE = {
 
     dispatchLogout: function () {
         localStorage.removeItem('krwmp_user');
-        window.location.href = '/index.html';
+        window.location.href = '/login.html';
     }
 };
 
