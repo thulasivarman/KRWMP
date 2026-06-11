@@ -61,10 +61,22 @@ window.KRWMP_ENGINE = {
             const response = await fetch(sidebarUrl);
             if (!response.ok) throw new Error(`HTML fragment unresolved: ${sidebarUrl}`);
             sidebarContainer.innerHTML = await response.text();
+            this.injectReportsLink();
             this.syncProfileMetadata();
         } catch (uiError) {
             console.error("UI contextual engine compile fault:", uiError);
         }
+    },
+
+    injectReportsLink: function () {
+        if (document.querySelector('a[href="/reports.html"]')) return;
+        const homeLink = document.getElementById('sidebar-home-link');
+        if (!homeLink || !homeLink.parentElement) return;
+        const reportLink = document.createElement('a');
+        reportLink.href = '/reports.html';
+        reportLink.className = homeLink.className;
+        reportLink.innerHTML = '<span>Reports</span>';
+        homeLink.insertAdjacentElement('afterend', reportLink);
     },
 
     syncProfileMetadata: function () {
