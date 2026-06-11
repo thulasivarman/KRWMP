@@ -127,30 +127,57 @@ function renderRasterAdminLayer(layer) {
 function renderSymbologyEditor(symbology) {
   const rows = Array.from({ length: MAX_RASTER_CLASSES }).map((_, index) => {
     const cls = symbology.classes[index] || {};
-    return `<div class="raster-class-row grid grid-cols-12 gap-2 items-center" data-class-index="${index}">
-      <input type="checkbox" class="class-enabled col-span-1" ${cls.min !== undefined && cls.max !== undefined ? 'checked' : ''} title="Enable class">
-      <input type="number" step="any" class="class-min col-span-3 bg-slate-950 border border-slate-800 rounded px-2 py-1" placeholder="Min" value="${escapeAttr(cls.min ?? '')}">
-      <input type="number" step="any" class="class-max col-span-3 bg-slate-950 border border-slate-800 rounded px-2 py-1" placeholder="Max" value="${escapeAttr(cls.max ?? '')}">
-      <input type="color" class="class-color col-span-2 bg-slate-950 border border-slate-800 rounded" value="${escapeAttr(cls.color || DEFAULT_CLASS_COLORS[index])}">
-      <input type="text" class="class-label col-span-3 bg-slate-950 border border-slate-800 rounded px-2 py-1" placeholder="Label" value="${escapeAttr(cls.label || '')}">
-    </div>`;
+    const enabled = cls.min !== undefined && cls.max !== undefined;
+    return `<article class="raster-class-row rounded-xl border border-slate-800/80 bg-slate-950/55 p-4 shadow-sm" data-class-index="${index}">
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <label class="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-300">
+          <input type="checkbox" class="class-enabled h-4 w-4 accent-emerald-500" ${enabled ? 'checked' : ''}>
+          Class ${index + 1}
+        </label>
+        <div class="flex items-center gap-2">
+          <span class="h-5 w-8 rounded-md border border-white/20 shadow-inner" style="background:${escapeAttr(cls.color || DEFAULT_CLASS_COLORS[index])}"></span>
+          <span class="text-[10px] text-slate-500">${escapeAttr(cls.color || DEFAULT_CLASS_COLORS[index])}</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+        <label class="md:col-span-2 space-y-1">
+          <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-bold">Min Value</span>
+          <input type="number" step="any" class="class-min w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500/70" placeholder="0" value="${escapeAttr(cls.min ?? '')}">
+        </label>
+        <label class="md:col-span-2 space-y-1">
+          <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-bold">Max Value</span>
+          <input type="number" step="any" class="class-max w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500/70" placeholder="10" value="${escapeAttr(cls.max ?? '')}">
+        </label>
+        <label class="md:col-span-2 space-y-1">
+          <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-bold">Color</span>
+          <div class="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5">
+            <input type="color" class="class-color h-9 w-12 rounded border border-slate-600 bg-transparent cursor-pointer" value="${escapeAttr(cls.color || DEFAULT_CLASS_COLORS[index])}">
+            <span class="class-color-text text-[10px] font-mono text-slate-400">${escapeAttr(cls.color || DEFAULT_CLASS_COLORS[index])}</span>
+          </div>
+        </label>
+        <label class="md:col-span-6 space-y-1">
+          <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-bold">Legend Label</span>
+          <input type="text" class="class-label w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500/70" placeholder="Very Low / Low / Moderate / High" value="${escapeAttr(cls.label || '')}">
+        </label>
+      </div>
+    </article>`;
   }).join('');
 
-  return `<section class="raster-symbology-box mt-4 pt-4 border-t border-slate-800 space-y-3 text-xs">
-    <div class="flex items-center justify-between gap-3">
+  return `<section class="raster-symbology-box md:col-span-4 lg:col-span-4 mt-5 rounded-2xl border border-slate-800 bg-slate-950/35 p-5 space-y-5 text-xs">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-800 pb-4">
       <div>
         <h4 class="font-bold uppercase tracking-wider text-emerald-400">Raster Symbology</h4>
-        <p class="text-[10px] text-slate-500 mt-1">Classified heat-map symbology supports up to 10 value classes.</p>
+        <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">Define up to 10 clean heat-map value classes. Enabled classes will be used to regenerate the map preview.</p>
       </div>
-      <select name="symbologyMode" class="bg-slate-950 border border-slate-800 rounded px-2 py-1">
-        <option value="stretch" ${symbology.mode === 'stretch' ? 'selected' : ''}>Stretch / Original</option>
-        <option value="classified" ${symbology.mode === 'classified' ? 'selected' : ''}>Classified Heat Map</option>
-      </select>
+      <label class="space-y-1 min-w-[220px]">
+        <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-bold">Render Mode</span>
+        <select name="symbologyMode" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500/70">
+          <option value="stretch" ${symbology.mode === 'stretch' ? 'selected' : ''}>Stretch / Original</option>
+          <option value="classified" ${symbology.mode === 'classified' ? 'selected' : ''}>Classified Heat Map</option>
+        </select>
+      </label>
     </div>
-    <div class="grid grid-cols-12 gap-2 text-[10px] text-slate-500 uppercase tracking-wider font-bold">
-      <div class="col-span-1">Use</div><div class="col-span-3">Min</div><div class="col-span-3">Max</div><div class="col-span-2">Color</div><div class="col-span-3">Label</div>
-    </div>
-    <div class="space-y-2">${rows}</div>
+    <div class="grid grid-cols-1 gap-3">${rows}</div>
   </section>`;
 }
 
@@ -159,8 +186,22 @@ function bindSymbologyEditor(form) {
   const rows = Array.from(form.querySelectorAll('.raster-class-row'));
   function sync() {
     const disabled = modeSelect.value !== 'classified';
-    rows.forEach(row => row.classList.toggle('opacity-40', disabled));
+    rows.forEach(row => {
+      row.classList.toggle('opacity-50', disabled);
+      row.querySelectorAll('input').forEach(input => {
+        if (!input.classList.contains('class-enabled')) input.disabled = disabled;
+      });
+    });
   }
+  form.querySelectorAll('.class-color').forEach(input => {
+    input.addEventListener('input', () => {
+      const row = input.closest('.raster-class-row');
+      const swatch = row?.querySelector('span[style^="background"]');
+      const text = row?.querySelector('.class-color-text');
+      if (swatch) swatch.style.background = input.value;
+      if (text) text.textContent = input.value;
+    });
+  });
   modeSelect.addEventListener('change', sync);
   sync();
 }
