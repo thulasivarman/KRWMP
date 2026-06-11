@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Watershed Intelligence System</title>
+    <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
     <script>
         try {
             const cachedUser = localStorage.getItem('krwmp_user');
@@ -12,25 +13,33 @@
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="/assets/css/style.css" rel="stylesheet" />
+    <style>
+        @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes floatSoft{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+        .fade-up{animation:fadeUp .7s ease both}.float-soft{animation:floatSoft 5s ease-in-out infinite}
+    </style>
 </head>
 <body class="bg-[#f5f8f4] text-slate-900 font-sans antialiased min-h-screen">
     <main class="min-h-screen grid lg:grid-cols-2">
-        <section class="hidden lg:flex relative overflow-hidden bg-emerald-950 text-white p-12 items-end">
-            <div class="absolute inset-0 bg-cover bg-center opacity-70" style="background-image:url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&q=80')"></div>
-            <div class="absolute inset-0 bg-gradient-to-t from-emerald-950 via-emerald-950/50 to-transparent"></div>
-            <div class="relative max-w-lg">
+        <section class="hidden lg:flex relative overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-800 to-sky-900 text-white p-12 items-end">
+            <div class="absolute top-10 left-10 bg-white/90 rounded-3xl px-6 py-4 shadow-xl float-soft">
+                <img src="/assets/img/wis-logo.svg" alt="Watershed Intelligence System" class="h-20 w-auto">
+            </div>
+            <div class="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-sky-300/20 blur-3xl"></div>
+            <div class="absolute -left-20 bottom-20 h-72 w-72 rounded-full bg-lime-300/20 blur-3xl"></div>
+            <div class="relative max-w-lg fade-up">
                 <p class="uppercase tracking-[0.35em] text-xs text-emerald-200 mb-4">Watershed Intelligence System</p>
                 <h1 class="text-5xl font-semibold leading-tight">Data-driven watershed decisions for a sustainable future.</h1>
-                <p class="mt-5 text-emerald-50/85 leading-7">Secure access for spatial data, community reports, interventions, VWMC coordination and watershed analytics.</p>
+                <p class="mt-5 text-emerald-50/85 leading-7">Ministry of Agriculture, Livestock, Land and Irrigation</p>
             </div>
         </section>
 
         <section class="flex items-center justify-center p-6 sm:p-10">
-            <div class="w-full max-w-md">
+            <div class="w-full max-w-md fade-up">
                 <a href="/index.html" class="inline-flex items-center gap-2 text-sm text-emerald-800 hover:text-emerald-600 mb-8">← Back to WIS home</a>
                 <div class="bg-white border border-emerald-100 rounded-[2rem] p-8 shadow-2xl shadow-emerald-900/10">
                     <div class="mb-7">
-                        <div class="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-white font-black text-xl mb-4">WIS</div>
+                        <img src="/assets/img/wis-logo.svg" alt="Watershed Intelligence System" class="h-20 w-auto mb-5">
                         <h2 class="text-2xl font-semibold text-slate-950">Portal Login</h2>
                         <p class="text-sm text-slate-500 mt-2">Authorized access for Ministry and project stakeholders.</p>
                     </div>

@@ -4,15 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Watershed Intelligence System</title>
+  <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes floatSoft{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+    .fade-up{animation:fadeUp .7s ease both}.float-soft{animation:floatSoft 5s ease-in-out infinite}
+  </style>
 </head>
 <body class="bg-[#f7f8f3] text-slate-900 antialiased">
   <header class="fixed top-0 left-0 right-0 z-50 bg-[#f7f8f3]/90 backdrop-blur-xl border-b border-emerald-900/10">
     <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-      <a href="/index.html" class="flex items-center gap-3">
-        <div class="h-12 w-12 rounded-2xl bg-emerald-700 text-white grid place-items-center font-black">WIS</div>
-        <div>
-          <div class="font-semibold">Watershed Intelligence System</div>
+      <a href="/index.html" class="flex items-center gap-4">
+        <img src="/assets/img/wis-logo.svg" alt="Watershed Intelligence System" class="h-14 w-auto">
+        <div class="hidden lg:block border-l border-slate-200 pl-4">
+          <div class="text-sm font-semibold text-slate-950">Ministry of Agriculture, Livestock, Land and Irrigation</div>
           <div class="text-xs text-slate-500">Government watershed management platform</div>
         </div>
       </a>
@@ -29,7 +35,7 @@
   <main>
     <section class="pt-32 pb-16">
       <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-10 items-center">
-        <div>
+        <div class="fade-up">
           <p class="text-sm uppercase tracking-[0.35em] text-emerald-700 font-semibold mb-5">Kelani River Basin Management</p>
           <h1 class="text-5xl md:text-7xl font-semibold tracking-tight leading-none">Smarter watersheds. Stronger communities.</h1>
           <p class="mt-7 text-lg text-slate-600 leading-8">A clean geospatial platform for watershed planning, public participation, intervention tracking, VWMC coordination and decision-ready reporting.</p>
@@ -38,8 +44,9 @@
             <a href="/community-report.html" class="px-6 py-3.5 rounded-full bg-white border border-slate-200 text-slate-800 font-semibold">Report Issue</a>
           </div>
         </div>
-        <div class="min-h-[520px] rounded-[2.5rem] bg-gradient-to-br from-emerald-900 via-emerald-500 to-lime-100 shadow-2xl relative overflow-hidden">
+        <div class="min-h-[520px] rounded-[2.5rem] bg-gradient-to-br from-emerald-900 via-emerald-500 to-lime-100 shadow-2xl relative overflow-hidden float-soft">
           <div class="absolute inset-8 rounded-[2rem] border border-white/30"></div>
+          <img src="/assets/img/favicon.svg" alt="WIS icon" class="absolute top-10 left-10 h-28 w-28 drop-shadow-xl">
           <div class="absolute bottom-6 left-6 right-6 bg-white/90 rounded-[1.75rem] p-6 grid grid-cols-3 gap-4 text-center">
             <div><div class="text-2xl font-semibold text-emerald-800">GIS</div><div class="text-xs text-slate-500">Spatial Layers</div></div>
             <div><div class="text-2xl font-semibold text-emerald-800">VWMC</div><div class="text-xs text-slate-500">Committees</div></div>
@@ -51,7 +58,7 @@
 
     <section id="about" class="py-16">
       <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
-        <div class="h-[420px] rounded-[2rem] bg-gradient-to-br from-lime-100 via-sky-100 to-emerald-100"></div>
+        <div class="h-[420px] rounded-[2rem] bg-gradient-to-br from-lime-100 via-sky-100 to-emerald-100 float-soft"></div>
         <div>
           <p class="text-sm uppercase tracking-[0.3em] text-emerald-700 font-semibold mb-4">What WIS does</p>
           <h2 class="text-4xl md:text-5xl font-semibold tracking-tight">One platform for evidence-based watershed management.</h2>
@@ -79,7 +86,7 @@
       <div class="max-w-7xl mx-auto px-6 rounded-[2.5rem] bg-emerald-950 text-white p-10 md:p-16">
         <p class="text-sm uppercase tracking-[0.3em] text-emerald-200 font-semibold mb-4">Public Participation</p>
         <h2 class="text-4xl md:text-5xl font-semibold tracking-tight max-w-3xl">People are part of the watershed solution.</h2>
-        <p class="mt-6 text-emerald-50/80 leading-8 max-w-3xl">Citizens can report erosion, pollution, flooding, drainage blockages and other watershed issues. Local knowledge helps officers verify problems and monitor action.</p>
+        <p class="mt-6 text-emerald-50/80 leading-8 max-w-3xl">Citizens can report watershed issues and local observations. This helps officers verify problems, assign solutions and monitor action.</p>
         <a href="/community-report.html" class="mt-8 inline-flex px-6 py-3.5 rounded-full bg-white text-emerald-950 font-semibold">Report a Watershed Issue</a>
       </div>
     </section>
@@ -88,7 +95,7 @@
       <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-3 gap-8">
         <div><p class="text-sm uppercase tracking-[0.3em] text-emerald-700 font-semibold mb-4">SDG Contribution</p><h2 class="text-4xl font-semibold tracking-tight">Aligned with sustainable development goals.</h2></div>
         <div class="lg:col-span-2 grid sm:grid-cols-2 gap-5">
-          <div class="rounded-[1.5rem] p-6 bg-[#f7f8f3]"><strong class="text-emerald-700">SDG 6</strong><h3 class="mt-2 font-semibold">Clean Water and Sanitation</h3><p class="mt-2 text-sm text-slate-600">Water monitoring and pollution response.</p></div>
+          <div class="rounded-[1.5rem] p-6 bg-[#f7f8f3]"><strong class="text-emerald-700">SDG 6</strong><h3 class="mt-2 font-semibold">Clean Water and Sanitation</h3><p class="mt-2 text-sm text-slate-600">Water monitoring and response.</p></div>
           <div class="rounded-[1.5rem] p-6 bg-[#f7f8f3]"><strong class="text-emerald-700">SDG 11</strong><h3 class="mt-2 font-semibold">Sustainable Communities</h3><p class="mt-2 text-sm text-slate-600">Community participation and resilience.</p></div>
           <div class="rounded-[1.5rem] p-6 bg-[#f7f8f3]"><strong class="text-emerald-700">SDG 13</strong><h3 class="mt-2 font-semibold">Climate Action</h3><p class="mt-2 text-sm text-slate-600">Climate-sensitive watershed planning.</p></div>
           <div class="rounded-[1.5rem] p-6 bg-[#f7f8f3]"><strong class="text-emerald-700">SDG 15</strong><h3 class="mt-2 font-semibold">Life on Land</h3><p class="mt-2 text-sm text-slate-600">Ecosystem protection and restoration.</p></div>
@@ -97,6 +104,6 @@
     </section>
   </main>
 
-  <footer class="py-10 border-t border-slate-200"><div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between gap-4 text-sm text-slate-500"><div><strong class="text-slate-900">Watershed Intelligence System</strong><br>Government watershed management platform</div><div class="flex gap-5"><a href="/login.html">Login</a><a href="/community-report.html">Public Report</a><a href="#sdg">SDG</a></div></div></footer>
+  <footer class="py-10 border-t border-slate-200"><div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between gap-4 text-sm text-slate-500"><div><strong class="text-slate-900">Watershed Intelligence System</strong><br>Ministry of Agriculture, Livestock, Land and Irrigation</div><div class="flex gap-5"><a href="/login.html">Login</a><a href="/community-report.html">Public Report</a><a href="#sdg">SDG</a></div></div></footer>
 </body>
 </html>
