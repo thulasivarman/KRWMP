@@ -1,25 +1,9 @@
 const pool = require('../../config/database');
 const service = require('../services/vwmc.service');
+const { requirePrivilegeInline } = require('../middleware/privilege.middleware');
 
 function getUser(request) {
   return String(request.headers['x-krwmp-user'] || request.headers['x-user'] || 'system').trim();
-}
-
-function getRole(request) {
-  return String(request.headers['x-krwmp-role'] || request.headers['x-role'] || '').trim().toLowerCase();
-}
-
-function canManage(request) {
-  const role = getRole(request);
-  return role === 'admin' || role === 'data_collectors' || role === 'data_collector';
-}
-
-function requireManage(request, reply) {
-  if (!canManage(request)) {
-    reply.status(403).send({ success: false, message: 'Only admin and data_collectors can manage VWMC records.' });
-    return false;
-  }
-  return true;
 }
 
 async function getVwmcGeoJson() {
@@ -54,82 +38,78 @@ async function getVwmcGeoJson() {
 }
 
 async function vwmcRoutes(fastify) {
-  fastify.get('/vwmc/lookups/dsds', async () => {
-    const result = await pool.query(`
-      SELECT DISTINCT dsd_n AS dsd_name
-      FROM public.dsd_boundary
-      WHERE dsd_n IS NOT NULL AND trim(dsd_n) <> ''
-      ORDER BY dsd_n;
-    `);
+  fastify.get('/vwmc/lookups/dsds', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'vwmc_view', 'view')) return;
+    const result = await pool.query(`SELECT DISTINCT dsd_n AS dsd_name FROM public.dsd_boundary WHERE dsd_n IS NOT NULL AND trim(dsd_n) <> '' ORDER BY dsd_n;`);
     return { success: true, dsds: result.rows };
   });
 
-  fastify.get('/vwmc/lookups/gnds', async (request) => {
+  fastify.get('/vwmc/lookups/gnds', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'vwmc_view', 'view')) return;
     const dsdName = request.query?.dsd_name || null;
     const result = await pool.query(`
       SELECT DISTINCT g.gnd_name
       FROM public.gnd_boundary AS g
-      LEFT JOIN public.dsd_boundary AS d
-        ON d.dsd_n = $1::text
-       AND g.geom IS NOT NULL
-       AND d.geom IS NOT NULL
-       AND ST_Intersects(g.geom, d.geom)
-      WHERE g.gnd_name IS NOT NULL
-        AND trim(g.gnd_name) <> ''
-        AND ($1::text IS NULL OR d.id IS NOT NULL)
+      LEFT JOIN public.dsd_boundary AS d ON d.dsd_n = $1::text AND g.geom IS NOT NULL AND d.geom IS NOT NULL AND ST_Intersects(g.geom, d.geom)
+      WHERE g.gnd_name IS NOT NULL AND trim(g.gnd_name) <> '' AND ($1::text IS NULL OR d.id IS NOT NULL)
       ORDER BY g.gnd_name;
     `, [dsdName]);
     return { success: true, gnds: result.rows };
   });
 
-  fastify.get('/vwmc/committees.geojson', async () => getVwmcGeoJson());
+  fastify.get('/vwmc/committees.geojson', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'map_view', 'view')) return;
+    return getVwmcGeoJson();
+  });
 
-  fastify.get('/vwmc/committees', async () => {
+  fastify.get('/vwmc/committees', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'vwmc_view', 'view')) return;
     const committees = await service.listCommittees();
     return { success: true, committees };
   });
 
   fastify.get('/vwmc/committees/:id', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'vwmc_view', 'view')) return;
     const committee = await service.getCommittee(request.params.id);
     if (!committee) return reply.status(404).send({ success: false, message: 'VWMC not found' });
     return { success: true, committee };
   });
 
   fastify.post('/vwmc/committees', async (request, reply) => {
-    if (!requireManage(request, reply)) return;
+    if (!await requirePrivilegeInline(request, reply, 'vwmc_management', 'create')) return;
     const committee = await service.createCommittee(request.body || {}, getUser(request));
     return reply.status(201).send({ success: true, committee });
   });
 
   fastify.put('/vwmc/committees/:id', async (request, reply) => {
-    if (!requireManage(request, reply)) return;
+    if (!await requirePrivilegeInline(request, reply, 'vwmc_management', 'update')) return;
     const committee = await service.updateCommittee(request.params.id, request.body || {}, getUser(request));
     if (!committee) return reply.status(404).send({ success: false, message: 'VWMC not found' });
     return { success: true, committee };
   });
 
   fastify.delete('/vwmc/committees/:id', async (request, reply) => {
-    if (!requireManage(request, reply)) return;
+    if (!await requirePrivilegeInline(request, reply, 'vwmc_management', 'delete')) return;
     const deleted = await service.deleteCommittee(request.params.id);
     if (!deleted) return reply.status(404).send({ success: false, message: 'VWMC not found' });
     return { success: true, deleted: request.params.id };
   });
 
   fastify.post('/vwmc/committees/:id/members', async (request, reply) => {
-    if (!requireManage(request, reply)) return;
+    if (!await requirePrivilegeInline(request, reply, 'vwmc_management', 'create')) return;
     const member = await service.createMember(request.params.id, request.body || {}, getUser(request));
     return reply.status(201).send({ success: true, member });
   });
 
   fastify.put('/vwmc/members/:id', async (request, reply) => {
-    if (!requireManage(request, reply)) return;
+    if (!await requirePrivilegeInline(request, reply, 'vwmc_management', 'update')) return;
     const member = await service.updateMember(request.params.id, request.body || {}, getUser(request));
     if (!member) return reply.status(404).send({ success: false, message: 'Member not found' });
     return { success: true, member };
   });
 
   fastify.delete('/vwmc/members/:id', async (request, reply) => {
-    if (!requireManage(request, reply)) return;
+    if (!await requirePrivilegeInline(request, reply, 'vwmc_management', 'delete')) return;
     const deleted = await service.deleteMember(request.params.id);
     if (!deleted) return reply.status(404).send({ success: false, message: 'Member not found' });
     return { success: true, deleted: request.params.id };

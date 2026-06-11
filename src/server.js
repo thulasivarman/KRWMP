@@ -22,6 +22,7 @@ fastify.register(require('@fastify/multipart'), {
 
 fastify.register(require('./routes/auth.routes'), { prefix: '/api' });
 fastify.register(require('./routes/admin.routes'), { prefix: '/api' });
+fastify.register(require('./routes/privileges.routes'), { prefix: '/api' });
 fastify.register(require('./routes/spatial.routes'), { prefix: '/api' });
 fastify.register(require('./routes/layers.routes'), { prefix: '/api' });
 fastify.register(require('./routes/vector-layer.routes'), { prefix: '/api' });

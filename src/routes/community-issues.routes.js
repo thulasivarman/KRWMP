@@ -1,4 +1,5 @@
 const communityService = require('../services/community-issues.service');
+const { requirePrivilegeInline } = require('../middleware/privilege.middleware');
 
 function getAdminUser(request) {
   return String(request.headers['x-krwmp-user'] || request.headers['x-user'] || 'admin').trim();
@@ -10,12 +11,14 @@ async function communityIssueRoutes(fastify) {
     return { success: true, categories };
   });
 
-  fastify.post('/issue-categories', async (request) => {
+  fastify.post('/issue-categories', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'community_issues_review', 'create')) return;
     const category = await communityService.createCategory(request.body || {});
     return { success: true, category };
   });
 
   fastify.put('/issue-categories/:id', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'community_issues_review', 'update')) return;
     const category = await communityService.updateCategory(request.params.id, request.body || {});
     if (!category) return reply.status(404).send({ success: false, message: 'Category not found' });
     return { success: true, category };
@@ -26,53 +29,53 @@ async function communityIssueRoutes(fastify) {
     return { success: true, solutions };
   });
 
-  fastify.post('/solutions', async (request) => {
+  fastify.post('/solutions', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'community_issues_review', 'create')) return;
     const solution = await communityService.createSolution(request.body || {}, getAdminUser(request));
     return { success: true, solution };
   });
 
   fastify.put('/solutions/:id', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'community_issues_review', 'update')) return;
     const solution = await communityService.updateSolution(request.params.id, request.body || {});
     if (!solution) return reply.status(404).send({ success: false, message: 'Solution not found' });
     return { success: true, solution };
   });
 
-  fastify.get('/community-reports', async (request) => {
+  fastify.get('/community-reports', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'community_issues_review', 'view')) return;
     const reports = await communityService.listReports({ status: request.query?.status || null });
     return { success: true, reports };
   });
 
   fastify.post('/community-reports', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'community_issue_submit', 'create')) return;
     const contentType = String(request.headers['content-type'] || '');
     let report;
-
     if (contentType.includes('multipart/form-data')) {
       const parts = request.parts();
       const fields = {};
       let photoFile = null;
-
       for await (const part of parts) {
-        if (part.file && part.fieldname === 'photo') {
-          photoFile = part;
-        } else if (!part.file) {
-          fields[part.fieldname] = part.value;
-        }
+        if (part.file && part.fieldname === 'photo') photoFile = part;
+        else if (!part.file) fields[part.fieldname] = part.value;
       }
       report = await communityService.createPublicReport({ fields, photoFile });
     } else {
       report = await communityService.createPublicReport({ fields: request.body || {}, photoFile: null });
     }
-
     return reply.status(201).send({ success: true, message: 'Issue report submitted successfully', report });
   });
 
   fastify.put('/community-reports/:id', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'community_issues_review', 'update')) return;
     const report = await communityService.updateReport(request.params.id, request.body || {}, getAdminUser(request));
     if (!report) return reply.status(404).send({ success: false, message: 'Report not found' });
     return { success: true, report };
   });
 
-  fastify.get('/community-reports.geojson', async (request) => {
+  fastify.get('/community-reports.geojson', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'map_view', 'view')) return;
     return communityService.getReportsGeoJson({ status: request.query?.status || null });
   });
 }
