@@ -30,8 +30,9 @@ function getRasterRenderMode(layer) {
 
 function getRasterImageUrl(layer) {
     const previewUrl = layer.preview_file_url || layer.file_url || '';
-    if (/\.(png|jpg|jpeg|webp)$/i.test(previewUrl)) return previewUrl;
-    return null;
+    if (!/\.(png|jpg|jpeg|webp)(\?.*)?$/i.test(previewUrl)) return null;
+    const version = encodeURIComponent(layer.updated_at || layer.uploaded_at || Date.now());
+    return previewUrl.includes('?') ? `${previewUrl}&v=${version}` : `${previewUrl}?v=${version}`;
 }
 
 function rasterLocalKey(layerKey) {
@@ -185,7 +186,7 @@ function renderRasterLayerControls(layers) {
         return;
     }
 
-    layers.forEach(layer => {
+    layers.forEach((layer, index) => {
         const checked = layer.default_visible === true || layer.default_visible === 'true';
         const saved = getStoredRasterSymbology(layer);
         const opacity = clampNumber(saved.opacity ?? layer.opacity ?? 0.7, 0, 1);
@@ -195,32 +196,46 @@ function renderRasterLayerControls(layers) {
         const saturation = clampNumber(saved.saturation ?? layer.saturation ?? 0, -1, 1);
         const hueRotate = clampNumber(saved.hueRotate ?? layer.hue_rotate ?? 0, 0, 360);
         const mode = getRasterRenderMode(layer);
+        const classes = getRasterClasses(layer);
         const card = document.createElement('div');
-        card.className = 'bg-slate-950/50 border border-slate-800 rounded-lg p-3 space-y-3';
+        card.className = 'bg-slate-950/50 border border-slate-800 rounded-lg overflow-hidden';
         card.innerHTML = `
-            <div class="flex items-start justify-between gap-3">
-                <label class="flex items-start gap-3 cursor-pointer min-w-0">
-                    <input type="checkbox" ${checked ? 'checked' : ''} class="raster-visible accent-emerald-500 h-4 w-4 mt-0.5 cursor-pointer flex-shrink-0">
+            <div class="raster-accordion-head flex items-center justify-between gap-3 p-3 cursor-pointer hover:bg-slate-900/70 transition">
+                <label class="flex items-center gap-3 cursor-pointer min-w-0" onclick="event.stopPropagation()">
+                    <input type="checkbox" ${checked ? 'checked' : ''} class="raster-visible accent-emerald-500 h-4 w-4 cursor-pointer flex-shrink-0">
                     <div class="min-w-0">
-                        <div class="font-semibold text-slate-200 leading-tight">${escapeRasterHtml(layer.layer_name || layer.layer_key)}</div>
+                        <div class="font-semibold text-slate-200 leading-tight truncate">${escapeRasterHtml(layer.layer_name || layer.layer_key)}</div>
                         <div class="text-[10px] text-slate-500 mt-0.5 truncate">${escapeRasterHtml(layer.original_file_name || layer.file_name || '')}</div>
-                        <div class="text-[10px] text-emerald-400 mt-1 uppercase tracking-wide">${mode === 'tiles' ? 'Tile rendering' : 'Preview rendering'}</div>
                     </div>
                 </label>
-                <button type="button" class="raster-zoom text-[10px] px-2 py-1 rounded bg-slate-800 hover:bg-emerald-600 text-slate-200 transition flex-shrink-0">Zoom</button>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <span class="text-[9px] text-emerald-400 uppercase">${classes.length ? `${classes.length} classes` : mode}</span>
+                    <span class="raster-accordion-icon text-slate-400">${index === 0 ? '▼' : '▶'}</span>
+                </div>
             </div>
-            ${rangeControl('Opacity', 'raster-opacity', 0, 1, 0.05, opacity, `${Math.round(opacity * 100)}%`)}
-            ${rangeControl('Brightness Min', 'raster-brightness-min', 0, 1, 0.05, brightnessMin, brightnessMin.toFixed(2))}
-            ${rangeControl('Brightness Max', 'raster-brightness-max', 0, 1, 0.05, brightnessMax, brightnessMax.toFixed(2))}
-            ${rangeControl('Contrast', 'raster-contrast', -1, 1, 0.05, contrast, contrast.toFixed(2))}
-            ${rangeControl('Saturation', 'raster-saturation', -1, 1, 0.05, saturation, saturation.toFixed(2))}
-            ${rangeControl('Hue Rotate', 'raster-hue-rotate', 0, 360, 5, hueRotate, `${Math.round(hueRotate)}°`)}
-            <div class="grid grid-cols-2 gap-2 text-[10px] text-slate-500">
-                <div>CRS: <span class="text-slate-300">${escapeRasterHtml(layer.crs || 'Unknown')}</span></div>
-                <div>Size: <span class="text-slate-300">${Number(layer.raster_width || 0)} × ${Number(layer.raster_height || 0)}</span></div>
-                <div>Min Zoom: <span class="text-slate-300">${Number(layer.min_zoom || 0)}</span></div>
-                <div>Max Zoom: <span class="text-slate-300">${Number(layer.max_zoom || 22)}</span></div>
+            <div class="raster-accordion-body ${index === 0 ? '' : 'hidden'} p-3 pt-0 space-y-3 border-t border-slate-800/70">
+                <div class="flex justify-end"><button type="button" class="raster-zoom text-[10px] px-2 py-1 rounded bg-slate-800 hover:bg-emerald-600 text-slate-200 transition">Zoom</button></div>
+                ${rangeControl('Opacity', 'raster-opacity', 0, 1, 0.05, opacity, `${Math.round(opacity * 100)}%`)}
+                ${rangeControl('Brightness Min', 'raster-brightness-min', 0, 1, 0.05, brightnessMin, brightnessMin.toFixed(2))}
+                ${rangeControl('Brightness Max', 'raster-brightness-max', 0, 1, 0.05, brightnessMax, brightnessMax.toFixed(2))}
+                ${rangeControl('Contrast', 'raster-contrast', -1, 1, 0.05, contrast, contrast.toFixed(2))}
+                ${rangeControl('Saturation', 'raster-saturation', -1, 1, 0.05, saturation, saturation.toFixed(2))}
+                ${rangeControl('Hue Rotate', 'raster-hue-rotate', 0, 360, 5, hueRotate, `${Math.round(hueRotate)}°`)}
+                ${renderRasterClassLegend(classes)}
+                <div class="grid grid-cols-2 gap-2 text-[10px] text-slate-500">
+                    <div>CRS: <span class="text-slate-300">${escapeRasterHtml(layer.crs || 'Unknown')}</span></div>
+                    <div>Size: <span class="text-slate-300">${Number(layer.raster_width || 0)} × ${Number(layer.raster_height || 0)}</span></div>
+                    <div>Min Zoom: <span class="text-slate-300">${Number(layer.min_zoom || 0)}</span></div>
+                    <div>Max Zoom: <span class="text-slate-300">${Number(layer.max_zoom || 22)}</span></div>
+                </div>
             </div>`;
+        const head = card.querySelector('.raster-accordion-head');
+        const body = card.querySelector('.raster-accordion-body');
+        const icon = card.querySelector('.raster-accordion-icon');
+        head.addEventListener('click', () => {
+            const hidden = body.classList.toggle('hidden');
+            icon.textContent = hidden ? '▶' : '▼';
+        });
         card.querySelector('.raster-visible').addEventListener('change', event => setRasterVisibility(layer, event.target.checked));
         bindRasterRange(card, '.raster-opacity', layer, 'opacity', value => setRasterOpacity(layer, value), value => `${Math.round(Number(value) * 100)}%`);
         bindRasterRange(card, '.raster-brightness-min', layer, 'brightnessMin', value => setRasterDisplayValue(layer, 'brightnessMin', value));
@@ -231,6 +246,17 @@ function renderRasterLayerControls(layers) {
         card.querySelector('.raster-zoom').addEventListener('click', () => zoomToRaster(layer));
         container.appendChild(card);
     });
+}
+
+function getRasterClasses(layer) {
+    const symbology = layer.symbology || {};
+    if ((symbology.mode !== 'classified' && layer.symbology_mode !== 'classified') || !Array.isArray(symbology.classes)) return [];
+    return symbology.classes.slice(0, 10);
+}
+
+function renderRasterClassLegend(classes) {
+    if (!classes.length) return '<div class="text-[10px] text-slate-500">No classified heat-map classes configured.</div>';
+    return `<div class="space-y-1 pt-2 border-t border-slate-800"><div class="text-[10px] uppercase tracking-wider font-bold text-slate-500">Classified Heat Map Legend</div>${classes.map(cls => `<div class="flex items-center justify-between gap-2 text-[10px]"><span class="flex items-center gap-2 min-w-0"><i class="h-3 w-5 rounded-sm border border-white/30 flex-shrink-0" style="background:${escapeRasterHtml(cls.color || '#cccccc')}"></i><span class="text-slate-300 truncate">${escapeRasterHtml(cls.label || `${cls.min} - ${cls.max}`)}</span></span><span class="text-slate-500 flex-shrink-0">${escapeRasterHtml(cls.min)}–${escapeRasterHtml(cls.max)}</span></div>`).join('')}</div>`;
 }
 
 function rangeControl(label, className, min, max, step, value, displayValue) {
