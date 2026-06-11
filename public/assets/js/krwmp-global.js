@@ -10,38 +10,33 @@ window.KRWMP_ENGINE = {
 
     initSession: async function () {
         try {
-            const response = await fetch('/api/auth/profile');
-            if (!response.ok) throw new Error(`Profile endpoint error code: ${response.status}`);
-            const data = await response.json();
-
-            if (data && data.success && data.user) {
-                this.Session.user = data.user;
-                this.Session.isAuthenticated = true;
-            } else {
-                throw new Error("Data payload invalid.");
-            }
-        } catch (error) {
             const cachedUser = localStorage.getItem('krwmp_user');
             if (cachedUser) {
                 this.Session.user = JSON.parse(cachedUser);
                 this.Session.isAuthenticated = true;
             } else {
-                this.Session.user = {
-                    name: "Kadampeswaran Thulasivarman",
-                    designation: "Town Planner & Development Consultant",
-                    initials: "KT",
-                    identifier: "thulasi",
-                    role_name: "admin",
-                    visible_sections: ["data_layers", "raster_layers", "user_management"]
-                };
+                this.Session.user = null;
                 this.Session.isAuthenticated = false;
             }
+        } catch (error) {
+            this.Session.user = null;
+            this.Session.isAuthenticated = false;
+            localStorage.removeItem('krwmp_user');
         }
         this.normalizeMasterAdminSession();
         this.syncProfileMetadata();
     },
 
+    requireAuthenticatedSession: function () {
+        if (!this.Session.isAuthenticated || !this.Session.user) {
+            window.location.replace('/login.html');
+            return false;
+        }
+        return true;
+    },
+
     normalizeMasterAdminSession: function () {
+        if (!this.Session.isAuthenticated || !this.Session.user) return;
         const profile = this.Session.user || {};
         const identifier = String(profile.identifier || profile.username || '').trim().toLowerCase();
         if (identifier === 'thulasi') {
@@ -54,6 +49,7 @@ window.KRWMP_ENGINE = {
 
     assembleInterfaceContext: async function (sidebarUrl = '/sidebar.html', sidebarContainerId = 'sidebar') {
         await this.initSession();
+        if (!this.requireAuthenticatedSession()) return;
         const sidebarContainer = document.getElementById(sidebarContainerId);
         if (!sidebarContainer) return;
 
@@ -153,7 +149,9 @@ window.KRWMP_ENGINE = {
 
     dispatchLogout: function () {
         localStorage.removeItem('krwmp_user');
-        window.location.href = '/login.html';
+        this.Session.user = null;
+        this.Session.isAuthenticated = false;
+        window.location.replace('/login.html');
     }
 };
 
