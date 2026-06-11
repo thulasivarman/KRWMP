@@ -1,6 +1,6 @@
 const pool = require('../../config/database');
 
-function parseFilters(query = {}) {
+function parseFilters(query = {}, dateColumn = 'updated_at') {
   const filters = [];
   const values = [];
   if (query.status) {
@@ -9,17 +9,17 @@ function parseFilters(query = {}) {
   }
   if (query.date_from) {
     values.push(query.date_from);
-    filters.push(`COALESCE(r.created_at, r.updated_at)::date >= $${values.length}`);
+    filters.push(`r.${dateColumn}::date >= $${values.length}`);
   }
   if (query.date_to) {
     values.push(query.date_to);
-    filters.push(`COALESCE(r.created_at, r.updated_at)::date <= $${values.length}`);
+    filters.push(`r.${dateColumn}::date <= $${values.length}`);
   }
   return { where: filters.length ? `WHERE ${filters.join(' AND ')}` : '', values };
 }
 
 async function communityComplaints(query = {}) {
-  const { where, values } = parseFilters(query);
+  const { where, values } = parseFilters(query, 'submitted_at');
   const summarySql = `
     SELECT COUNT(*)::int AS total,
       COUNT(*) FILTER (WHERE status = 'submitted')::int AS submitted,
@@ -31,13 +31,13 @@ async function communityComplaints(query = {}) {
   `;
   const rowsSql = `
     SELECT r.report_code, r.issue_title, r.description, r.status, r.severity_level,
-      r.latitude, r.longitude, r.submitted_at, r.created_at, r.updated_at,
+      r.latitude, r.longitude, r.submitted_at,
       c.category_name,
       NULL::text AS solution_title
     FROM public.community_issue_reports r
     LEFT JOIN public.issue_categories c ON c.id = r.category_id
     ${where}
-    ORDER BY COALESCE(r.created_at, r.updated_at) DESC
+    ORDER BY r.submitted_at DESC NULLS LAST
     LIMIT 500;
   `;
   const statusSql = `SELECT status, COUNT(*)::int AS count FROM public.community_issue_reports r ${where} GROUP BY status ORDER BY status;`;
@@ -49,7 +49,7 @@ async function communityComplaints(query = {}) {
 }
 
 async function interventions(query = {}) {
-  const { where, values } = parseFilters(query);
+  const { where, values } = parseFilters(query, 'updated_at');
   const summarySql = `
     SELECT COUNT(*)::int AS total,
       COUNT(*) FILTER (WHERE status = 'planned')::int AS planned,
