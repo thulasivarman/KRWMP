@@ -16,6 +16,10 @@ function loadOptionalScript(src) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    if (window.KRWMP_ENGINE) {
+        await window.KRWMP_ENGINE.initSession();
+    }
+
     if (window.loadLayerRegistry) {
         await window.loadLayerRegistry();
     }
