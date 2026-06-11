@@ -32,10 +32,10 @@ async function communityComplaints(query = {}) {
   const rowsSql = `
     SELECT r.report_code, r.issue_title, r.description, r.status, r.severity_level,
       r.latitude, r.longitude, r.submitted_at, r.created_at, r.updated_at,
-      c.category_name, s.solution_title
+      c.category_name,
+      NULL::text AS solution_title
     FROM public.community_issue_reports r
     LEFT JOIN public.issue_categories c ON c.id = r.category_id
-    LEFT JOIN public.issue_solutions s ON s.id = r.assigned_solution_id
     ${where}
     ORDER BY COALESCE(r.created_at, r.updated_at) DESC
     LIMIT 500;
