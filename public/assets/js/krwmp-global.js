@@ -97,6 +97,7 @@ window.KRWMP_ENGINE = {
         const currentPath = window.location.pathname;
         const isCurrentPageAdminWorkspace =
             currentPath.endsWith('admin.html') ||
+            currentPath.endsWith('admin-institutions.html') ||
             currentPath.endsWith('admin-vector-layers.html') ||
             currentPath.endsWith('admin-raster-layers.html');
 
