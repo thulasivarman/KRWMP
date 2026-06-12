@@ -1,8 +1,9 @@
 const communityService = require('../services/community-issues.service');
 const { requirePrivilegeInline } = require('../middleware/privilege.middleware');
+const { assertImageUpload } = require('../utils/upload-validation');
 
 function getAdminUser(request) {
-  return String(request.headers['x-krwmp-user'] || request.headers['x-user'] || 'admin').trim();
+  return String(request.headers['x-krwmp-user'] || request.headers['x-user'] || request.auth?.identifier || 'admin').trim();
 }
 
 async function communityIssueRoutes(fastify) {
@@ -25,10 +26,7 @@ async function communityIssueRoutes(fastify) {
   });
 
   fastify.get('/specific-issues', async (request) => {
-    const issues = await communityService.listSpecificIssues({
-      activeOnly: true,
-      categoryId: request.query?.category_id || null,
-    });
+    const issues = await communityService.listSpecificIssues({ activeOnly: true, categoryId: request.query?.category_id || null });
     return { success: true, issues };
   });
 
@@ -46,11 +44,7 @@ async function communityIssueRoutes(fastify) {
   });
 
   fastify.get('/solutions', async (request) => {
-    const solutions = await communityService.listSolutions({
-      activeOnly: true,
-      issueId: request.query?.issue_id || null,
-      categoryId: request.query?.category_id || null,
-    });
+    const solutions = await communityService.listSolutions({ activeOnly: true, issueId: request.query?.issue_id || null, categoryId: request.query?.category_id || null });
     return { success: true, solutions };
   });
 
@@ -73,7 +67,7 @@ async function communityIssueRoutes(fastify) {
     return { success: true, reports };
   });
 
-  fastify.post('/community-reports', async (request, reply) => {
+  fastify.post('/community-reports', { config: { rateLimit: { max: Number(process.env.PUBLIC_COMPLAINT_RATE_LIMIT || 20), timeWindow: '1 minute' } } }, async (request, reply) => {
     const contentType = String(request.headers['content-type'] || '');
     let report;
     if (contentType.includes('multipart/form-data')) {
@@ -83,13 +77,9 @@ async function communityIssueRoutes(fastify) {
       for await (const part of parts) {
         if (part.file && part.fieldname === 'photo') {
           const buffer = await part.toBuffer();
-          if (buffer.length > 0) {
-            photoFile = {
-              filename: part.filename,
-              mimetype: part.mimetype,
-              toBuffer: async () => buffer,
-            };
-          }
+          const fileMeta = { filename: part.filename, mimetype: part.mimetype, size: buffer.length };
+          assertImageUpload(fileMeta);
+          if (buffer.length > 0) photoFile = { ...fileMeta, toBuffer: async () => buffer };
         } else if (part.file) {
           await part.toBuffer();
         } else {
