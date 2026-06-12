@@ -51,13 +51,12 @@ WHERE NOT EXISTS (
   SELECT 1 FROM public.solution_issue_links sil WHERE sil.solution_id = s.id AND sil.issue_id = si.id
 );
 
--- Suggested initial categories and issues. Adjust as required.
+-- Suggested initial categories. Adjust as required.
 INSERT INTO public.issue_categories (category_key, category_name, description, severity_level, sort_order, active)
-VALUES
-  ('drainage', 'Drainage', 'Issues related to blocked drainage, stormwater flow and canal drainage.', 'medium', 10, true),
-  ('deforestation', 'Deforestation', 'Issues related to tree cutting, forest degradation and vegetation loss.', 'high', 20, true),
-  ('solid_waste', 'Solid Waste', 'Issues related to dumping, littering and poor waste management.', 'medium', 30, true),
-  ('water_pollution', 'Water Pollution', 'Issues related to wastewater discharge, chemical pollution and contaminated waterways.', 'high', 40, true)
+SELECT 'drainage', 'Drainage', 'Issues related to blocked drainage, stormwater flow and canal drainage.', 'medium', 10, true
+UNION ALL SELECT 'deforestation', 'Deforestation', 'Issues related to tree cutting, forest degradation and vegetation loss.', 'high', 20, true
+UNION ALL SELECT 'solid_waste', 'Solid Waste', 'Issues related to dumping, littering and poor waste management.', 'medium', 30, true
+UNION ALL SELECT 'water_pollution', 'Water Pollution', 'Issues related to wastewater discharge, chemical pollution and contaminated waterways.', 'high', 40, true
 ON CONFLICT (category_key) DO UPDATE SET
   category_name = EXCLUDED.category_name,
   description = EXCLUDED.description,
@@ -66,21 +65,21 @@ ON CONFLICT (category_key) DO UPDATE SET
   active = true,
   updated_at = now();
 
+-- Suggested initial specific issues. Dollar-quoted text avoids copy/paste quote corruption.
+WITH issue_seed AS (
+  SELECT $$drainage$$::text AS category_key, $$blocked_drainage$$::text AS issue_key, $$Blocked drainage$$::text AS issue_name, $$Blocked or poorly maintained drainage lines causing stagnation or flooding.$$::text AS description, $$medium$$::text AS severity_level, 10::integer AS sort_order
+  UNION ALL SELECT $$drainage$$, $$canal_siltation$$, $$Canal siltation$$, $$Sediment accumulation reducing canal flow capacity.$$, $$medium$$, 20
+  UNION ALL SELECT $$deforestation$$, $$illegal_tree_cutting$$, $$Illegal tree cutting$$, $$Unauthorized tree cutting or vegetation clearance.$$, $$high$$, 10
+  UNION ALL SELECT $$deforestation$$, $$riverbank_vegetation_loss$$, $$Riverbank vegetation loss$$, $$Loss of riparian vegetation along streams or riverbanks.$$, $$high$$, 20
+  UNION ALL SELECT $$solid_waste$$, $$open_dumping$$, $$Open dumping$$, $$Open dumping of mixed solid waste in public or environmentally sensitive areas.$$, $$medium$$, 10
+  UNION ALL SELECT $$solid_waste$$, $$garbage_thrown_into_canals$$, $$Garbage thrown into canals$$, $$Disposal of garbage into drainage canals, streams or waterways.$$, $$high$$, 20
+  UNION ALL SELECT $$water_pollution$$, $$wastewater_discharge$$, $$Wastewater discharge$$, $$Untreated wastewater discharge to stream, canal or river.$$, $$high$$, 10
+  UNION ALL SELECT $$water_pollution$$, $$chemical_pollution$$, $$Chemical pollution$$, $$Potential chemical or hazardous substance pollution affecting water bodies.$$, $$high$$, 20
+)
 INSERT INTO public.specific_issues (category_id, issue_key, issue_name, description, severity_level, sort_order, active, created_by)
-SELECT c.id, x.issue_key, x.issue_name, x.description, x.severity_level, x.sort_order, true, 'seed'
+SELECT c.id, s.issue_key, s.issue_name, s.description, s.severity_level, s.sort_order, true, 'seed'
 FROM public.issue_categories c
-JOIN (
-  VALUES
-    ('drainage', 'blocked_drainage', 'Blocked drainage', 'Blocked or poorly maintained drainage lines causing stagnation or flooding.', 'medium', 10),
-    ('drainage', 'canal_siltation', 'Canal siltation', 'Sediment accumulation reducing canal flow capacity.', 'medium', 20),
-    ('deforestation', 'illegal_tree_cutting', 'Illegal tree cutting', 'Unauthorized tree cutting or vegetation clearance.', 'high', 10),
-    ('deforestation', 'riverbank_vegetation_loss', 'Riverbank vegetation loss', 'Loss of riparian vegetation along streams or riverbanks.', 'high', 20),
-    ('solid_waste', 'open_dumping', 'Open dumping', 'Open dumping of mixed solid waste in public or environmentally sensitive areas.', 'medium', 10),
-    ('solid_waste', 'garbage_thrown_into_canals', 'Garbage thrown into canals', 'Disposal of garbage into drainage canals, streams or waterways.', 'high', 20),
-    ('water_pollution', 'wastewater_discharge', 'Wastewater discharge', 'Untreated wastewater discharge to stream, canal or river.', 'high', 10),
-    ('water_pollution', 'chemical_pollution', 'Chemical pollution', 'Potential chemical or hazardous substance pollution affecting water bodies.', 'high', 20)
-) AS x(category_key, issue_key, issue_name, description, severity_level, sort_order)
-  ON c.category_key = x.category_key
+JOIN issue_seed s ON c.category_key = s.category_key
 ON CONFLICT (category_id, issue_key) DO UPDATE SET
   issue_name = EXCLUDED.issue_name,
   description = EXCLUDED.description,
