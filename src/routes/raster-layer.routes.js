@@ -1,4 +1,5 @@
 const rasterLayerService = require('../services/raster-layer.service');
+const { requirePrivilegeInline } = require('../middleware/privilege.middleware');
 
 function getAdminUser(request) {
   return String(
@@ -29,17 +30,20 @@ function extractFields(fields = {}) {
 }
 
 async function rasterLayerRoutes(fastify) {
-  fastify.get('/raster-layers', async () => {
+  fastify.get('/raster-layers', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'raster_layers', 'view')) return;
     const layers = await rasterLayerService.listRasterLayers({ activeOnly: true });
     return { success: true, layers };
   });
 
-  fastify.get('/raster-layers/admin', async () => {
+  fastify.get('/raster-layers/admin', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'raster_layers', 'view')) return;
     const layers = await rasterLayerService.listRasterLayers({ activeOnly: false });
     return { success: true, layers };
   });
 
   fastify.post('/raster-layers/upload', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'raster_layers', 'create')) return;
     const data = await request.file();
 
     if (!data) {
@@ -65,6 +69,7 @@ async function rasterLayerRoutes(fastify) {
   });
 
   fastify.post('/raster-layers/:id/process', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'raster_layers', 'update')) return;
     const result = await rasterLayerService.processRasterLayerForTiles(request.params.id, request.body || {});
 
     if (!result) {
@@ -79,6 +84,7 @@ async function rasterLayerRoutes(fastify) {
   });
 
   fastify.put('/raster-layers/:id', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'raster_layers', 'update')) return;
     const layer = await rasterLayerService.updateRasterLayer(request.params.id, request.body || {});
 
     if (!layer) {
@@ -89,6 +95,7 @@ async function rasterLayerRoutes(fastify) {
   });
 
   fastify.delete('/raster-layers/:id', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'raster_layers', 'delete')) return;
     const deleted = await rasterLayerService.deleteRasterLayer(request.params.id, getAdminUser(request));
 
     if (!deleted) {
