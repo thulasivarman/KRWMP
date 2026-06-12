@@ -82,8 +82,20 @@ async function communityIssueRoutes(fastify) {
       const fields = {};
       let photoFile = null;
       for await (const part of parts) {
-        if (part.file && part.fieldname === 'photo') photoFile = part;
-        else if (!part.file) fields[part.fieldname] = part.value;
+        if (part.file && part.fieldname === 'photo') {
+          const buffer = await part.toBuffer();
+          if (buffer.length > 0) {
+            photoFile = {
+              filename: part.filename,
+              mimetype: part.mimetype,
+              toBuffer: async () => buffer,
+            };
+          }
+        } else if (part.file) {
+          await part.toBuffer();
+        } else {
+          fields[part.fieldname] = part.value;
+        }
       }
       report = await communityService.createPublicReport({ fields, photoFile });
     } else {
