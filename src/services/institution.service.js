@@ -122,9 +122,10 @@ async function createInstitution(payload, username) {
        website, address, district, dsd_name, gnd_name, description, latitude, longitude, geom,
        active, created_by, updated_by)
     VALUES
-      ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,
-       ST_SetSRID(ST_MakePoint($14::double precision, $13::double precision), 4326),
-       $15,$16,$16)
+      ($1::text,$2::varchar,$3::text,$4::text,$5::text,$6::text,$7::text,$8::text,$9::varchar,$10::varchar,$11::varchar,$12::text,
+       $13::numeric,$14::numeric,
+       ST_SetSRID(ST_MakePoint(($14::numeric)::double precision, ($13::numeric)::double precision), 4326),
+       $15::boolean,$16::text,$16::text)
     RETURNING *;
   `, [
     body.institution_name, body.institution_code, body.institution_type, body.contact_person, body.contact_phone,
@@ -138,25 +139,25 @@ async function updateInstitution(id, payload, username) {
   const body = validateInstitutionPayload(payload, true);
   const result = await pool.query(`
     UPDATE public.intervention_institutions SET
-      institution_name = COALESCE($2, institution_name),
-      institution_code = $3,
-      institution_type = COALESCE($4, institution_type),
-      contact_person = $5,
-      contact_phone = $6,
-      contact_email = $7,
-      website = $8,
-      address = $9,
-      district = $10,
-      dsd_name = $11,
-      gnd_name = $12,
-      description = $13,
-      latitude = $14,
-      longitude = $15,
-      geom = CASE WHEN $14::double precision IS NOT NULL AND $15::double precision IS NOT NULL THEN ST_SetSRID(ST_MakePoint($15::double precision, $14::double precision), 4326) ELSE NULL END,
-      active = $16,
-      updated_by = $17,
+      institution_name = COALESCE($2::text, institution_name),
+      institution_code = $3::varchar,
+      institution_type = COALESCE($4::text, institution_type),
+      contact_person = $5::text,
+      contact_phone = $6::text,
+      contact_email = $7::text,
+      website = $8::text,
+      address = $9::text,
+      district = $10::varchar,
+      dsd_name = $11::varchar,
+      gnd_name = $12::varchar,
+      description = $13::text,
+      latitude = $14::numeric,
+      longitude = $15::numeric,
+      geom = CASE WHEN $14::numeric IS NOT NULL AND $15::numeric IS NOT NULL THEN ST_SetSRID(ST_MakePoint(($15::numeric)::double precision, ($14::numeric)::double precision), 4326) ELSE NULL END,
+      active = $16::boolean,
+      updated_by = $17::text,
       updated_at = now()
-    WHERE id = $1
+    WHERE id = $1::bigint
     RETURNING *;
   `, [
     id, body.institution_name, body.institution_code, body.institution_type, body.contact_person, body.contact_phone,
