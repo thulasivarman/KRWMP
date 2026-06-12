@@ -117,10 +117,84 @@ async function savePrivilege(data) {
   return result.rows[0];
 }
 
+async function listAvailablePrivilegeKeys() {
+  const result = await pool.query(`
+    SELECT privilege_key,
+           COALESCE(MIN(privilege_name), INITCAP(REPLACE(privilege_key, '_', ' '))) AS privilege_name
+    FROM public.role_privileges
+    GROUP BY privilege_key
+    ORDER BY privilege_key ASC;
+  `);
+
+  const defaults = [
+    ['admin', 'Administration'],
+    ['user_management_settings', 'User Management and System Settings'],
+    ['map_view', 'Map View'],
+    ['vector_layers', 'Vector Layer Management'],
+    ['raster_layers', 'Raster Layer Management'],
+    ['community_issue_submit', 'Community Issue Submission'],
+    ['community_issues_review', 'Community Issue Review'],
+    ['community_issue_intervention_mapping', 'Community Issue Intervention Mapping'],
+    ['vwmc_management', 'VWMC Management'],
+    ['intervention_registry', 'Intervention Registry'],
+    ['institution_management', 'Institution Management'],
+    ['reports_module', 'Reports Module'],
+  ];
+
+  const byKey = new Map(result.rows.map(row => [row.privilege_key, row]));
+  defaults.forEach(([privilege_key, privilege_name]) => {
+    if (!byKey.has(privilege_key)) byKey.set(privilege_key, { privilege_key, privilege_name });
+  });
+
+  return Array.from(byKey.values()).sort((a, b) => a.privilege_key.localeCompare(b.privilege_key));
+}
+
+async function getRolePrivilegeMatrix() {
+  const roles = await pool.query('SELECT id, role_name, description FROM public.roles ORDER BY role_name ASC;');
+  const privileges = await pool.query('SELECT * FROM public.role_privileges ORDER BY role_id ASC, privilege_key ASC;');
+  const availableKeys = await listAvailablePrivilegeKeys();
+  return { roles: roles.rows, privileges: privileges.rows, availableKeys };
+}
+
+async function saveRolePrivilegeMatrix(data = {}) {
+  const roleId = parseInt(data.role_id, 10);
+  const privileges = Array.isArray(data.privileges) ? data.privileges : [];
+  if (!Number.isFinite(roleId)) throw new Error('Valid role_id is required.');
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    for (const item of privileges) {
+      if (!item.privilege_key) continue;
+      await client.query(`
+        INSERT INTO public.role_privileges (role_id, privilege_key, privilege_name, can_view, can_create, can_update, can_delete)
+        VALUES ($1,$2,$3,$4,$5,$6,$7)
+        ON CONFLICT (role_id, privilege_key)
+        DO UPDATE SET privilege_name=EXCLUDED.privilege_name, can_view=EXCLUDED.can_view, can_create=EXCLUDED.can_create, can_update=EXCLUDED.can_update, can_delete=EXCLUDED.can_delete, updated_at=now();
+      `, [
+        roleId,
+        String(item.privilege_key).trim(),
+        String(item.privilege_name || item.privilege_key).trim(),
+        !!item.can_view,
+        !!item.can_create,
+        !!item.can_update,
+        !!item.can_delete,
+      ]);
+    }
+    await client.query('COMMIT');
+    return { success: true, saved: privileges.length };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function resetPassword(data) {
   const { targetUserIdentifier, newPassword } = data;
   const passwordHash = await bcrypt.hash(newPassword.trim(), 10);
   await pool.query(`UPDATE public.users SET password_hash = $1 WHERE identifier = $2`, [passwordHash, targetUserIdentifier.trim().toLowerCase()]);
 }
 
-module.exports = { getUsers, registerUser, updateUser, deleteUser, assignRole, createRole, updateRole, deleteRole, savePrivilege, resetPassword };
+module.exports = { getUsers, registerUser, updateUser, deleteUser, assignRole, createRole, updateRole, deleteRole, savePrivilege, getRolePrivilegeMatrix, saveRolePrivilegeMatrix, resetPassword };
