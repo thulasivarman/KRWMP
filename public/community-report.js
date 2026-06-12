@@ -183,6 +183,38 @@ function initializeLocationPicker() {
   });
 }
 
+function buildJsonPayload() {
+  const formData = new FormData(form);
+  const payload = {};
+  for (const [key, value] of formData.entries()) {
+    if (value instanceof File) continue;
+    payload[key] = value === '' ? null : value;
+  }
+  return payload;
+}
+
+function getSelectedPhoto() {
+  const input = form.querySelector('input[name="photo"]');
+  const file = input?.files?.[0] || null;
+  return file && file.size > 0 ? file : null;
+}
+
+async function submitCommunityReport() {
+  const selectedPhoto = getSelectedPhoto();
+  if (!selectedPhoto) {
+    return json('/api/community-reports', {
+      method: 'POST',
+      headers: requestHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(buildJsonPayload()),
+    });
+  }
+
+  return json('/api/community-reports', {
+    method: 'POST',
+    body: new FormData(form),
+  });
+}
+
 categorySelect.addEventListener('change', async () => {
   try {
     await loadSpecificIssues(categorySelect.value);
@@ -207,9 +239,14 @@ form.addEventListener('submit', async event => {
     return;
   }
 
-  const formData = new FormData(form);
+  const submitButton = form.querySelector('button[type="submit"]');
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = 'Submitting...';
+  }
+
   try {
-    const data = await json('/api/community-reports', { method: 'POST', body: formData });
+    const data = await submitCommunityReport();
     form.reset();
     resetDetectedLocation();
     resetSelect(specificIssueSelect, 'Select category first', true);
@@ -219,6 +256,11 @@ form.addEventListener('submit', async event => {
     showStatus(`Issue submitted successfully. Reference: ${data.report.report_code}`);
   } catch (error) {
     showStatus(error.message, true);
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = 'Submit Issue Report';
+    }
   }
 });
 
