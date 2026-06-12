@@ -43,6 +43,16 @@ async function adminRoutes(fastify) {
     return reply.status(201).send({ success: true, privilege });
   });
 
+  fastify.get('/admin/role-privileges/matrix', async () => {
+    const matrix = await adminService.getRolePrivilegeMatrix();
+    return { success: true, ...matrix };
+  });
+
+  fastify.post('/admin/role-privileges/matrix', async (request) => {
+    const result = await adminService.saveRolePrivilegeMatrix(request.body || {});
+    return { success: true, message: 'Role privileges saved successfully', ...result };
+  });
+
   fastify.post('/admin/reset-password', async (request) => {
     await adminService.resetPassword(request.body);
     return { success: true, message: 'Password reset successfully' };
