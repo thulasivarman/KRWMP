@@ -3,8 +3,9 @@ class KRWMPLocationPicker {
     this.containerId = options.containerId;
     this.latitudeInput = document.querySelector(options.latitudeInput);
     this.longitudeInput = document.querySelector(options.longitudeInput);
-    this.initialCenter = options.initialCenter || [80.214, 6.935];
-    this.initialZoom = options.initialZoom || 9;
+    this.initialCenter = options.initialCenter || [80.2280810, 7.2334995];
+    this.initialZoom = options.initialZoom || 11;
+    this.onChange = typeof options.onChange === 'function' ? options.onChange : null;
     this.map = null;
     this.marker = null;
     this.statusElement = null;
@@ -57,7 +58,8 @@ class KRWMPLocationPicker {
     this.marker.setLngLat([lng, lat]);
     this.marker.getElement().style.display = 'block';
     if (fly) this.map.flyTo({ center: [lng, lat], zoom: Math.max(this.map.getZoom(), 13), essential: true });
-    this.setStatus(`Selected: ${fixedLat}, ${fixedLng}`);
+    this.setStatus('Selected: ' + fixedLat + ', ' + fixedLng);
+    if (this.onChange) this.onChange({ latitude: Number(fixedLat), longitude: Number(fixedLng) });
   }
 
   useBrowserLocation() {
@@ -75,12 +77,13 @@ class KRWMPLocationPicker {
     if (this.longitudeInput) this.longitudeInput.value = '';
     if (this.marker) this.marker.getElement().style.display = 'none';
     this.setStatus('Location cleared. Click the map to select a point.');
+    if (this.onChange) this.onChange({ latitude: null, longitude: null, cleared: true });
   }
 
   setStatus(message, error = false) {
     if (!this.statusElement) return;
     this.statusElement.textContent = message;
-    this.statusElement.className = `text-xs mt-2 ${error ? 'text-rose-300' : 'text-slate-400'}`;
+    this.statusElement.className = 'text-xs mt-2 ' + (error ? 'text-rose-300' : 'text-slate-400');
   }
 
   refresh() {
