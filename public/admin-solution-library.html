@@ -72,16 +72,19 @@
           <div class="flex items-center justify-between gap-3 mb-4">
             <div>
               <h2 class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Issue Structure</h2>
-              <p class="text-xs text-slate-500 mt-1">Categories with specific issues grouped below.</p>
+              <p class="text-xs text-slate-500 mt-1">Categories with specific issues grouped below. Click a category to expand.</p>
             </div>
             <button id="refreshBtn" class="bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded text-xs font-bold">Refresh</button>
           </div>
-          <div id="categoryIssueList" class="space-y-4"></div>
+          <div id="categoryIssueList" class="space-y-3"></div>
+          <div id="issuePagination" class="mt-4"></div>
         </section>
 
         <section class="bg-slate-900 border border-slate-800 rounded-xl p-5">
-          <h2 class="text-xs uppercase tracking-widest text-emerald-400 font-bold mb-4">Solution Records</h2>
-          <div id="solutionList" class="space-y-4"></div>
+          <h2 class="text-xs uppercase tracking-widest text-emerald-400 font-bold mb-1">Solution Records</h2>
+          <p class="text-xs text-slate-500 mb-4">Click a solution title to view details and linked issues.</p>
+          <div id="solutionList" class="space-y-3"></div>
+          <div id="solutionPagination" class="mt-4"></div>
         </section>
       </section>
     </main>
