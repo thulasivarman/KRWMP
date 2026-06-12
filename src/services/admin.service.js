@@ -1,6 +1,23 @@
 const bcrypt = require('bcryptjs');
 const pool = require('../../config/database');
 
+const ENFORCED_PRIVILEGE_KEYS = [
+  { privilege_key: 'user_management_settings', privilege_name: 'User Management & System Settings', group_name: 'Administration', description: 'Manage users, roles, passwords and privilege groups.' },
+  { privilege_key: 'map_view', privilege_name: 'Map & Spatial Boundary Access', group_name: 'Maps & Spatial Data', description: 'View protected map layers and full spatial boundary downloads.' },
+  { privilege_key: 'vector_layers', privilege_name: 'Vector Layer Management', group_name: 'Maps & Spatial Data', description: 'Manage uploaded vector layers and vector layer styles.' },
+  { privilege_key: 'raster_layers', privilege_name: 'Raster Layer Management', group_name: 'Maps & Spatial Data', description: 'Manage raster layers, uploads, processing and styles.' },
+  { privilege_key: 'community_issues_review', privilege_name: 'Community Issue Review', group_name: 'Community Participation', description: 'Review complaints, manage issue categories, specific issues and solution library records.' },
+  { privilege_key: 'community_issue_intervention_mapping', privilege_name: 'Complaint–Intervention Mapping', group_name: 'Community Participation', description: 'Link community complaints to planned or active interventions.' },
+  { privilege_key: 'vwmc_view', privilege_name: 'VWMC View', group_name: 'VWMC', description: 'View VWMC records and VWMC administrative lookups.' },
+  { privilege_key: 'vwmc_management', privilege_name: 'VWMC Management', group_name: 'VWMC', description: 'Create, update and remove VWMC committees and members.' },
+  { privilege_key: 'intervention_registry_view', privilege_name: 'Intervention Registry View', group_name: 'Interventions', description: 'View intervention registry records and intervention lookups.' },
+  { privilege_key: 'intervention_registry_manage', privilege_name: 'Intervention Registry Management', group_name: 'Interventions', description: 'Create, update and delete intervention registry records and officers.' },
+  { privilege_key: 'intervention_library_manage', privilege_name: 'Intervention Library Management', group_name: 'Interventions', description: 'View and maintain the predefined intervention library.' },
+  { privilege_key: 'intervention_progress_update', privilege_name: 'Intervention Progress Updates', group_name: 'Interventions', description: 'Add progress timeline entries for interventions.' },
+  { privilege_key: 'institution_management', privilege_name: 'Institution Management', group_name: 'Institutions', description: 'Manage institutions, contacts and institutional lookups.' },
+  { privilege_key: 'reports_export', privilege_name: 'Reports Export', group_name: 'Reports', description: 'View and export analytical reports.' },
+];
+
 async function getUsers() {
   const usersQuery = `
     SELECT 
@@ -118,54 +135,28 @@ async function savePrivilege(data) {
 }
 
 async function listAvailablePrivilegeKeys() {
-  const result = await pool.query(`
-    SELECT privilege_key,
-           COALESCE(MIN(privilege_name), INITCAP(REPLACE(privilege_key, '_', ' '))) AS privilege_name
-    FROM public.role_privileges
-    GROUP BY privilege_key
-    ORDER BY privilege_key ASC;
-  `);
-
-  const defaults = [
-    ['admin', 'Administration'],
-    ['user_management_settings', 'User Management and System Settings'],
-    ['map_view', 'Map View'],
-    ['vector_layers', 'Vector Layer Management'],
-    ['raster_layers', 'Raster Layer Management'],
-    ['community_issue_submit', 'Community Issue Submission'],
-    ['community_issues_review', 'Community Issue Review'],
-    ['community_issue_intervention_mapping', 'Community Issue Intervention Mapping'],
-    ['vwmc_management', 'VWMC Management'],
-    ['intervention_registry', 'Intervention Registry'],
-    ['institution_management', 'Institution Management'],
-    ['reports_module', 'Reports Module'],
-  ];
-
-  const byKey = new Map(result.rows.map(row => [row.privilege_key, row]));
-  defaults.forEach(([privilege_key, privilege_name]) => {
-    if (!byKey.has(privilege_key)) byKey.set(privilege_key, { privilege_key, privilege_name });
-  });
-
-  return Array.from(byKey.values()).sort((a, b) => a.privilege_key.localeCompare(b.privilege_key));
+  return ENFORCED_PRIVILEGE_KEYS;
 }
 
 async function getRolePrivilegeMatrix() {
+  const allowedKeys = ENFORCED_PRIVILEGE_KEYS.map(item => item.privilege_key);
   const roles = await pool.query('SELECT id, role_name, description FROM public.roles ORDER BY role_name ASC;');
-  const privileges = await pool.query('SELECT * FROM public.role_privileges ORDER BY role_id ASC, privilege_key ASC;');
+  const privileges = await pool.query('SELECT * FROM public.role_privileges WHERE privilege_key = ANY($1::text[]) ORDER BY role_id ASC, privilege_key ASC;', [allowedKeys]);
   const availableKeys = await listAvailablePrivilegeKeys();
   return { roles: roles.rows, privileges: privileges.rows, availableKeys };
 }
 
 async function saveRolePrivilegeMatrix(data = {}) {
   const roleId = parseInt(data.role_id, 10);
-  const privileges = Array.isArray(data.privileges) ? data.privileges : [];
+  const allowedKeys = new Map(ENFORCED_PRIVILEGE_KEYS.map(item => [item.privilege_key, item]));
+  const privileges = Array.isArray(data.privileges) ? data.privileges.filter(item => allowedKeys.has(item.privilege_key)) : [];
   if (!Number.isFinite(roleId)) throw new Error('Valid role_id is required.');
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     for (const item of privileges) {
-      if (!item.privilege_key) continue;
+      const meta = allowedKeys.get(item.privilege_key);
       await client.query(`
         INSERT INTO public.role_privileges (role_id, privilege_key, privilege_name, can_view, can_create, can_update, can_delete)
         VALUES ($1,$2,$3,$4,$5,$6,$7)
@@ -173,8 +164,8 @@ async function saveRolePrivilegeMatrix(data = {}) {
         DO UPDATE SET privilege_name=EXCLUDED.privilege_name, can_view=EXCLUDED.can_view, can_create=EXCLUDED.can_create, can_update=EXCLUDED.can_update, can_delete=EXCLUDED.can_delete, updated_at=now();
       `, [
         roleId,
-        String(item.privilege_key).trim(),
-        String(item.privilege_name || item.privilege_key).trim(),
+        meta.privilege_key,
+        meta.privilege_name,
         !!item.can_view,
         !!item.can_create,
         !!item.can_update,
