@@ -1,4 +1,5 @@
 const vectorLayerDbService = require('../services/vector-layer-db.service');
+const { requirePrivilegeInline } = require('../middleware/privilege.middleware');
 
 function getAdminUser(request) {
   return String(
@@ -15,7 +16,8 @@ function getFieldValue(fields, fieldName) {
 }
 
 async function vectorLayerRoutes(fastify) {
-  fastify.get('/vector-layers', async () => {
+  fastify.get('/vector-layers', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'vector_layers', 'view')) return;
     const layers = await vectorLayerDbService.listManagedLayers();
 
     return {
@@ -26,6 +28,7 @@ async function vectorLayerRoutes(fastify) {
   });
 
   fastify.post('/vector-layers/upload', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'vector_layers', 'create')) return;
     const data = await request.file();
 
     if (!data) {
@@ -76,6 +79,7 @@ async function vectorLayerRoutes(fastify) {
   });
 
   fastify.put('/vector-layers/:id/style', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'vector_layers', 'update')) return;
     const layer = await vectorLayerDbService.updateManagedLayerStyle(
       request.params.id,
       request.body || {}
@@ -96,6 +100,7 @@ async function vectorLayerRoutes(fastify) {
   });
 
   fastify.delete('/vector-layers/:id', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'vector_layers', 'delete')) return;
     const deleted = await vectorLayerDbService.deleteManagedLayer(
       request.params.id,
       getAdminUser(request)
