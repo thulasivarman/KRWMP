@@ -9,8 +9,14 @@ fastify.register(require('@fastify/static'), {
   prefix: '/',
 });
 
-fastify.register(require('@fastify/compress'), {
+fastify.register(require('@fastify/compress'), { global: true });
+
+fastify.register(require('@fastify/rate-limit'), {
   global: true,
+  max: Number(process.env.RATE_LIMIT_MAX || 300),
+  timeWindow: process.env.RATE_LIMIT_WINDOW || '1 minute',
+  allowList: (request) => String(request.ip || '').startsWith('127.0.0.1'),
+  errorResponseBuilder: () => ({ success: false, message: 'Too many requests. Please try again shortly.' }),
 });
 
 fastify.register(require('@fastify/multipart'), {
@@ -36,26 +42,17 @@ fastify.register(require('./routes/community-issue-interventions.routes'), { pre
 
 fastify.setErrorHandler((error, request, reply) => {
   fastify.log.error(error);
-  reply.status(error.statusCode || 500).send({
-    success: false,
-    message: error.message || 'Server error',
-  });
+  reply.status(error.statusCode || 500).send({ success: false, message: error.message || 'Server error' });
 });
 
 fastify.setNotFoundHandler((request, reply) => {
   if (request.url.startsWith('/api/')) {
-    return reply.status(404).send({
-      success: false,
-      message: 'API endpoint not found',
-    });
+    return reply.status(404).send({ success: false, message: 'API endpoint not found' });
   }
-
   return reply.sendFile('map.html');
 });
 
-fastify.addHook('onClose', async () => {
-  await pool.end();
-});
+fastify.addHook('onClose', async () => { await pool.end(); });
 
 const start = async () => {
   try {
