@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Privilege Group Management - KRWMP Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div class="flex min-h-screen">
+    <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
+    <main class="flex-1 p-8 space-y-6 max-w-7xl mx-auto w-full">
+      <header class="border-b border-slate-800 pb-4 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+        <div>
+          <p class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Administration</p>
+          <h1 class="text-2xl font-bold mt-2">User Privilege Group Management</h1>
+          <p class="text-sm text-slate-400 mt-1">Select a user group and manage all available privilege keys using View, Add, Edit, and Delete permissions.</p>
+        </div>
+        <a href="/admin.html" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded text-sm font-bold self-start lg:self-auto">Back to Admin</a>
+      </header>
+
+      <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
+
+      <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-end">
+          <label class="text-sm font-semibold lg:col-span-2">User Group / Role
+            <select id="roleSelect" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" required>
+              <option value="">Loading user groups...</option>
+            </select>
+          </label>
+          <div class="flex gap-2">
+            <button id="selectAllViewBtn" type="button" class="bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded text-sm font-bold">View All</button>
+            <button id="clearAllBtn" type="button" class="bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded text-sm font-bold">Clear All</button>
+            <button id="saveBtn" type="button" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-sm font-bold">Save</button>
+          </div>
+        </div>
+        <div id="roleDescription" class="text-xs text-slate-500"></div>
+      </section>
+
+      <section class="space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <h2 class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Available Privilege Keys</h2>
+          <input id="searchInput" type="search" class="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm md:w-80" placeholder="Search privilege key or name">
+        </div>
+        <div id="privilegeGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+      </section>
+    </main>
+  </div>
+  <script src="/assets/js/krwmp-global.js"></script>
+  <script src="/privilege-group-management.js"></script>
+</body>
+</html>
