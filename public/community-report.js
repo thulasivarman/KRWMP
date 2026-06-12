@@ -19,6 +19,23 @@ let currentSpecificIssues = [];
 let currentSolutions = [];
 let locationPicker = null;
 
+function currentUser() {
+  try {
+    return JSON.parse(localStorage.getItem('krwmp_user') || 'null') || {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function requestHeaders(extra = {}) {
+  const user = currentUser();
+  return {
+    ...extra,
+    'X-KRWMP-User': user.identifier || user.username || user.name || 'public',
+    'X-KRWMP-Role': user.role_name || user.role || '',
+  };
+}
+
 async function initializeCommunityReportSidebar() {
   if (window.KRWMP_ENGINE) {
     await window.KRWMP_ENGINE.assembleInterfaceContext('/sidebar.html', 'sidebar');
@@ -35,6 +52,7 @@ function showStatus(message, error = false) {
 }
 
 async function json(url, options = {}) {
+  options.headers = requestHeaders(options.headers || {});
   const response = await fetch(url, options);
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data.success === false) throw new Error(data.message || 'Request failed');
@@ -101,11 +119,7 @@ async function loadApplicableSolutions(categoryId, issueId) {
 
 function syncIssueTitle() {
   const selected = currentSpecificIssues.find(issue => String(issue.id) === String(specificIssueSelect.value));
-  if (selected && !issueTitleInput.value.trim()) {
-    issueTitleInput.value = selected.issue_name;
-  } else if (selected) {
-    issueTitleInput.value = selected.issue_name;
-  }
+  if (selected) issueTitleInput.value = selected.issue_name;
 }
 
 function resetDetectedLocation() {
