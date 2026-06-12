@@ -24,21 +24,12 @@ class KRWMPLocationPicker {
     const hasPoint = Number.isFinite(lat) && Number.isFinite(lng);
     const center = hasPoint ? [lng, lat] : this.initialCenter;
 
-    this.map = new maplibregl.Map({
-      container: mapNode,
-      style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-      center,
-      zoom: hasPoint ? 13 : this.initialZoom
-    });
+    this.map = new maplibregl.Map({ container: mapNode, style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json', center, zoom: hasPoint ? 13 : this.initialZoom });
     this.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
     this.marker = new maplibregl.Marker({ draggable: true, color: '#059669' }).setLngLat(center).addTo(this.map);
     if (!hasPoint) this.marker.getElement().style.display = 'none';
-
     this.map.on('click', event => this.setLocation(event.lngLat.lat, event.lngLat.lng, true));
-    this.marker.on('dragend', () => {
-      const p = this.marker.getLngLat();
-      this.setLocation(p.lat, p.lng, false);
-    });
+    this.marker.on('dragend', () => { const p = this.marker.getLngLat(); this.setLocation(p.lat, p.lng, false); });
     gpsButton?.addEventListener('click', () => this.useBrowserLocation());
     clearButton?.addEventListener('click', () => this.clear());
     setTimeout(() => this.map.resize(), 250);
@@ -47,10 +38,7 @@ class KRWMPLocationPicker {
   setLocation(latitude, longitude, fly = true) {
     const lat = Number(latitude);
     const lng = Number(longitude);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-      this.setStatus('Invalid map location.', true);
-      return;
-    }
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) { this.setStatus('Invalid map location.', true); return; }
     const fixedLat = lat.toFixed(7);
     const fixedLng = lng.toFixed(7);
     if (this.latitudeInput) this.latitudeInput.value = fixedLat;
@@ -65,11 +53,7 @@ class KRWMPLocationPicker {
   useBrowserLocation() {
     if (!navigator.geolocation) return this.setStatus('Browser location is not available.', true);
     this.setStatus('Reading browser location...');
-    navigator.geolocation.getCurrentPosition(
-      p => this.setLocation(p.coords.latitude, p.coords.longitude, true),
-      () => this.setStatus('Unable to read browser location. Click the map instead.', true),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
+    navigator.geolocation.getCurrentPosition(p => this.setLocation(p.coords.latitude, p.coords.longitude, true), () => this.setStatus('Unable to read browser location. Click the map instead.', true), { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
   }
 
   clear() {
@@ -86,9 +70,18 @@ class KRWMPLocationPicker {
     this.statusElement.className = 'text-xs mt-2 ' + (error ? 'text-rose-300' : 'text-slate-400');
   }
 
-  refresh() {
-    if (this.map) setTimeout(() => this.map.resize(), 150);
-  }
+  refresh() { if (this.map) setTimeout(() => this.map.resize(), 150); }
 }
 
+function hideVWMCManualSpatialFields() {
+  if (!window.location.pathname.endsWith('/vwmc-management.html')) return;
+  ['dsd_name', 'gnd_name', 'latitude', 'longitude'].forEach(name => {
+    const field = document.querySelector('[name="' + name + '"]');
+    if (!field) return;
+    const wrapper = field.closest('label') || field;
+    wrapper.classList.add('hidden');
+  });
+}
+
+document.addEventListener('DOMContentLoaded', hideVWMCManualSpatialFields);
 window.KRWMPLocationPicker = KRWMPLocationPicker;
