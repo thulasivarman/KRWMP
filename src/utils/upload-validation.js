@@ -2,7 +2,7 @@ const path = require('path');
 
 const IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const GEOJSON_MIME_TYPES = new Set(['application/json', 'application/geo+json', 'application/octet-stream']);
-const RASTER_MIME_TYPES = new Set(['image/tiff', 'image/geotiff', 'application/octet-stream']);
+const RASTER_MIME_TYPES = new Set(['image/tiff', 'image/geotiff', 'image/png', 'image/jpeg', 'application/octet-stream']);
 
 function extension(filename = '') {
   return path.extname(String(filename)).toLowerCase();
@@ -40,7 +40,7 @@ function assertRasterUpload(file) {
   const ext = extension(file.filename);
   const mimetype = String(file.mimetype || '').toLowerCase();
   if (!['.tif', '.tiff', '.png', '.jpg', '.jpeg'].includes(ext) || !RASTER_MIME_TYPES.has(mimetype)) {
-    const error = new Error('Invalid raster upload. Only TIFF/GeoTIFF and supported raster image files are allowed.');
+    const error = new Error('Invalid raster upload. Only TIFF/GeoTIFF, PNG and JPEG raster files are allowed.');
     error.statusCode = 400;
     throw error;
   }
