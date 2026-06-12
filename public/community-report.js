@@ -1,6 +1,23 @@
 const statusBox = document.getElementById('statusBox');
 const form = document.getElementById('communityReportForm');
 const categorySelect = document.getElementById('categorySelect');
+const specificIssueSelect = document.getElementById('specificIssueSelect');
+const solutionSelect = document.getElementById('solutionSelect');
+const issueTitleInput = document.getElementById('issueTitleInput');
+const latitudeInput = document.getElementById('latitudeInput');
+const longitudeInput = document.getElementById('longitudeInput');
+const dsdNameInput = document.getElementById('dsdNameInput');
+const gndNameInput = document.getElementById('gndNameInput');
+const subWatershedIdInput = document.getElementById('subWatershedIdInput');
+const subWatershedNameInput = document.getElementById('subWatershedNameInput');
+const latDisplay = document.getElementById('latDisplay');
+const lngDisplay = document.getElementById('lngDisplay');
+const adminBoundaryDisplay = document.getElementById('adminBoundaryDisplay');
+const subWatershedDisplay = document.getElementById('subWatershedDisplay');
+
+let currentSpecificIssues = [];
+let currentSolutions = [];
+let locationPicker = null;
 
 async function initializeCommunityReportSidebar() {
   if (window.KRWMP_ENGINE) {
@@ -17,9 +34,20 @@ function showStatus(message, error = false) {
   statusBox.classList.remove('hidden');
 }
 
+async function json(url, options = {}) {
+  const response = await fetch(url, options);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.success === false) throw new Error(data.message || 'Request failed');
+  return data;
+}
+
+function resetSelect(select, placeholder, disabled = true) {
+  select.innerHTML = `<option value="">${placeholder}</option>`;
+  select.disabled = disabled;
+}
+
 async function loadCategories() {
-  const response = await fetch('/api/issue-categories');
-  const data = await response.json();
+  const data = await json('/api/issue-categories');
   categorySelect.innerHTML = '<option value="">Select issue category</option>';
   (data.categories || []).forEach(category => {
     const option = document.createElement('option');
@@ -29,23 +57,150 @@ async function loadCategories() {
   });
 }
 
-document.getElementById('useLocationBtn').addEventListener('click', () => {
-  if (!navigator.geolocation) return showStatus('Geolocation is not available in this browser.', true);
-  navigator.geolocation.getCurrentPosition(position => {
-    document.getElementById('latitudeInput').value = position.coords.latitude.toFixed(7);
-    document.getElementById('longitudeInput').value = position.coords.longitude.toFixed(7);
-    showStatus('Current location captured.');
-  }, () => showStatus('Unable to capture location. Please enter coordinates manually.', true));
+async function loadSpecificIssues(categoryId) {
+  currentSpecificIssues = [];
+  resetSelect(specificIssueSelect, 'Loading specific issues...', true);
+  resetSelect(solutionSelect, 'Select issue first', true);
+  issueTitleInput.value = '';
+  if (!categoryId) {
+    resetSelect(specificIssueSelect, 'Select category first', true);
+    return;
+  }
+
+  const data = await json(`/api/specific-issues?category_id=${encodeURIComponent(categoryId)}`);
+  currentSpecificIssues = data.issues || [];
+  resetSelect(specificIssueSelect, currentSpecificIssues.length ? 'Select specific issue' : 'No active issues for this category', !currentSpecificIssues.length);
+  currentSpecificIssues.forEach(issue => {
+    const option = document.createElement('option');
+    option.value = issue.id;
+    option.textContent = issue.issue_name;
+    specificIssueSelect.appendChild(option);
+  });
+}
+
+async function loadApplicableSolutions(categoryId, issueId) {
+  currentSolutions = [];
+  resetSelect(solutionSelect, 'Loading applicable solutions...', true);
+  if (!categoryId || !issueId) {
+    resetSelect(solutionSelect, 'Select issue first', true);
+    return;
+  }
+
+  const url = `/api/solutions?category_id=${encodeURIComponent(categoryId)}&issue_id=${encodeURIComponent(issueId)}`;
+  const data = await json(url);
+  currentSolutions = data.solutions || [];
+  resetSelect(solutionSelect, currentSolutions.length ? 'Select applicable solution' : 'No predefined solution found', !currentSolutions.length);
+  currentSolutions.forEach(solution => {
+    const option = document.createElement('option');
+    option.value = solution.id;
+    option.textContent = solution.solution_title;
+    option.dataset.description = solution.solution_description || '';
+    solutionSelect.appendChild(option);
+  });
+}
+
+function syncIssueTitle() {
+  const selected = currentSpecificIssues.find(issue => String(issue.id) === String(specificIssueSelect.value));
+  if (selected && !issueTitleInput.value.trim()) {
+    issueTitleInput.value = selected.issue_name;
+  } else if (selected) {
+    issueTitleInput.value = selected.issue_name;
+  }
+}
+
+function resetDetectedLocation() {
+  dsdNameInput.value = '';
+  gndNameInput.value = '';
+  subWatershedIdInput.value = '';
+  subWatershedNameInput.value = '';
+  latDisplay.textContent = 'Not selected';
+  lngDisplay.textContent = 'Not selected';
+  adminBoundaryDisplay.textContent = 'Pending location';
+  subWatershedDisplay.textContent = 'Pending location';
+}
+
+async function identifySelectedLocation({ latitude, longitude, cleared = false } = {}) {
+  if (cleared || latitude === null || longitude === null) {
+    resetDetectedLocation();
+    return;
+  }
+
+  latDisplay.textContent = Number(latitude).toFixed(7);
+  lngDisplay.textContent = Number(longitude).toFixed(7);
+  adminBoundaryDisplay.textContent = 'Detecting...';
+  subWatershedDisplay.textContent = 'Detecting...';
+
+  try {
+    const data = await json(`/api/spatial/identify?lat=${encodeURIComponent(latitude)}&lng=${encodeURIComponent(longitude)}`);
+    const dsdName = data.dsd?.dsd_name || '';
+    const gndName = data.gnd?.gnd_name || '';
+    const subName = data.sub_watershed?.watershed_name || data.sub_watershed?.name || '';
+
+    dsdNameInput.value = dsdName;
+    gndNameInput.value = gndName;
+    subWatershedIdInput.value = data.sub_watershed?.id || '';
+    subWatershedNameInput.value = subName;
+
+    adminBoundaryDisplay.textContent = dsdName || gndName ? `${dsdName || 'Unknown DSD'} / ${gndName || 'Unknown GND'}` : 'Outside mapped DSD/GND';
+    subWatershedDisplay.textContent = subName || 'Outside mapped sub-watershed';
+  } catch (error) {
+    dsdNameInput.value = '';
+    gndNameInput.value = '';
+    subWatershedIdInput.value = '';
+    subWatershedNameInput.value = '';
+    adminBoundaryDisplay.textContent = 'Unable to detect';
+    subWatershedDisplay.textContent = 'Unable to detect';
+    showStatus(error.message || 'Unable to identify selected location.', true);
+  }
+}
+
+function initializeLocationPicker() {
+  if (!window.KRWMPLocationPicker) {
+    showStatus('Location picker module is not available.', true);
+    return;
+  }
+  locationPicker = new window.KRWMPLocationPicker({
+    containerId: 'communityLocationPicker',
+    latitudeInput: '#latitudeInput',
+    longitudeInput: '#longitudeInput',
+    initialCenter: [80.2280810, 7.2334995],
+    initialZoom: 11,
+    onChange: identifySelectedLocation,
+  });
+}
+
+categorySelect.addEventListener('change', async () => {
+  try {
+    await loadSpecificIssues(categorySelect.value);
+  } catch (error) {
+    showStatus(error.message || 'Unable to load specific issues.', true);
+  }
+});
+
+specificIssueSelect.addEventListener('change', async () => {
+  try {
+    syncIssueTitle();
+    await loadApplicableSolutions(categorySelect.value, specificIssueSelect.value);
+  } catch (error) {
+    showStatus(error.message || 'Unable to load applicable solutions.', true);
+  }
 });
 
 form.addEventListener('submit', async event => {
   event.preventDefault();
+  if (!latitudeInput.value || !longitudeInput.value) {
+    showStatus('Please select the issue location on the map before submission.', true);
+    return;
+  }
+
   const formData = new FormData(form);
   try {
-    const response = await fetch('/api/community-reports', { method: 'POST', body: formData });
-    const data = await response.json();
-    if (!response.ok || data.success === false) throw new Error(data.message || 'Submission failed');
+    const data = await json('/api/community-reports', { method: 'POST', body: formData });
     form.reset();
+    resetDetectedLocation();
+    resetSelect(specificIssueSelect, 'Select category first', true);
+    resetSelect(solutionSelect, 'Select issue first', true);
+    if (locationPicker) locationPicker.clear();
     await loadCategories();
     showStatus(`Issue submitted successfully. Reference: ${data.report.report_code}`);
   } catch (error) {
@@ -56,4 +211,5 @@ form.addEventListener('submit', async event => {
 (async () => {
   await initializeCommunityReportSidebar();
   await loadCategories();
-})().catch(() => showStatus('Unable to load issue categories.', true));
+  initializeLocationPicker();
+})().catch(error => showStatus(error.message || 'Unable to initialize community report form.', true));
