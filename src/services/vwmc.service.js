@@ -11,6 +11,10 @@ function num(value) {
   return Number.isFinite(n) ? n : null;
 }
 
+function uuidOrNull(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || '')) ? value : null;
+}
+
 async function listCommittees() {
   const result = await pool.query(`
     SELECT c.*, COALESCE(json_agg(m ORDER BY m.id) FILTER (WHERE m.id IS NOT NULL), '[]') AS members
@@ -37,8 +41,8 @@ async function createCommittee(body = {}, username = 'system') {
   const result = await pool.query(`
     INSERT INTO public.vwmc_committees (
       committee_code, committee_name, village_name, dsd_name, gnd_name, address,
-      latitude, longitude, status, remarks, created_by, updated_by
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$11)
+      latitude, longitude, status, remarks, sub_watershed_id, sub_watershed_name, created_by, updated_by
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$13)
     RETURNING *;
   `, [
     body.committee_code || generateCommitteeCode(),
@@ -51,6 +55,8 @@ async function createCommittee(body = {}, username = 'system') {
     num(body.longitude),
     body.status || 'active',
     body.remarks || null,
+    uuidOrNull(body.sub_watershed_id),
+    body.sub_watershed_name || null,
     username
   ]);
   return result.rows[0];
@@ -68,11 +74,13 @@ async function updateCommittee(id, body = {}, username = 'system') {
         longitude = COALESCE($8, longitude),
         status = COALESCE($9, status),
         remarks = COALESCE($10, remarks),
-        updated_by = $11,
+        sub_watershed_id = $11,
+        sub_watershed_name = COALESCE($12, sub_watershed_name),
+        updated_by = $13,
         updated_at = now()
     WHERE id = $1
     RETURNING *;
-  `, [id, body.committee_name || null, body.village_name || null, body.dsd_name || null, body.gnd_name || null, body.address || null, body.latitude === undefined ? null : num(body.latitude), body.longitude === undefined ? null : num(body.longitude), body.status || null, body.remarks || null, username]);
+  `, [id, body.committee_name || null, body.village_name || null, body.dsd_name || null, body.gnd_name || null, body.address || null, body.latitude === undefined ? null : num(body.latitude), body.longitude === undefined ? null : num(body.longitude), body.status || null, body.remarks || null, uuidOrNull(body.sub_watershed_id), body.sub_watershed_name || null, username]);
   return result.rows[0] || null;
 }
 
