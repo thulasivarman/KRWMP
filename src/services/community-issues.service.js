@@ -36,14 +36,14 @@ function toIdArray(value) {
 
 async function listCategories({ activeOnly = true } = {}) {
   const result = await pool.query(`
-    SELECT id, category_key, category_name, description, severity_level, sort_order, active, created_at, updated_at,
+    SELECT id, category_key, category_name, description, severity_level, active, created_at, updated_at,
            COALESCE(issue_count.count, 0)::integer AS issue_count
     FROM public.issue_categories c
     LEFT JOIN LATERAL (
       SELECT COUNT(*) AS count FROM public.specific_issues si WHERE si.category_id = c.id AND ($1::boolean = false OR si.active = true)
     ) issue_count ON true
     WHERE ($1::boolean = false OR c.active = true)
-    ORDER BY c.sort_order ASC, c.category_name ASC;
+    ORDER BY c.category_name ASC;
   `, [activeOnly]);
   return result.rows;
 }
@@ -52,27 +52,26 @@ async function createCategory(body = {}) {
   const categoryName = cleanText(body.category_name);
   if (!categoryName || categoryName.length < 3) throw new Error('Issue category name must be at least 3 characters.');
   const result = await pool.query(`
-    INSERT INTO public.issue_categories (category_key, category_name, description, severity_level, sort_order, active)
-    VALUES ($1, $2, $3, $4, $5, true)
+    INSERT INTO public.issue_categories (category_key, category_name, description, severity_level, active)
+    VALUES ($1, $2, $3, $4, true)
     ON CONFLICT (category_key) DO UPDATE SET
       category_name = EXCLUDED.category_name,
       description = EXCLUDED.description,
       severity_level = EXCLUDED.severity_level,
-      sort_order = EXCLUDED.sort_order,
       active = true,
       updated_at = now()
     RETURNING *;
-  `, [sanitizeKey(body.category_key || categoryName), categoryName, cleanText(body.description), body.severity_level || 'medium', Number(body.sort_order || 100)]);
+  `, [sanitizeKey(body.category_key || categoryName), categoryName, cleanText(body.description), body.severity_level || 'medium']);
   return result.rows[0];
 }
 
 async function updateCategory(id, body = {}) {
   const result = await pool.query(`
     UPDATE public.issue_categories
-    SET category_name = COALESCE($2, category_name), description = COALESCE($3, description), severity_level = COALESCE($4, severity_level), sort_order = COALESCE($5, sort_order), active = COALESCE($6, active), updated_at = now()
+    SET category_name = COALESCE($2, category_name), description = COALESCE($3, description), severity_level = COALESCE($4, severity_level), active = COALESCE($5, active), updated_at = now()
     WHERE id = $1
     RETURNING *;
-  `, [id, cleanText(body.category_name), cleanText(body.description), body.severity_level || null, body.sort_order === undefined ? null : Number(body.sort_order), body.active === undefined ? null : Boolean(body.active)]);
+  `, [id, cleanText(body.category_name), cleanText(body.description), body.severity_level || null, body.active === undefined ? null : Boolean(body.active)]);
   return result.rows[0] || null;
 }
 
@@ -87,7 +86,7 @@ async function listSpecificIssues({ activeOnly = true, categoryId = null } = {})
     ) link_count ON true
     WHERE ($1::boolean = false OR si.active = true)
       AND ($2::bigint IS NULL OR si.category_id = $2)
-    ORDER BY c.sort_order ASC, c.category_name ASC, si.sort_order ASC, si.issue_name ASC;
+    ORDER BY c.category_name ASC, si.issue_name ASC;
   `, [activeOnly, categoryId]);
   return result.rows;
 }
@@ -99,27 +98,26 @@ async function createSpecificIssue(body = {}, createdBy = 'admin') {
   if (!issueName || issueName.length < 3) throw new Error('Specific issue name must be at least 3 characters.');
 
   const result = await pool.query(`
-    INSERT INTO public.specific_issues (category_id, issue_key, issue_name, description, severity_level, sort_order, active, created_by)
-    VALUES ($1,$2,$3,$4,$5,$6,true,$7)
+    INSERT INTO public.specific_issues (category_id, issue_key, issue_name, description, severity_level, active, created_by)
+    VALUES ($1,$2,$3,$4,$5,true,$6)
     ON CONFLICT (category_id, issue_key) DO UPDATE SET
       issue_name = EXCLUDED.issue_name,
       description = EXCLUDED.description,
       severity_level = EXCLUDED.severity_level,
-      sort_order = EXCLUDED.sort_order,
       active = true,
       updated_at = now()
     RETURNING *;
-  `, [categoryId, sanitizeKey(body.issue_key || issueName), issueName, cleanText(body.description), body.severity_level || 'medium', Number(body.sort_order || 100), createdBy]);
+  `, [categoryId, sanitizeKey(body.issue_key || issueName), issueName, cleanText(body.description), body.severity_level || 'medium', createdBy]);
   return result.rows[0];
 }
 
 async function updateSpecificIssue(id, body = {}) {
   const result = await pool.query(`
     UPDATE public.specific_issues
-    SET category_id = COALESCE($2, category_id), issue_name = COALESCE($3, issue_name), description = COALESCE($4, description), severity_level = COALESCE($5, severity_level), sort_order = COALESCE($6, sort_order), active = COALESCE($7, active), updated_at = now()
+    SET category_id = COALESCE($2, category_id), issue_name = COALESCE($3, issue_name), description = COALESCE($4, description), severity_level = COALESCE($5, severity_level), active = COALESCE($6, active), updated_at = now()
     WHERE id = $1
     RETURNING *;
-  `, [id, body.category_id || null, cleanText(body.issue_name), cleanText(body.description), body.severity_level || null, body.sort_order === undefined ? null : Number(body.sort_order), body.active === undefined ? null : Boolean(body.active)]);
+  `, [id, body.category_id || null, cleanText(body.issue_name), cleanText(body.description), body.severity_level || null, body.active === undefined ? null : Boolean(body.active)]);
   return result.rows[0] || null;
 }
 
@@ -154,7 +152,7 @@ async function listSolutions({ activeOnly = true, issueId = null, categoryId = n
       AND ($2::bigint IS NULL OR sil.issue_id = $2)
       AND ($3::bigint IS NULL OR si.category_id = $3)
     GROUP BY s.id
-    ORDER BY s.priority_level ASC, s.solution_title ASC;
+    ORDER BY s.solution_title ASC;
   `, [activeOnly, issueId, categoryId]);
   return result.rows;
 }
