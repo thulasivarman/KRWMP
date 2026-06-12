@@ -74,7 +74,6 @@ async function communityIssueRoutes(fastify) {
   });
 
   fastify.post('/community-reports', async (request, reply) => {
-    if (!await requirePrivilegeInline(request, reply, 'community_issue_submit', 'create')) return;
     const contentType = String(request.headers['content-type'] || '');
     let report;
     if (contentType.includes('multipart/form-data')) {
