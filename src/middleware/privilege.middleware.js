@@ -1,11 +1,23 @@
 const pool = require('../../config/database');
+const { extractBearerToken, verifyToken } = require('../utils/jwt');
 
 function getRequestUser(request) {
-  return String(request.headers['x-krwmp-user'] || request.headers['x-user'] || '').trim().toLowerCase();
+  if (request.auth?.identifier) return String(request.auth.identifier).trim().toLowerCase();
+  const token = extractBearerToken(request);
+  if (!token) return '';
+  try {
+    const decoded = verifyToken(token);
+    request.auth = decoded;
+    return String(decoded.identifier || decoded.sub || '').trim().toLowerCase();
+  } catch (error) {
+    request.authError = error;
+    return '';
+  }
 }
 
 function isMasterAdmin(identifier) {
-  return String(identifier || '').trim().toLowerCase() === 'thulasi';
+  const configured = String(process.env.KRWMP_SUPERUSERS || 'thulasi').split(',').map(v => v.trim().toLowerCase()).filter(Boolean);
+  return configured.includes(String(identifier || '').trim().toLowerCase());
 }
 
 function isAdminRole(roleName) {
@@ -18,20 +30,12 @@ async function getUserPrivileges(identifier) {
     return [{ privilege_key: 'system_admin', privilege_name: 'System Administration', can_view: true, can_create: true, can_update: true, can_delete: true, role_name: 'admin' }];
   }
   const result = await pool.query(`
-    SELECT DISTINCT
-      rp.privilege_key,
-      rp.privilege_name,
-      rp.can_view,
-      rp.can_create,
-      rp.can_update,
-      rp.can_delete,
-      r.role_name
+    SELECT DISTINCT rp.privilege_key, rp.privilege_name, rp.can_view, rp.can_create, rp.can_update, rp.can_delete, r.role_name
     FROM public.users u
     LEFT JOIN public.user_roles ur ON ur.user_id = u.id
     LEFT JOIN public.roles r ON r.id = COALESCE(ur.role_id, u.role_id)
     LEFT JOIN public.role_privileges rp ON rp.role_id = r.id
-    WHERE u.identifier = $1
-      AND rp.privilege_key IS NOT NULL
+    WHERE u.identifier = $1 AND rp.privilege_key IS NOT NULL
     ORDER BY rp.privilege_key;
   `, [identifier]);
   return result.rows;
@@ -69,6 +73,10 @@ async function hasPrivilege(identifier, privilegeKey, action = 'view') {
 function requirePrivilege(privilegeKey, action = 'view') {
   return async function privilegeGuard(request, reply) {
     const identifier = getRequestUser(request);
+    if (!identifier) {
+      reply.status(401).send({ success: false, message: request.authError ? 'Invalid or expired authentication token' : 'Authentication required' });
+      return false;
+    }
     const allowed = await hasPrivilege(identifier, privilegeKey, action);
     if (!allowed) {
       reply.status(403).send({ success: false, message: `Access denied. Required privilege: ${privilegeKey}:${action}` });
