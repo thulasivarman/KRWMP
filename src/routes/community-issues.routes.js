@@ -24,8 +24,33 @@ async function communityIssueRoutes(fastify) {
     return { success: true, category };
   });
 
+  fastify.get('/specific-issues', async (request) => {
+    const issues = await communityService.listSpecificIssues({
+      activeOnly: true,
+      categoryId: request.query?.category_id || null,
+    });
+    return { success: true, issues };
+  });
+
+  fastify.post('/specific-issues', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'community_issues_review', 'create')) return;
+    const issue = await communityService.createSpecificIssue(request.body || {}, getAdminUser(request));
+    return { success: true, issue };
+  });
+
+  fastify.put('/specific-issues/:id', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'community_issues_review', 'update')) return;
+    const issue = await communityService.updateSpecificIssue(request.params.id, request.body || {});
+    if (!issue) return reply.status(404).send({ success: false, message: 'Specific issue not found' });
+    return { success: true, issue };
+  });
+
   fastify.get('/solutions', async (request) => {
-    const solutions = await communityService.listSolutions({ activeOnly: true, categoryId: request.query?.category_id || null });
+    const solutions = await communityService.listSolutions({
+      activeOnly: true,
+      issueId: request.query?.issue_id || null,
+      categoryId: request.query?.category_id || null,
+    });
     return { success: true, solutions };
   });
 
