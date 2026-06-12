@@ -235,16 +235,42 @@ async function createPublicReport({ fields = {}, photoFile = null } = {}) {
   const reportCode = generateReportCode();
   const issueId = fields.issue_id || null;
   const categoryId = fields.category_id || null;
+  const assignedSolutionId = fields.assigned_solution_id || null;
+  const dsdName = cleanText(fields.dsd_name);
+  const gndName = cleanText(fields.gnd_name);
+  const subWatershedId = cleanText(fields.sub_watershed_id);
+  const subWatershedName = cleanText(fields.sub_watershed_name);
 
   const result = await pool.query(`
     INSERT INTO public.community_issue_reports (
-      report_code, category_id, issue_id, issue_title, description, reporter_name, reporter_contact, reporter_email, location_description, latitude, longitude, geom, photo_url, status, severity_level
+      report_code, category_id, issue_id, issue_title, description, reporter_name, reporter_contact, reporter_email,
+      location_description, latitude, longitude, geom, photo_url, status, severity_level, assigned_solution_id,
+      dsd_name, gnd_name, sub_watershed_id, sub_watershed_name
     ) VALUES (
       $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,
       CASE WHEN $10::numeric IS NOT NULL AND $11::numeric IS NOT NULL THEN ST_SetSRID(ST_MakePoint(($11::numeric)::double precision, ($10::numeric)::double precision), 4326) ELSE NULL END,
-      $12,'submitted',$13
+      $12,'submitted',$13,$14,$15,$16,$17,$18
     ) RETURNING *;
-  `, [reportCode, categoryId, issueId, fields.issue_title, fields.description || null, fields.reporter_name || null, fields.reporter_contact || null, fields.reporter_email || null, fields.location_description || null, lat, lng, photoUrl, fields.severity_level || 'medium']);
+  `, [
+    reportCode,
+    categoryId,
+    issueId,
+    fields.issue_title,
+    fields.description || null,
+    fields.reporter_name || null,
+    fields.reporter_contact || null,
+    fields.reporter_email || null,
+    fields.location_description || null,
+    lat,
+    lng,
+    photoUrl,
+    fields.severity_level || 'medium',
+    assignedSolutionId,
+    dsdName,
+    gndName,
+    subWatershedId,
+    subWatershedName
+  ]);
   return result.rows[0];
 }
 
@@ -288,6 +314,10 @@ async function getReportsGeoJson({ status = null } = {}) {
           'severity_level', r.severity_level,
           'category_name', c.category_name,
           'issue_name', si.issue_name,
+          'solution_title', s.solution_title,
+          'dsd_name', r.dsd_name,
+          'gnd_name', r.gnd_name,
+          'sub_watershed_name', r.sub_watershed_name,
           'photo_url', r.photo_url,
           'submitted_at', r.submitted_at
         )
@@ -295,6 +325,7 @@ async function getReportsGeoJson({ status = null } = {}) {
       FROM public.community_issue_reports r
       LEFT JOIN public.issue_categories c ON c.id = r.category_id
       LEFT JOIN public.specific_issues si ON si.id = r.issue_id
+      LEFT JOIN public.solution_library s ON s.id = r.assigned_solution_id
       WHERE r.geom IS NOT NULL
         AND ($1::text IS NULL OR r.status = $1)
     ) x;
