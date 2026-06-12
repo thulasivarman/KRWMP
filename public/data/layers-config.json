@@ -1,16 +1,42 @@
 {
   "layers": [
     {
-      "id": "1780920122108",
-      "name": "basin-boundary.geojson",
-      "url": "/data/vector-layers/1780920122108.geojson",
+      "id": "test2",
+      "name": "test2",
+      "url": "/data/vector-layers/test2.geojson",
+      "geometryType": "MultiPolygon",
       "visible": true,
+      "popupFields": [
+        "name"
+      ],
+      "style": {
+        "color": "#d46a08",
+        "weight": 2,
+        "opacity": 1,
+        "fillColor": "#1e3452",
+        "fillOpacity": 0.2,
+        "radius": 6
+      },
+      "updatedAt": "2026-06-08T12:28:17.938Z"
+    },
+    {
+      "id": "22ee",
+      "name": "22ee",
+      "url": "/data/vector-layers/22ee.geojson",
+      "geometryType": "MultiLineString",
+      "visible": true,
+      "popupFields": [
+        "stream_name"
+      ],
       "style": {
         "color": "#3388ff",
         "weight": 2,
+        "opacity": 1,
         "fillColor": "#3388ff",
-        "fillOpacity": 0.2
-      }
+        "fillOpacity": 0.2,
+        "radius": 6
+      },
+      "updatedAt": "2026-06-08T13:40:08.691Z"
     }
   ]
 }

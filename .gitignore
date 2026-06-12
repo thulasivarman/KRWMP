@@ -1,3 +1,7 @@
 node_modules
 .env
 package-lock.json
+public/data/vector-layers/*
+public/data/raster-layers/*
+public/data/raster-previews/*
+public/data/community-issue-photos/*

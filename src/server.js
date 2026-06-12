@@ -32,6 +32,7 @@ fastify.register(require('./routes/vwmc.routes'), { prefix: '/api' });
 fastify.register(require('./routes/intervention.routes'), { prefix: '/api' });
 fastify.register(require('./routes/institution.routes'), { prefix: '/api' });
 fastify.register(require('./routes/reports.routes'), { prefix: '/api' });
+fastify.register(require('./routes/community-issue-interventions.routes'), { prefix: '/api' });
 
 fastify.setErrorHandler((error, request, reply) => {
   fastify.log.error(error);
