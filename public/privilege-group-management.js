@@ -43,7 +43,7 @@ async function initSidebar() {
 }
 
 async function loadMatrix() {
-  privilegeGrid.innerHTML = '<p class="text-sm text-slate-400">Loading privileges...</p>';
+  privilegeGrid.innerHTML = '<div class="p-5 text-sm text-slate-400">Loading privileges...</div>';
   const data = await json('/api/admin/role-privileges/matrix');
   roles = data.roles || [];
   availableKeys = data.availableKeys || [];
@@ -78,7 +78,16 @@ function privilegeFor(roleId, key) {
 function filteredKeys() {
   const q = String(searchInput.value || '').trim().toLowerCase();
   if (!q) return availableKeys;
-  return availableKeys.filter(item => `${item.privilege_key} ${item.privilege_name}`.toLowerCase().includes(q));
+  return availableKeys.filter(item => `${item.privilege_key} ${item.privilege_name} ${item.group_name} ${item.description}`.toLowerCase().includes(q));
+}
+
+function groupedKeys(keys) {
+  return keys.reduce((groups, item) => {
+    const groupName = item.group_name || 'Other';
+    if (!groups[groupName]) groups[groupName] = [];
+    groups[groupName].push(item);
+    return groups;
+  }, {});
 }
 
 function renderPrivileges() {
@@ -87,43 +96,50 @@ function renderPrivileges() {
   privilegeGrid.innerHTML = '';
 
   if (!selectedRoleId) {
-    privilegeGrid.innerHTML = '<p class="text-sm text-slate-400">Please select a user group.</p>';
+    privilegeGrid.innerHTML = '<div class="p-5 text-sm text-slate-400">Please select a user group.</div>';
     return;
   }
 
   const keys = filteredKeys();
   if (!keys.length) {
-    privilegeGrid.innerHTML = '<p class="text-sm text-slate-400">No privilege keys match your search.</p>';
+    privilegeGrid.innerHTML = '<div class="p-5 text-sm text-slate-400">No access keys match your search.</div>';
     return;
   }
 
-  keys.forEach(item => {
-    const existing = privilegeFor(selectedRoleId, item.privilege_key) || {};
-    const card = document.createElement('article');
-    card.className = 'privilege-card bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-4';
-    card.dataset.privilegeKey = item.privilege_key;
-    card.dataset.privilegeName = item.privilege_name || item.privilege_key;
-    card.innerHTML = `
-      <div>
-        <h3 class="font-bold text-slate-100">${escapeHtml(item.privilege_name || item.privilege_key)}</h3>
-        <p class="text-xs text-slate-500 mt-1 font-mono">${escapeHtml(item.privilege_key)}</p>
-      </div>
-      <div class="grid grid-cols-2 gap-3 text-sm">
+  const groups = groupedKeys(keys);
+  Object.entries(groups).forEach(([groupName, items]) => {
+    const groupHeader = document.createElement('div');
+    groupHeader.className = 'bg-slate-950/50 px-4 py-2 text-[11px] uppercase tracking-widest text-emerald-400 font-bold';
+    groupHeader.textContent = groupName;
+    privilegeGrid.appendChild(groupHeader);
+
+    items.forEach(item => {
+      const existing = privilegeFor(selectedRoleId, item.privilege_key) || {};
+      const row = document.createElement('article');
+      row.className = 'privilege-card grid grid-cols-1 lg:grid-cols-[1.5fr_repeat(4,110px)] gap-3 lg:gap-0 items-center p-4 hover:bg-slate-800/30 transition';
+      row.dataset.privilegeKey = item.privilege_key;
+      row.dataset.privilegeName = item.privilege_name || item.privilege_key;
+      row.innerHTML = `
+        <div class="space-y-1">
+          <h3 class="font-semibold text-slate-100">${escapeHtml(item.privilege_name || item.privilege_key)}</h3>
+          <p class="text-xs text-slate-500">${escapeHtml(item.description || '')}</p>
+          <p class="text-[11px] text-slate-600 font-mono">${escapeHtml(item.privilege_key)}</p>
+        </div>
         ${checkboxHtml('can_view', 'View', existing.can_view)}
         ${checkboxHtml('can_create', 'Add', existing.can_create)}
         ${checkboxHtml('can_update', 'Edit', existing.can_update)}
         ${checkboxHtml('can_delete', 'Delete', existing.can_delete)}
-      </div>
-    `;
-    privilegeGrid.appendChild(card);
+      `;
+      privilegeGrid.appendChild(row);
+    });
   });
 }
 
 function checkboxHtml(name, label, checked) {
   return `
-    <label class="flex items-center gap-2 bg-slate-950/60 border border-slate-800 rounded-lg px-3 py-2">
-      <input type="checkbox" name="${name}" class="h-4 w-4 accent-emerald-500" ${checked ? 'checked' : ''}>
-      <span>${label}</span>
+    <label class="flex lg:justify-center items-center gap-2 text-sm text-slate-300 bg-slate-950/50 lg:bg-transparent border border-slate-800 lg:border-0 rounded-lg px-3 py-2 lg:p-0">
+      <span class="lg:hidden w-14">${label}</span>
+      <input type="checkbox" name="${name}" class="h-5 w-5 accent-emerald-500" ${checked ? 'checked' : ''}>
     </label>
   `;
 }
@@ -163,7 +179,7 @@ async function savePrivileges() {
     showStatus(error.message, true);
   } finally {
     saveBtn.disabled = false;
-    saveBtn.textContent = 'Save';
+    saveBtn.textContent = 'Save Changes';
   }
 }
 
