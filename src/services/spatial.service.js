@@ -139,7 +139,7 @@ async function identifyLocation(latitude, longitude) {
       LIMIT 1
     ),
     sub_match AS (
-      SELECT s.id, s.name, s.area
+      SELECT s.id, s.watershed_code, s.watershed_name, s.area_ha
       FROM public.sub_watersheds s, p
       WHERE s.geom IS NOT NULL AND ST_Intersects(s.geom, p.geom)
       LIMIT 1
@@ -147,7 +147,7 @@ async function identifyLocation(latitude, longitude) {
     SELECT
       (SELECT jsonb_build_object('id', id, 'gnd_name', gnd_name, 'idgnd', idgnd, 'iddsd', iddsd, 'la', la) FROM gnd_match) AS gnd,
       (SELECT jsonb_build_object('id', id, 'dsd_name', dsd_n, 'iddistrict', iddistrict, 'iddsd', iddsd) FROM dsd_match) AS dsd,
-      (SELECT jsonb_build_object('id', id, 'name', name, 'area', area) FROM sub_match) AS sub_watershed;
+      (SELECT jsonb_build_object('id', id, 'watershed_code', watershed_code, 'watershed_name', watershed_name, 'area_ha', area_ha) FROM sub_match) AS sub_watershed;
   `;
 
   const result = await pool.query(sql, [lng, lat]);
