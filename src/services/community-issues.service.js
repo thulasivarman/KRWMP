@@ -28,6 +28,11 @@ function toNumber(value) {
   return Number.isFinite(n) ? n : null;
 }
 
+function toNullableId(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 function toIdArray(value) {
   if (Array.isArray(value)) return value.map(Number).filter(Number.isFinite);
   if (typeof value === 'string') return value.split(',').map(v => Number(v.trim())).filter(Number.isFinite);
@@ -233,9 +238,12 @@ async function createPublicReport({ fields = {}, photoFile = null } = {}) {
   const lng = toNumber(fields.longitude);
   const photoUrl = await savePhoto(photoFile);
   const reportCode = generateReportCode();
-  const issueId = fields.issue_id || null;
-  const categoryId = fields.category_id || null;
-  const assignedSolutionId = fields.assigned_solution_id || null;
+  const issueId = toNullableId(fields.issue_id);
+  const categoryId = toNullableId(fields.category_id);
+  const assignedSolutionId = toNullableId(fields.assigned_solution_id);
+  const otherCategoryName = cleanText(fields.other_category_name);
+  const otherIssueName = cleanText(fields.other_issue_name);
+  const issueTitle = cleanText(fields.issue_title) || otherIssueName || otherCategoryName || 'Community reported issue';
   const dsdName = cleanText(fields.dsd_name);
   const gndName = cleanText(fields.gnd_name);
   const subWatershedId = cleanText(fields.sub_watershed_id);
@@ -245,17 +253,17 @@ async function createPublicReport({ fields = {}, photoFile = null } = {}) {
     INSERT INTO public.community_issue_reports (
       report_code, category_id, issue_id, issue_title, description, reporter_name, reporter_contact, reporter_email,
       location_description, latitude, longitude, geom, photo_url, status, severity_level, assigned_solution_id,
-      dsd_name, gnd_name, sub_watershed_id, sub_watershed_name
+      dsd_name, gnd_name, sub_watershed_id, sub_watershed_name, other_category_name, other_issue_name
     ) VALUES (
       $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,
       CASE WHEN $10::numeric IS NOT NULL AND $11::numeric IS NOT NULL THEN ST_SetSRID(ST_MakePoint(($11::numeric)::double precision, ($10::numeric)::double precision), 4326) ELSE NULL END,
-      $12,'submitted',$13,$14,$15,$16,$17,$18
+      $12,'submitted',$13,$14,$15,$16,$17,$18,$19,$20
     ) RETURNING *;
   `, [
     reportCode,
     categoryId,
     issueId,
-    fields.issue_title,
+    issueTitle,
     fields.description || null,
     fields.reporter_name || null,
     fields.reporter_contact || null,
@@ -269,7 +277,9 @@ async function createPublicReport({ fields = {}, photoFile = null } = {}) {
     dsdName,
     gndName,
     subWatershedId,
-    subWatershedName
+    subWatershedName,
+    otherCategoryName,
+    otherIssueName
   ]);
   return result.rows[0];
 }
@@ -312,8 +322,8 @@ async function getReportsGeoJson({ status = null } = {}) {
           'description', r.description,
           'status', r.status,
           'severity_level', r.severity_level,
-          'category_name', c.category_name,
-          'issue_name', si.issue_name,
+          'category_name', COALESCE(c.category_name, r.other_category_name, 'Other'),
+          'issue_name', COALESCE(si.issue_name, r.other_issue_name, r.issue_title),
           'solution_title', s.solution_title,
           'dsd_name', r.dsd_name,
           'gnd_name', r.gnd_name,
