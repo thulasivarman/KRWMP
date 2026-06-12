@@ -6,8 +6,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node src/server.js",
-    "lint": "node scripts/check-js-syntax.js",
-    "test": "node scripts/check-js-syntax.js && node scripts/verify-migrations.js",
+    "lint": "node --check src/server.js && node --check src/middleware/privilege.middleware.js && node --check src/services/auth.service.js && node --check src/routes/community-issues.routes.js && node --check src/routes/vector-layer.routes.js && node --check src/routes/raster-layer.routes.js",
+    "test": "npm run lint && node scripts/verify-migrations.js",
     "check:migrations": "node scripts/verify-migrations.js"
   },
   "dependencies": {
