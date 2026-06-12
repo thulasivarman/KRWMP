@@ -3,6 +3,21 @@
  * KRWMP MANAGEMENT PORTAL - CENTRALIZED GLOBAL RUNTIME ORCHESTRATOR
  * ========================================================================== 
  */
+(function installKrwmpAuthFetch() {
+    if (window.__KRWMP_AUTH_FETCH_INSTALLED__) return;
+    window.__KRWMP_AUTH_FETCH_INSTALLED__ = true;
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = function (input, init = {}) {
+        const url = typeof input === 'string' ? input : input?.url || '';
+        const isApiRequest = String(url).startsWith('/api/') || String(url).includes('/api/');
+        if (!isApiRequest) return nativeFetch(input, init);
+        const token = localStorage.getItem('krwmp_token');
+        if (!token) return nativeFetch(input, init);
+        const headers = new Headers(init.headers || (input instanceof Request ? input.headers : {}));
+        if (!headers.has('Authorization')) headers.set('Authorization', `Bearer ${token}`);
+        return nativeFetch(input, { ...init, headers });
+    };
+})();
 
 window.KRWMP_ENGINE = {
     ZONING_TERMINOLOGY_TAMIL: "வலயம்",
@@ -11,7 +26,8 @@ window.KRWMP_ENGINE = {
     initSession: async function () {
         try {
             const cachedUser = localStorage.getItem('krwmp_user');
-            if (cachedUser) {
+            const cachedToken = localStorage.getItem('krwmp_token');
+            if (cachedUser && cachedToken) {
                 this.Session.user = JSON.parse(cachedUser);
                 this.Session.isAuthenticated = true;
             } else {
@@ -22,6 +38,7 @@ window.KRWMP_ENGINE = {
             this.Session.user = null;
             this.Session.isAuthenticated = false;
             localStorage.removeItem('krwmp_user');
+            localStorage.removeItem('krwmp_token');
         }
         this.normalizeMasterAdminSession();
         this.syncProfileMetadata();
@@ -150,6 +167,7 @@ window.KRWMP_ENGINE = {
 
     dispatchLogout: function () {
         localStorage.removeItem('krwmp_user');
+        localStorage.removeItem('krwmp_token');
         this.Session.user = null;
         this.Session.isAuthenticated = false;
         window.location.replace('/login.html');
