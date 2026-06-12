@@ -3,47 +3,53 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>User Privilege Group Management - KRWMP Portal</title>
+  <title>Privilege Group Management - KRWMP Portal</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
   <div class="flex min-h-screen">
     <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
-    <main class="flex-1 p-8 space-y-6 max-w-7xl mx-auto w-full">
-      <header class="border-b border-slate-800 pb-4 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+    <main class="flex-1 p-6 lg:p-8 space-y-5 max-w-7xl mx-auto w-full">
+      <header class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
         <div>
           <p class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Administration</p>
-          <h1 class="text-2xl font-bold mt-2">User Privilege Group Management</h1>
-          <p class="text-sm text-slate-400 mt-1">Select a user group and manage all available privilege keys using View, Add, Edit, and Delete permissions.</p>
+          <h1 class="text-2xl font-bold mt-1">Privilege Group Management</h1>
+          <p class="text-sm text-slate-400 mt-1">Manage only the access keys currently enforced by the KRWMP backend.</p>
         </div>
-        <a href="/admin.html" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded text-sm font-bold self-start lg:self-auto">Back to Admin</a>
+        <div class="flex flex-wrap gap-2">
+          <a href="/admin.html" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg text-sm font-bold">Back to Admin</a>
+          <button id="saveBtn" type="button" class="bg-emerald-600 hover:bg-emerald-500 px-5 py-2 rounded-lg text-sm font-bold">Save Changes</button>
+        </div>
       </header>
 
       <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
 
-      <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-end">
-          <label class="text-sm font-semibold lg:col-span-2">User Group / Role
-            <select id="roleSelect" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" required>
-              <option value="">Loading user groups...</option>
-            </select>
-          </label>
-          <div class="flex gap-2">
-            <button id="selectAllViewBtn" type="button" class="bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded text-sm font-bold">View All</button>
-            <button id="clearAllBtn" type="button" class="bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded text-sm font-bold">Clear All</button>
-            <button id="saveBtn" type="button" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-sm font-bold">Save</button>
-          </div>
+      <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 grid grid-cols-1 xl:grid-cols-4 gap-4 items-end">
+        <label class="text-sm font-semibold xl:col-span-2">User Group
+          <select id="roleSelect" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2" required>
+            <option value="">Loading user groups...</option>
+          </select>
+        </label>
+        <label class="text-sm font-semibold">Search Module
+          <input id="searchInput" type="search" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2" placeholder="Search access key">
+        </label>
+        <div class="flex gap-2">
+          <button id="selectAllViewBtn" type="button" class="flex-1 bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded-lg text-sm font-bold">View All</button>
+          <button id="clearAllBtn" type="button" class="flex-1 bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded-lg text-sm font-bold">Clear</button>
         </div>
-        <div id="roleDescription" class="text-xs text-slate-500"></div>
+        <div id="roleDescription" class="xl:col-span-4 text-xs text-slate-500"></div>
       </section>
 
-      <section class="space-y-4">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <h2 class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Available Privilege Keys</h2>
-          <input id="searchInput" type="search" class="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm md:w-80" placeholder="Search privilege key or name">
+      <section class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+        <div class="hidden lg:grid grid-cols-[1.5fr_repeat(4,110px)] gap-0 bg-slate-950/80 border-b border-slate-800 px-4 py-3 text-[11px] uppercase tracking-widest text-slate-500 font-bold">
+          <div>Module / Access Key</div>
+          <div class="text-center">View</div>
+          <div class="text-center">Add</div>
+          <div class="text-center">Edit</div>
+          <div class="text-center">Delete</div>
         </div>
-        <div id="privilegeGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+        <div id="privilegeGrid" class="divide-y divide-slate-800"></div>
       </section>
     </main>
   </div>
