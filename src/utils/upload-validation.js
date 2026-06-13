@@ -46,4 +46,20 @@ function assertRasterUpload(file) {
   }
 }
 
-module.exports = { assertImageUpload, assertGeoJsonUpload, assertRasterUpload };
+function assertPdfUpload(file, maxBytes = Number(process.env.MAX_WATER_QUALITY_PDF_SIZE || 10 * 1024 * 1024)) {
+  if (!file) return;
+  const ext = extension(file.filename);
+  const mimetype = String(file.mimetype || '').toLowerCase();
+  if (ext !== '.pdf' || !['application/pdf', 'application/octet-stream'].includes(mimetype)) {
+    const error = new Error('Invalid signed report upload. Only PDF files are allowed.');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (Number(file.size || 0) > maxBytes) {
+    const error = new Error(`Signed report PDF is too large. Maximum size is ${Math.round(maxBytes / 1024 / 1024)} MB.`);
+    error.statusCode = 413;
+    throw error;
+  }
+}
+
+module.exports = { assertImageUpload, assertGeoJsonUpload, assertRasterUpload, assertPdfUpload };
