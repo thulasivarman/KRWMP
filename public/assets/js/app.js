@@ -6,7 +6,6 @@ function loadOptionalScript(src) {
     return new Promise((resolve) => {
         const existing = document.querySelector(`script[src="${src}"]`);
         if (existing) return resolve();
-
         const script = document.createElement('script');
         script.src = src;
         script.onload = resolve;
@@ -20,26 +19,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         await window.KRWMP_ENGINE.initSession();
         if (!window.KRWMP_ENGINE.requireAuthenticatedSession()) return;
     }
-
-    if (window.loadLayerRegistry) {
-        await window.loadLayerRegistry();
-    }
-
+    if (window.loadLayerRegistry) await window.loadLayerRegistry();
     await window.initializeInterface();
-
     window.initializeMap();
-
-    if (window.initializeMapExportControls) {
-        window.initializeMapExportControls();
-    }
-
-    if (window.initializeBasemapSwitcher) {
-        window.initializeBasemapSwitcher();
-    }
-
+    if (window.initializeMapExportControls) window.initializeMapExportControls();
+    if (window.initializeBasemapSwitcher) window.initializeBasemapSwitcher();
     if (window.KRWMP_MAP) {
         window.KRWMP_MAP.on('load', () => {
             if (window.initializeRasterLayerControls) window.initializeRasterLayerControls();
+            if (window.initializeCommunityIssueLayer) window.initializeCommunityIssueLayer();
+            if (window.initializeWaterQualityLayer) window.initializeWaterQualityLayer();
         });
     }
 });
