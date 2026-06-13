@@ -43,20 +43,24 @@ function overallStatus(items) {
   return 'not_assessed';
 }
 
-async function createTest({ fields = {}, pdfFile = null, user = 'system' }) {
-  const lat = toNumber(fields.latitude);
-  const lng = toNumber(fields.longitude);
-  if (lat === null || lng === null) throw new Error('Valid latitude and longitude are required.');
+async function prepareResults(fields) {
   const parameters = await listParameters();
   const byId = new Map(parameters.map(p => [String(p.id), p]));
   const rawResults = Array.isArray(fields.results) ? fields.results : JSON.parse(fields.results || '[]');
-  const prepared = rawResults.map(r => {
+  return rawResults.map(r => {
     const p = byId.get(String(r.parameter_id));
     if (!p) return null;
     const measured = r.measured_value === '' || r.measured_value === null || r.measured_value === undefined ? null : Number(r.measured_value);
     const textValue = cleanText(r.text_value);
     return { parameter: p, measured_value: Number.isFinite(measured) ? measured : null, text_value: textValue, unit: r.unit || p.unit, status: statusFor(p, measured, textValue), remarks: cleanText(r.remarks) };
   }).filter(Boolean);
+}
+
+async function createTest({ fields = {}, pdfFile = null, user = 'system' }) {
+  const lat = toNumber(fields.latitude);
+  const lng = toNumber(fields.longitude);
+  if (lat === null || lng === null) throw new Error('Valid latitude and longitude are required.');
+  const prepared = await prepareResults(fields);
   const pdfUrl = await savePdf(pdfFile);
   const client = await pool.connect();
   try {
@@ -65,11 +69,29 @@ async function createTest({ fields = {}, pdfFile = null, user = 'system' }) {
       (sample_code, sample_location_name, latitude, longitude, geom, sample_collection_datetime, collected_by, dsd_name, gnd_name, sub_watershed_id, sub_watershed_name, overall_status, signed_report_pdf_url, remarks, created_by, updated_by)
       VALUES ($1,$2,$3,$4,ST_SetSRID(ST_MakePoint($4::double precision,$3::double precision),4326),$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14) RETURNING *`,
       [cleanText(fields.sample_code) || sampleCode(), cleanText(fields.sample_location_name), lat, lng, fields.sample_collection_datetime, cleanText(fields.collected_by), cleanText(fields.dsd_name), cleanText(fields.gnd_name), cleanText(fields.sub_watershed_id), cleanText(fields.sub_watershed_name), overallStatus(prepared), pdfUrl, cleanText(fields.remarks), user]);
-    for (const item of prepared) {
-      await client.query('INSERT INTO public.water_quality_test_results (test_id, parameter_id, measured_value, text_value, unit, compliance_status, remarks) VALUES ($1,$2,$3,$4,$5,$6,$7)', [inserted.rows[0].id, item.parameter.id, item.measured_value, item.text_value, item.unit, item.status, item.remarks]);
-    }
+    for (const item of prepared) await client.query('INSERT INTO public.water_quality_test_results (test_id, parameter_id, measured_value, text_value, unit, compliance_status, remarks) VALUES ($1,$2,$3,$4,$5,$6,$7)', [inserted.rows[0].id, item.parameter.id, item.measured_value, item.text_value, item.unit, item.status, item.remarks]);
     await client.query('COMMIT');
     return getTest(inserted.rows[0].id);
+  } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
+}
+
+async function updateTest(id, { fields = {}, pdfFile = null, user = 'system' }) {
+  const existing = await getTest(id);
+  if (!existing) return null;
+  const lat = toNumber(fields.latitude ?? existing.latitude);
+  const lng = toNumber(fields.longitude ?? existing.longitude);
+  const prepared = fields.results !== undefined ? await prepareResults(fields) : null;
+  const pdfUrl = await savePdf(pdfFile);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(`UPDATE public.water_quality_tests SET sample_location_name=COALESCE($2,sample_location_name), latitude=$3, longitude=$4, geom=ST_SetSRID(ST_MakePoint($4::double precision,$3::double precision),4326), sample_collection_datetime=COALESCE($5,sample_collection_datetime), collected_by=COALESCE($6,collected_by), dsd_name=COALESCE($7,dsd_name), gnd_name=COALESCE($8,gnd_name), sub_watershed_id=COALESCE($9,sub_watershed_id), sub_watershed_name=COALESCE($10,sub_watershed_name), overall_status=COALESCE($11,overall_status), signed_report_pdf_url=COALESCE($12,signed_report_pdf_url), remarks=COALESCE($13,remarks), updated_by=$14, updated_at=now() WHERE id=$1`, [id, cleanText(fields.sample_location_name), lat, lng, fields.sample_collection_datetime || null, cleanText(fields.collected_by), cleanText(fields.dsd_name), cleanText(fields.gnd_name), cleanText(fields.sub_watershed_id), cleanText(fields.sub_watershed_name), prepared ? overallStatus(prepared) : null, pdfUrl, cleanText(fields.remarks), user]);
+    if (prepared) {
+      await client.query('DELETE FROM public.water_quality_test_results WHERE test_id=$1', [id]);
+      for (const item of prepared) await client.query('INSERT INTO public.water_quality_test_results (test_id, parameter_id, measured_value, text_value, unit, compliance_status, remarks) VALUES ($1,$2,$3,$4,$5,$6,$7)', [id, item.parameter.id, item.measured_value, item.text_value, item.unit, item.status, item.remarks]);
+    }
+    await client.query('COMMIT');
+    return getTest(id);
   } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
 }
 
@@ -92,4 +114,4 @@ async function latestGeoJson() {
   return result.rows[0].geojson;
 }
 
-module.exports = { listParameters, createTest, listTests, getTest, deleteTest, latestGeoJson };
+module.exports = { listParameters, createTest, updateTest, listTests, getTest, deleteTest, latestGeoJson };
