@@ -10,6 +10,22 @@ const requiredChecks = [
   { table: 'community_issue_reports', column: 'sub_watershed_name' },
   { table: 'community_issue_reports', column: 'other_category_name' },
   { table: 'community_issue_reports', column: 'other_issue_name' },
+  { table: 'knowledge_content', column: 'title' },
+  { table: 'knowledge_content', column: 'content_type' },
+  { table: 'knowledge_content', column: 'status' },
+  { table: 'knowledge_content', column: 'geom' },
+  { table: 'knowledge_content', column: 'sub_watershed_id' },
+  { table: 'knowledge_categories', column: 'category_name' },
+  { table: 'knowledge_tags', column: 'tag_name' }
+];
+
+const requiredTables = [
+  'public.complaint_intervention_mapping',
+  'public.knowledge_categories',
+  'public.knowledge_tags',
+  'public.knowledge_content',
+  'public.knowledge_content_tags',
+  'public.knowledge_content_relations'
 ];
 
 async function main() {
@@ -17,8 +33,10 @@ async function main() {
   const files = fs.existsSync(migrationDir) ? fs.readdirSync(migrationDir).filter(name => name.endsWith('.sql')) : [];
   if (!files.length) throw new Error('No migration files found in database/migrations.');
 
-  const tableResult = await pool.query(`SELECT to_regclass('public.complaint_intervention_mapping') AS table_name;`);
-  if (!tableResult.rows[0].table_name) throw new Error('Missing table: public.complaint_intervention_mapping');
+  for (const table of requiredTables) {
+    const result = await pool.query('SELECT to_regclass($1) AS table_name;', [table]);
+    if (!result.rows[0].table_name) throw new Error(`Missing table: ${table}`);
+  }
 
   for (const check of requiredChecks) {
     const result = await pool.query(`
