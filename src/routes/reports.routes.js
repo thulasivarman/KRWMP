@@ -13,6 +13,12 @@ async function reportsRoutes(fastify) {
     if (!allowed) return;
     return { success: true, report: await reportsService.interventions(request.query || {}) };
   });
+
+  fastify.get('/reports/knowledge', async (request, reply) => {
+    const allowed = await requirePrivilegeInline(request, reply, 'reports_export', 'view');
+    if (!allowed) return;
+    return { success: true, report: await reportsService.knowledge(request.query || {}) };
+  });
 }
 
 module.exports = reportsRoutes;
