@@ -105,6 +105,7 @@
 
   document.addEventListener('DOMContentLoaded', async () => {
     try {
+      if (window.KRWMP_ENGINE) await window.KRWMP_ENGINE.assembleInterfaceContext();
       await loadAll();
       qs('btn-refresh-knowledge').addEventListener('click', loadAll);
       qs('btn-apply-filters').addEventListener('click', loadAll);
