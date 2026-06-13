@@ -24,6 +24,7 @@ fastify.register(require('./routes/reports.routes'), { prefix: '/api' });
 fastify.register(require('./routes/community-issue-interventions.routes'), { prefix: '/api' });
 fastify.register(require('./routes/water-quality.routes'), { prefix: '/api' });
 fastify.register(require('./routes/pollution-source.routes'), { prefix: '/api' });
+fastify.register(require('./routes/volunteer-organisation.routes'), { prefix: '/api' });
 
 fastify.setErrorHandler((error, request, reply) => { fastify.log.error(error); reply.status(error.statusCode || 500).send({ success: false, message: error.message || 'Server error' }); });
 fastify.setNotFoundHandler((request, reply) => { if (request.url.startsWith('/api/')) return reply.status(404).send({ success: false, message: 'API endpoint not found' }); return reply.sendFile('map.html'); });
