@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knowledge Portal - KRWMP Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-emerald-500/30">
+  <div class="flex min-h-screen">
+    <aside id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 hidden lg:flex flex-col"></aside>
+    <main class="flex-1 p-6 lg:p-8">
+      <section class="mb-6 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+        <div>
+          <p class="text-xs uppercase tracking-[0.35em] text-emerald-300 font-bold">KRWMP</p>
+          <h1 class="text-3xl font-bold mt-2">Knowledge Portal</h1>
+          <p class="text-slate-400 mt-2 max-w-3xl">Research articles, PDFs, videos, guidelines and write-ups related to Kelani River Basin catchment management.</p>
+        </div>
+        <div class="flex gap-2">
+          <button id="btn-refresh-knowledge" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm font-semibold">Refresh</button>
+          <button id="btn-open-create" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-sm font-semibold">Add Resource</button>
+        </div>
+      </section>
+
+      <section id="knowledge-kpis" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6"></section>
+
+      <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-6">
+        <div class="grid md:grid-cols-6 gap-3">
+          <input id="filter-q" class="md:col-span-2 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm" placeholder="Search title, keyword, abstract">
+          <select id="filter-category" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm"><option value="">All Categories</option></select>
+          <select id="filter-type" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm">
+            <option value="">All Types</option><option value="article">Article</option><option value="pdf">PDF</option><option value="video">Video</option><option value="research_paper">Research Paper</option><option value="writeup">Write-up</option><option value="guideline">Guideline</option><option value="case_study">Case Study</option><option value="external_link">External Link</option>
+          </select>
+          <select id="filter-status" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm">
+            <option value="">All Status</option><option value="draft">Draft</option><option value="submitted">Submitted</option><option value="reviewed">Reviewed</option><option value="published">Published</option><option value="archived">Archived</option>
+          </select>
+          <button id="btn-apply-filters" class="bg-emerald-700 hover:bg-emerald-600 rounded-lg px-3 py-2 text-sm font-semibold">Apply</button>
+        </div>
+      </section>
+
+      <section class="grid lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+          <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+            <h2 class="font-bold">Knowledge Resources</h2>
+            <span id="resource-count" class="text-xs text-slate-400">0 records</span>
+          </div>
+          <div id="knowledge-list" class="divide-y divide-slate-800"></div>
+        </div>
+        <aside class="space-y-6">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <h2 class="font-bold mb-3">Content by Type</h2>
+            <div id="chart-type" class="space-y-2 text-sm"></div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <h2 class="font-bold mb-3">Pending Review</h2>
+            <div id="pending-review" class="space-y-2 text-sm"></div>
+          </div>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="knowledge-modal" class="backdrop:bg-slate-950/80 rounded-2xl bg-slate-900 text-slate-100 border border-slate-700 w-[min(920px,95vw)]">
+    <form id="knowledge-form" class="p-5 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h2 class="font-bold text-xl">Knowledge Resource</h2>
+        <button type="button" id="btn-close-modal" class="text-slate-400 hover:text-white text-2xl">&times;</button>
+      </div>
+      <input type="hidden" name="id">
+      <div class="grid md:grid-cols-2 gap-3">
+        <label class="md:col-span-2 text-sm">Title<input name="title" required class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2"></label>
+        <label class="text-sm">Content Type<select name="content_type" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2"><option value="article">Article</option><option value="pdf">PDF</option><option value="video">Video</option><option value="research_paper">Research Paper</option><option value="writeup">Write-up</option><option value="guideline">Guideline</option><option value="case_study">Case Study</option><option value="external_link">External Link</option></select></label>
+        <label class="text-sm">Category<select name="category_id" id="form-category" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2"><option value="">Uncategorised</option></select></label>
+        <label class="text-sm">Status<select name="status" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2"><option value="draft">Draft</option><option value="submitted">Submitted</option><option value="reviewed">Reviewed</option><option value="published">Published</option><option value="archived">Archived</option></select></label>
+        <label class="text-sm">Language<input name="language" value="English" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2"></label>
+        <label class="text-sm">Publication Year<input name="publication_year" type="number" min="1900" max="2100" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2"></label>
+        <label class="text-sm">Tags<input name="tags" placeholder="flood, water quality, community" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2"></label>
+        <label class="md:col-span-2 text-sm">Summary<textarea name="summary" rows="2" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2"></textarea></label>
+        <label class="md:col-span-2 text-sm">Abstract / Write-up<textarea name="abstract" rows="4" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2"></textarea></label>
+        <label class="text-sm">External URL<input name="external_url" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2"></label>
+        <label class="text-sm">File URL<input name="file_url" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2"></label>
+        <label class="text-sm">Video URL<input name="video_url" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2"></label>
+        <label class="text-sm">Thumbnail URL<input name="thumbnail_url" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2"></label>
+        <label class="text-sm">Latitude<input name="latitude" type="number" step="any" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2"></label>
+        <label class="text-sm">Longitude<input name="longitude" type="number" step="any" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2"></label>
+        <label class="text-sm flex items-center gap-2"><input name="is_featured" type="checkbox" class="rounded"> Featured Resource</label>
+      </div>
+      <div class="flex justify-end gap-2 pt-3 border-t border-slate-800">
+        <button type="button" id="btn-cancel-form" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700">Cancel</button>
+        <button class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold">Save Resource</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/assets/js/krwmp-global.js"></script>
+  <script src="/assets/js/knowledge.js"></script>
+</body>
+</html>
