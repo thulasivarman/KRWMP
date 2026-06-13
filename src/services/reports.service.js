@@ -1,4 +1,5 @@
 const pool = require('../../config/database');
+const knowledgeService = require('./knowledge.service');
 
 function parseFilters(query = {}, dateColumn = 'updated_at') {
   const filters = [];
@@ -99,4 +100,8 @@ async function interventions(query = {}) {
   return { summary: summary.rows[0], byStatus: byStatus.rows, byPriority: byPriority.rows, records: records.rows };
 }
 
-module.exports = { communityComplaints, interventions };
+async function knowledge(query = {}) {
+  return knowledgeService.report(query);
+}
+
+module.exports = { communityComplaints, interventions, knowledge };
