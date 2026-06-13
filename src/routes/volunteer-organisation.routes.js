@@ -11,6 +11,13 @@ async function volunteerOrganisationRoutes(fastify) {
     if (!await requirePrivilegeInline(request, reply, 'volunteer_organisation_management', 'view')) return;
     return { success: true, organisations: await service.listOrganisations() };
   });
+
+  fastify.get('/volunteer-organisations/:id', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'volunteer_organisation_management', 'view')) return;
+    const organisation = await service.getOrganisation(request.params.id);
+    if (!organisation) return reply.status(404).send({ success: false, message: 'Record not found.' });
+    return { success: true, organisation };
+  });
 }
 
 module.exports = volunteerOrganisationRoutes;
