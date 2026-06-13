@@ -1,27 +1,67 @@
 <!-- SIDEBAR BRANDING & IDENTITY SECTION -->
 <div class="p-6 border-b border-slate-800 bg-slate-950/40">
     <div class="flex items-center gap-3">
-        <div class="h-8 w-8 rounded-lg bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">★</div>
-        <div><h1 class="text-sm font-bold tracking-wider text-slate-200 uppercase">KRWMP Portal</h1><p class="text-[10px] text-slate-500 font-medium tracking-tight">Spatial Decision Support System</p></div>
+        <div class="h-9 w-9 rounded-xl bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30" aria-hidden="true">W</div>
+        <div>
+            <h1 class="text-sm font-bold tracking-wider text-slate-200 uppercase">KRWMP Portal</h1>
+            <p class="text-[10px] text-slate-500 font-medium tracking-tight">Watershed Intelligence System</p>
+        </div>
     </div>
 </div>
 
-<div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-    <a href="/map.html" id="sidebar-home-link" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-emerald-400 hover:bg-slate-950/40 border border-slate-800/40 hover:border-emerald-500/20 transition-all group"><span>Home / Map Portal</span></a>
-    <a href="/community-report.html" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-emerald-400 hover:bg-slate-950/40 border border-slate-800/40 hover:border-emerald-500/20 transition-all group"><span>Report Catchment Issue</span></a>
-    <a href="/vwmc-management.html" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-emerald-400 hover:bg-slate-950/40 border border-slate-800/40 hover:border-emerald-500/20 transition-all group"><span>VWMC Management</span></a>
-    <a href="/intervention-registry.html" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-emerald-400 hover:bg-slate-950/40 border border-slate-800/40 hover:border-emerald-500/20 transition-all group"><span>Intervention Registry</span></a>
-    <a href="/intervention-library.html" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-emerald-400 hover:bg-slate-950/40 border border-slate-800/40 hover:border-emerald-500/20 transition-all group"><span>Intervention Library</span></a>
-    <a href="/admin-institutions.html" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-emerald-400 hover:bg-slate-950/40 border border-slate-800/40 hover:border-emerald-500/20 transition-all group"><span>Institution Directory</span></a>
+<nav class="flex-1 overflow-y-auto p-4 space-y-5 custom-scrollbar" aria-label="Main navigation">
+    <section class="krwmp-nav-group" aria-labelledby="nav-overview">
+        <div id="nav-overview" class="krwmp-nav-heading">Overview</div>
+        <a href="/map.html" id="sidebar-home-link" class="krwmp-nav-link"><span>Map Portal</span></a>
+        <a href="/reports.html" class="krwmp-nav-link"><span>Reports & Dashboard</span></a>
+        <a href="/knowledge.html" class="krwmp-nav-link"><span>Knowledge Portal</span></a>
+    </section>
 
-    <div id="section-user-management" class="hidden mt-4 pt-4 border-t border-slate-800/60">
-        <div class="px-4 block text-[9px] font-bold tracking-widest text-slate-500 uppercase mb-2">System Administration</div>
-        <a href="/admin.html" class="mx-3 px-3 py-2 rounded-lg flex items-center gap-2.5 text-xs font-medium text-slate-400 hover:text-emerald-400 hover:bg-slate-950/40 border border-transparent hover:border-slate-800/40 transition-all group"><span>User Management Hub</span></a>
-        <a href="/admin-vector-layers.html" class="mx-3 mt-2 px-3 py-2 rounded-lg flex items-center gap-2.5 text-xs font-medium text-slate-400 hover:text-emerald-400 hover:bg-slate-950/40 border border-transparent hover:border-slate-800/40 transition-all group"><span>Vector Layer Management</span></a>
-        <a href="/admin-raster-layers.html" class="mx-3 mt-2 px-3 py-2 rounded-lg flex items-center gap-2.5 text-xs font-medium text-slate-400 hover:text-emerald-400 hover:bg-slate-950/40 border border-transparent hover:border-slate-800/40 transition-all group"><span>Raster Layer Management</span></a>
-        <a href="/admin-solution-library.html" class="mx-3 mt-2 px-3 py-2 rounded-lg flex items-center gap-2.5 text-xs font-medium text-slate-400 hover:text-emerald-400 hover:bg-slate-950/40 border border-transparent hover:border-slate-800/40 transition-all group"><span>Issue & Solution Library</span></a>
-        <a href="/admin-community-issues.html" class="mx-3 mt-2 px-3 py-2 rounded-lg flex items-center gap-2.5 text-xs font-medium text-slate-400 hover:text-emerald-400 hover:bg-slate-950/40 border border-transparent hover:border-slate-800/40 transition-all group"><span>Community Issue Review</span></a>
+    <section class="krwmp-nav-group" aria-labelledby="nav-community">
+        <div id="nav-community" class="krwmp-nav-heading">Community Participation</div>
+        <a href="/community-report.html" class="krwmp-nav-link"><span>Report Catchment Issue</span></a>
+        <a href="/admin-community-issues.html" class="krwmp-nav-link" data-section-key="user_management"><span>Community Issue Review</span></a>
+        <a href="/admin-solution-library.html" class="krwmp-nav-link" data-section-key="user_management"><span>Issue & Solution Library</span></a>
+    </section>
+
+    <section class="krwmp-nav-group" aria-labelledby="nav-watershed">
+        <div id="nav-watershed" class="krwmp-nav-heading">Watershed Management</div>
+        <a href="/vwmc-management.html" class="krwmp-nav-link"><span>VWMC Management</span></a>
+        <a href="/intervention-registry.html" class="krwmp-nav-link"><span>Intervention Registry</span></a>
+        <a href="/intervention-library.html" class="krwmp-nav-link"><span>Intervention Library</span></a>
+    </section>
+
+    <section class="krwmp-nav-group" aria-labelledby="nav-monitoring">
+        <div id="nav-monitoring" class="krwmp-nav-heading">Environmental Monitoring</div>
+        <a href="/water-quality-records.html" class="krwmp-nav-link"><span>Water Quality Monitoring</span></a>
+        <a href="/pollution-sources.html" class="krwmp-nav-link"><span>Pollution Sources</span></a>
+        <a href="/volunteer-organisations.html" class="krwmp-nav-link"><span>Volunteer Organizations</span></a>
+    </section>
+
+    <section class="krwmp-nav-group" aria-labelledby="nav-gis" id="section-data-layers">
+        <div id="nav-gis" class="krwmp-nav-heading">GIS Management</div>
+        <a href="/admin-vector-layers.html" class="krwmp-nav-link"><span>Vector Layer Management</span></a>
+        <a href="/admin-raster-layers.html" class="krwmp-nav-link"><span>Raster Layer Management</span></a>
+    </section>
+
+    <section id="section-user-management" class="krwmp-nav-group hidden" aria-labelledby="nav-admin">
+        <div id="nav-admin" class="krwmp-nav-heading">System Administration</div>
+        <a href="/admin.html" class="krwmp-nav-link"><span>User Management Hub</span></a>
+        <a href="/admin-institutions.html" class="krwmp-nav-link"><span>Institution Directory</span></a>
+        <a href="/privilege-group-management.html" class="krwmp-nav-link"><span>Roles & Privileges</span></a>
+    </section>
+</nav>
+
+<div class="p-4 border-t border-slate-800 bg-slate-950/40 flex items-center justify-between gap-1">
+    <div class="flex items-center gap-2.5 overflow-hidden flex-1">
+        <div class="h-7 w-7 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span id="userInitialsLabel" class="text-[10px] font-bold text-emerald-400 uppercase">--</span></div>
+        <div class="overflow-hidden">
+            <h4 id="userNameLabel" class="text-xs font-semibold text-slate-300 truncate">Loading Profiles...</h4>
+            <p id="userDesignationLabel" class="text-[9px] text-slate-500 truncate tracking-wide">Resolving Database Records...</p>
+        </div>
+    </div>
+    <div class="flex items-center gap-1 flex-shrink-0">
+        <button type="button" onclick="window.KRWMP_ENGINE.dispatchProfileEdit()" class="text-slate-500 hover:text-emerald-400 p-1.5 rounded transition hover:bg-slate-900/60 focus:outline-none focus:ring-2 focus:ring-emerald-400" aria-label="Edit profile" title="Edit Profile">✎</button>
+        <button type="button" onclick="window.KRWMP_ENGINE.dispatchLogout()" class="text-slate-500 hover:text-rose-400 p-1.5 rounded transition hover:bg-slate-900/60 focus:outline-none focus:ring-2 focus:ring-rose-400" aria-label="Logout" title="Logout Session">⎋</button>
     </div>
 </div>
-
-<div class="p-4 border-t border-slate-800 bg-slate-950/40 flex items-center justify-between gap-1"><div class="flex items-center gap-2.5 overflow-hidden flex-1"><div class="h-7 w-7 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0"><span id="userInitialsLabel" class="text-[10px] font-bold text-emerald-400 uppercase">--</span></div><div class="overflow-hidden"><h4 id="userNameLabel" class="text-xs font-semibold text-slate-300 truncate">Loading Profiles...</h4><p id="userDesignationLabel" class="text-[9px] text-slate-500 truncate tracking-wide">Resolving Database Records...</p></div></div><div class="flex items-center gap-1 flex-shrink-0"><button onclick="window.KRWMP_ENGINE.dispatchProfileEdit()" class="text-slate-500 hover:text-emerald-400 p-1.5 rounded transition hover:bg-slate-900/60" title="Edit Profile">✎</button><button onclick="window.KRWMP_ENGINE.dispatchLogout()" class="text-slate-500 hover:text-rose-400 p-1.5 rounded transition hover:bg-slate-900/60" title="Logout Session">⎋</button></div></div>
