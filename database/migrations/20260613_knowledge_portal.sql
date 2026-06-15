@@ -37,8 +37,8 @@ CREATE TABLE IF NOT EXISTS public.knowledge_content (
   summary text,
   content_type text NOT NULL DEFAULT 'article',
   category_id uuid REFERENCES public.knowledge_categories(id) ON DELETE SET NULL,
-  publisher_institution_id uuid REFERENCES public.intervention_institutions(id) ON DELETE SET NULL,
-  author_institution_id uuid REFERENCES public.intervention_institutions(id) ON DELETE SET NULL,
+  publisher_institution_id bigint REFERENCES public.intervention_institutions(id) ON DELETE SET NULL,
+  author_institution_id bigint REFERENCES public.intervention_institutions(id) ON DELETE SET NULL,
   publication_year integer,
   language text NOT NULL DEFAULT 'English',
   keywords text,
@@ -71,6 +71,8 @@ CREATE TABLE IF NOT EXISTS public.knowledge_content (
 CREATE INDEX IF NOT EXISTS idx_knowledge_content_status ON public.knowledge_content(status);
 CREATE INDEX IF NOT EXISTS idx_knowledge_content_type ON public.knowledge_content(content_type);
 CREATE INDEX IF NOT EXISTS idx_knowledge_content_category ON public.knowledge_content(category_id);
+CREATE INDEX IF NOT EXISTS idx_knowledge_content_publisher_institution ON public.knowledge_content(publisher_institution_id);
+CREATE INDEX IF NOT EXISTS idx_knowledge_content_author_institution ON public.knowledge_content(author_institution_id);
 CREATE INDEX IF NOT EXISTS idx_knowledge_content_sub_watershed ON public.knowledge_content(sub_watershed_id);
 CREATE INDEX IF NOT EXISTS idx_knowledge_content_geom ON public.knowledge_content USING gist(geom);
 CREATE INDEX IF NOT EXISTS idx_knowledge_content_search ON public.knowledge_content USING gin(to_tsvector('english', coalesce(title,'') || ' ' || coalesce(summary,'') || ' ' || coalesce(abstract,'') || ' ' || coalesce(keywords,'')));
@@ -87,12 +89,15 @@ CREATE TABLE IF NOT EXISTS public.knowledge_content_relations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   knowledge_content_id uuid NOT NULL REFERENCES public.knowledge_content(id) ON DELETE CASCADE,
   related_module text NOT NULL,
-  related_record_id uuid NOT NULL,
+  related_record_id text NOT NULL,
   relation_type text,
   note text,
   created_by text,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE INDEX IF NOT EXISTS idx_knowledge_content_relations_content ON public.knowledge_content_relations(knowledge_content_id);
+CREATE INDEX IF NOT EXISTS idx_knowledge_content_relations_module_record ON public.knowledge_content_relations(related_module, related_record_id);
 
 CREATE OR REPLACE VIEW public.vw_knowledge_dashboard_summary AS
 SELECT
