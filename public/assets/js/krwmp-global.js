@@ -74,10 +74,53 @@ window.KRWMP_ENGINE = {
             const response = await fetch(sidebarUrl);
             if (!response.ok) throw new Error(`HTML fragment unresolved: ${sidebarUrl}`);
             sidebarContainer.innerHTML = await response.text();
+            this.installSidebarShell(sidebarContainer);
             this.injectReportsLink();
             this.syncProfileMetadata();
+            document.dispatchEvent(new CustomEvent('krwmp:sidebar-loaded'));
         } catch (uiError) {
             console.error("UI contextual engine compile fault:", uiError);
+        }
+    },
+
+    installSidebarShell: function (sidebarContainer) {
+        if (!sidebarContainer || sidebarContainer.dataset.krwmpShellInstalled === 'true') return;
+        sidebarContainer.dataset.krwmpShellInstalled = 'true';
+        sidebarContainer.classList.add('krwmp-sidebar');
+        document.body.classList.add('krwmp-has-sidebar');
+
+        const savedState = localStorage.getItem('krwmp_sidebar_collapsed');
+        const shouldCollapse = savedState === 'true';
+        document.body.classList.toggle('krwmp-sidebar-collapsed', shouldCollapse);
+
+        let toggle = document.getElementById('krwmp-sidebar-toggle');
+        if (!toggle) {
+            toggle = document.createElement('button');
+            toggle.id = 'krwmp-sidebar-toggle';
+            toggle.type = 'button';
+            toggle.className = 'krwmp-sidebar-toggle';
+            toggle.setAttribute('aria-controls', sidebarContainer.id || 'sidebar');
+            toggle.setAttribute('title', 'Show / hide sidebar');
+            document.body.appendChild(toggle);
+        }
+
+        const syncToggle = () => {
+            const collapsed = document.body.classList.contains('krwmp-sidebar-collapsed');
+            toggle.setAttribute('aria-expanded', String(!collapsed));
+            toggle.innerHTML = collapsed ? '&#9776;' : '&lsaquo;';
+            toggle.setAttribute('aria-label', collapsed ? 'Show sidebar' : 'Hide sidebar');
+        };
+
+        syncToggle();
+
+        if (toggle.dataset.krwmpBound !== 'true') {
+            toggle.dataset.krwmpBound = 'true';
+            toggle.addEventListener('click', () => {
+                const collapsed = document.body.classList.toggle('krwmp-sidebar-collapsed');
+                localStorage.setItem('krwmp_sidebar_collapsed', String(collapsed));
+                syncToggle();
+                window.setTimeout(() => window.dispatchEvent(new Event('resize')), 260);
+            });
         }
     },
 
