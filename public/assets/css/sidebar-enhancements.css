@@ -1,0 +1,188 @@
+/* KRWMP sidebar logo, collapse rail and dark scrollbars */
+body.krwmp-has-sidebar #sidebar.krwmp-sidebar {
+  background: #020617 !important;
+  border-right-color: #1e293b !important;
+}
+
+.krwmp-sidebar-brand {
+  min-height: 6.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.krwmp-sidebar-brand-toggle {
+  position: relative;
+  width: 100%;
+  min-height: 4.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(30, 41, 59, 0.95);
+  background: rgba(15, 23, 42, 0.82);
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.krwmp-sidebar-brand-toggle:hover,
+.krwmp-sidebar-brand-toggle:focus-visible {
+  background: rgba(15, 23, 42, 1);
+  border-color: rgba(52, 211, 153, 0.55);
+  outline: 2px solid rgba(52, 211, 153, 0.3);
+  outline-offset: 2px;
+}
+
+.krwmp-sidebar-brand-toggle::after {
+  content: '\2039';
+  position: absolute;
+  right: 0.45rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.4rem;
+  height: 1.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.88);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  color: #d1fae5;
+  font-size: 1.25rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.krwmp-sidebar-logo {
+  width: 100%;
+  max-width: 13.5rem;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.28));
+}
+
+/* Override previous floating toggle. The logo is the sidebar control now. */
+#krwmp-sidebar-toggle,
+.krwmp-sidebar-toggle {
+  display: none !important;
+}
+
+/* Keep a compact logo rail visible when collapsed so the sidebar can be reopened. */
+body.krwmp-has-sidebar.krwmp-sidebar-collapsed #sidebar.krwmp-sidebar {
+  transform: none !important;
+  width: 4.75rem !important;
+}
+
+body.krwmp-has-sidebar.krwmp-sidebar-collapsed main {
+  margin-left: 4.75rem !important;
+}
+
+body.krwmp-sidebar-collapsed .krwmp-sidebar-brand {
+  padding: 0.65rem !important;
+  min-height: 5rem;
+}
+
+body.krwmp-sidebar-collapsed .krwmp-sidebar-brand-toggle {
+  min-height: 3.3rem;
+  padding: 0.35rem;
+}
+
+body.krwmp-sidebar-collapsed .krwmp-sidebar-brand-toggle::after {
+  content: '\203A';
+  right: -0.2rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  font-size: 1rem;
+}
+
+body.krwmp-sidebar-collapsed .krwmp-sidebar-logo {
+  width: 3.05rem;
+  height: 3.05rem;
+  object-fit: cover;
+  object-position: left center;
+  border-radius: 999px;
+}
+
+body.krwmp-sidebar-collapsed #sidebar nav,
+body.krwmp-sidebar-collapsed #sidebar > div:last-child {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+body.krwmp-sidebar-collapsed #sidebar nav {
+  display: none !important;
+}
+
+/* Dark mode scrollbars */
+html,
+body,
+#sidebar,
+.custom-scrollbar,
+.krwmp-table-wrap,
+.krwmp-layer-panel,
+#dynamic-layer-control-list,
+#raster-layer-control-list {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 #020617;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+#sidebar::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar,
+.krwmp-table-wrap::-webkit-scrollbar,
+.krwmp-layer-panel::-webkit-scrollbar,
+#dynamic-layer-control-list::-webkit-scrollbar,
+#raster-layer-control-list::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+#sidebar::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track,
+.krwmp-table-wrap::-webkit-scrollbar-track,
+.krwmp-layer-panel::-webkit-scrollbar-track,
+#dynamic-layer-control-list::-webkit-scrollbar-track,
+#raster-layer-control-list::-webkit-scrollbar-track {
+  background: #020617;
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+#sidebar::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb,
+.krwmp-table-wrap::-webkit-scrollbar-thumb,
+.krwmp-layer-panel::-webkit-scrollbar-thumb,
+#dynamic-layer-control-list::-webkit-scrollbar-thumb,
+#raster-layer-control-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #334155, #1e293b);
+  border: 2px solid #020617;
+  border-radius: 999px;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+#sidebar::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar::-webkit-scrollbar-thumb:hover,
+.krwmp-table-wrap::-webkit-scrollbar-thumb:hover,
+.krwmp-layer-panel::-webkit-scrollbar-thumb:hover,
+#dynamic-layer-control-list::-webkit-scrollbar-thumb:hover,
+#raster-layer-control-list::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #475569, #334155);
+}
+
+@media (max-width: 768px) {
+  body.krwmp-has-sidebar.krwmp-sidebar-collapsed #sidebar.krwmp-sidebar {
+    width: 4.75rem !important;
+    transform: none !important;
+  }
+
+  body.krwmp-has-sidebar main,
+  body.krwmp-has-sidebar.krwmp-sidebar-collapsed main {
+    margin-left: 4.75rem !important;
+  }
+}
