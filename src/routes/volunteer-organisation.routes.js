@@ -2,7 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { pipeline } = require('stream/promises');
+const pool = require('../../config/database');
 const service = require('../services/volunteer-organisation.service');
+const { getRequestUser, isMasterAdmin } = require('../middleware/privilege.middleware');
 const { requirePrivilegeInline } = require('../middleware/privilege.middleware');
 
 const UPLOAD_DIR = path.join(__dirname, '../../public/uploads/volunteer-organisations');
@@ -19,7 +21,33 @@ const ALLOWED_DOCUMENT_TYPES = new Set([
 ]);
 
 function getUser(request) {
-  return String(request.headers['x-krwmp-user'] || 'system').trim();
+  return String(request.headers['x-krwmp-user'] || getRequestUser(request) || 'system').trim();
+}
+
+async function requireAdminUserGroup(request, reply) {
+  const identifier = getRequestUser(request);
+  if (!identifier) {
+    reply.status(401).send({ success: false, message: 'Authentication required' });
+    return false;
+  }
+  if (isMasterAdmin(identifier)) return true;
+
+  const result = await pool.query(`
+    SELECT EXISTS (
+      SELECT 1
+      FROM public.users u
+      LEFT JOIN public.user_roles ur ON ur.user_id = u.id
+      LEFT JOIN public.roles r ON r.id = COALESCE(ur.role_id, u.role_id)
+      WHERE u.identifier = $1 AND LOWER(r.role_name) = 'admin'
+    ) AS allowed;
+  `, [identifier]);
+
+  if (!result.rows[0]?.allowed) {
+    reply.status(403).send({ success: false, message: 'Access denied. Only Admin user group can delete volunteer organisations.' });
+    return false;
+  }
+
+  return true;
 }
 
 function sanitizeFileName(value = 'supporting-document') {
@@ -86,7 +114,7 @@ async function volunteerOrganisationRoutes(fastify) {
   });
 
   fastify.delete('/volunteer-organisations/:id', async (request, reply) => {
-    if (!await requirePrivilegeInline(request, reply, 'volunteer_organisation_management', 'delete')) return;
+    if (!await requireAdminUserGroup(request, reply)) return;
     const deleted = await service.deleteOrganisation(request.params.id);
     if (!deleted) return reply.status(404).send({ success: false, message: 'Volunteer organisation not found.' });
     return { success: true, deleted: request.params.id };
