@@ -85,6 +85,13 @@ async function volunteerOrganisationRoutes(fastify) {
     }
   });
 
+  fastify.delete('/volunteer-organisations/:id', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'volunteer_organisation_management', 'delete')) return;
+    const deleted = await service.deleteOrganisation(request.params.id);
+    if (!deleted) return reply.status(404).send({ success: false, message: 'Volunteer organisation not found.' });
+    return { success: true, deleted: request.params.id };
+  });
+
   fastify.get('/volunteer-organisations/:id', async (request, reply) => {
     if (!await requirePrivilegeInline(request, reply, 'volunteer_organisation_management', 'view')) return;
     const organisation = await service.getOrganisation(request.params.id);
