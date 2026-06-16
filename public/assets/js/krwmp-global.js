@@ -89,33 +89,28 @@ window.KRWMP_ENGINE = {
         sidebarContainer.classList.add('krwmp-sidebar');
         document.body.classList.add('krwmp-has-sidebar');
 
+        const floatingToggle = document.getElementById('krwmp-sidebar-toggle');
+        if (floatingToggle) floatingToggle.remove();
+
         const savedState = localStorage.getItem('krwmp_sidebar_collapsed');
         const shouldCollapse = savedState === 'true';
         document.body.classList.toggle('krwmp-sidebar-collapsed', shouldCollapse);
 
-        let toggle = document.getElementById('krwmp-sidebar-toggle');
-        if (!toggle) {
-            toggle = document.createElement('button');
-            toggle.id = 'krwmp-sidebar-toggle';
-            toggle.type = 'button';
-            toggle.className = 'krwmp-sidebar-toggle';
-            toggle.setAttribute('aria-controls', sidebarContainer.id || 'sidebar');
-            toggle.setAttribute('title', 'Show / hide sidebar');
-            document.body.appendChild(toggle);
-        }
+        const brandToggle = document.getElementById('krwmp-sidebar-brand-toggle');
+        if (!brandToggle) return;
 
         const syncToggle = () => {
             const collapsed = document.body.classList.contains('krwmp-sidebar-collapsed');
-            toggle.setAttribute('aria-expanded', String(!collapsed));
-            toggle.innerHTML = collapsed ? '&#9776;' : '&lsaquo;';
-            toggle.setAttribute('aria-label', collapsed ? 'Show sidebar' : 'Hide sidebar');
+            brandToggle.setAttribute('aria-expanded', String(!collapsed));
+            brandToggle.setAttribute('aria-label', collapsed ? 'Show sidebar' : 'Hide sidebar');
+            brandToggle.setAttribute('title', collapsed ? 'Show sidebar' : 'Hide sidebar');
         };
 
         syncToggle();
 
-        if (toggle.dataset.krwmpBound !== 'true') {
-            toggle.dataset.krwmpBound = 'true';
-            toggle.addEventListener('click', () => {
+        if (brandToggle.dataset.krwmpBound !== 'true') {
+            brandToggle.dataset.krwmpBound = 'true';
+            brandToggle.addEventListener('click', () => {
                 const collapsed = document.body.classList.toggle('krwmp-sidebar-collapsed');
                 localStorage.setItem('krwmp_sidebar_collapsed', String(collapsed));
                 syncToggle();
