@@ -32,14 +32,9 @@ function sanitizeFileName(value = 'knowledge-resource') {
   return String(value).replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120) || 'knowledge-resource';
 }
 
-async function isAdminRequest(request, reply) {
-  const identifier = getRequestUser(request);
-  if (!identifier) {
-    reply.status(401).send({ success: false, message: 'Authentication required' });
-    return false;
-  }
+async function isAdminIdentifier(identifier) {
+  if (!identifier) return false;
   if (isMasterAdmin(identifier)) return true;
-
   const result = await pool.query(`
     SELECT EXISTS (
       SELECT 1
@@ -49,8 +44,16 @@ async function isAdminRequest(request, reply) {
       WHERE u.identifier = $1 AND LOWER(r.role_name) = 'admin'
     ) AS allowed;
   `, [identifier]);
+  return !!result.rows[0]?.allowed;
+}
 
-  if (!result.rows[0]?.allowed) {
+async function requireAdminRequest(request, reply) {
+  const identifier = getRequestUser(request);
+  if (!identifier) {
+    reply.status(401).send({ success: false, message: 'Authentication required' });
+    return false;
+  }
+  if (!await isAdminIdentifier(identifier)) {
     reply.status(403).send({ success: false, message: 'Access denied. Only Admin users can update Knowledge Resource status.' });
     return false;
   }
@@ -157,7 +160,7 @@ async function knowledgeRoutes(fastify) {
     if (!await requirePrivilegeInline(request, reply, PRIVILEGE_KEY, 'create')) return;
     try {
       const payload = await parseKnowledgePayload(request);
-      if (!await isAdminRequest(request, { status: () => ({ send: () => false }) })) delete payload.status;
+      if (!await isAdminIdentifier(getRequestUser(request))) delete payload.status;
       const resource = await service.createContent(payload, currentUser(request));
       return reply.status(201).send({ success: true, message: 'Knowledge resource created successfully.', resource });
     } catch (error) {
@@ -169,7 +172,7 @@ async function knowledgeRoutes(fastify) {
     if (!await requirePrivilegeInline(request, reply, PRIVILEGE_KEY, 'update')) return;
     try {
       const payload = await parseKnowledgePayload(request);
-      if (payload.status && !await isAdminRequest(request, { status: () => ({ send: () => false }) })) delete payload.status;
+      if (payload.status && !await isAdminIdentifier(getRequestUser(request))) delete payload.status;
       const resource = await service.updateContent(request.params.id, payload, currentUser(request));
       if (!resource) return reply.status(404).send({ success: false, message: 'Knowledge resource not found.' });
       return { success: true, message: 'Knowledge resource updated successfully.', resource };
@@ -179,7 +182,7 @@ async function knowledgeRoutes(fastify) {
   });
 
   fastify.patch('/knowledge/:id/status', async (request, reply) => {
-    if (!await isAdminRequest(request, reply)) return;
+    if (!await requireAdminRequest(request, reply)) return;
     const resource = await service.updateContentStatus(request.params.id, request.body?.status, currentUser(request), request.body?.review_remarks);
     if (!resource) return reply.status(404).send({ success: false, message: 'Knowledge resource not found.' });
     return { success: true, message: 'Knowledge resource status updated successfully.', resource };
