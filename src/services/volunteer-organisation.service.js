@@ -37,9 +37,14 @@ function validateVolunteerPayload(payload = {}) {
   const district = cleanText(payload.district);
   const dsdName = cleanText(payload.dsd_name || payload.dsd);
   const gndName = cleanText(payload.gnd_name || payload.gnd);
+  const subWatershedId = cleanText(payload.sub_watershed_id);
+  const subWatershedName = cleanText(payload.sub_watershed_name);
   const description = cleanText(payload.description);
   const latitude = parseCoordinate(payload.latitude, -90, 90, 'Latitude');
   const longitude = parseCoordinate(payload.longitude, -180, 180, 'Longitude');
+  const supportingDocumentUrl = cleanText(payload.supporting_document_url);
+  const supportingDocumentName = cleanText(payload.supporting_document_name);
+  const supportingDocumentMimeType = cleanText(payload.supporting_document_mime_type);
 
   if (!institutionName) throw new Error('Organisation name is required.');
   if (institutionName.length < 3 || institutionName.length > 255) throw new Error('Organisation name must be 3–255 characters.');
@@ -50,7 +55,8 @@ function validateVolunteerPayload(payload = {}) {
   if (contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) throw new Error('Contact email format is invalid.');
   if (website && !/^https?:\/\/.+/i.test(website)) throw new Error('Website must start with http:// or https://.');
   if (!address) throw new Error('Organisation address is required.');
-  if ((latitude === null) !== (longitude === null)) throw new Error('Both latitude and longitude are required when setting organisation location.');
+  if (latitude === null || longitude === null) throw new Error('Organisation location is required. Please mark the location on the map.');
+  if (!dsdName || !gndName) throw new Error('DSD and GND could not be identified. Please select a location inside the Kelani River Basin administrative boundary.');
 
   return {
     institution_name: institutionName,
@@ -64,11 +70,30 @@ function validateVolunteerPayload(payload = {}) {
     district,
     dsd_name: dsdName,
     gnd_name: gndName,
+    sub_watershed_id: subWatershedId,
+    sub_watershed_name: subWatershedName,
     description,
     latitude,
     longitude,
     active: parseBoolean(payload.active, true),
+    supporting_document_url: supportingDocumentUrl,
+    supporting_document_name: supportingDocumentName,
+    supporting_document_mime_type: supportingDocumentMimeType,
   };
+}
+
+async function ensureDocumentTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS public.volunteer_organisation_documents (
+      id bigserial PRIMARY KEY,
+      organisation_id bigint NOT NULL,
+      file_name text NOT NULL,
+      file_url text NOT NULL,
+      mime_type text,
+      uploaded_by text,
+      uploaded_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
 }
 
 async function dashboard() {
@@ -77,7 +102,25 @@ async function dashboard() {
 }
 
 async function listOrganisations() {
-  const result = await pool.query('SELECT * FROM public.vw_volunteer_organisation_performance ORDER BY active DESC, performance_score DESC NULLS LAST, institution_name LIMIT 500;');
+  const result = await pool.query(`
+    SELECT vo.*, doc.file_url AS supporting_document_url, doc.file_name AS supporting_document_name
+    FROM public.vw_volunteer_organisation_performance vo
+    LEFT JOIN LATERAL (
+      SELECT file_url, file_name
+      FROM public.volunteer_organisation_documents d
+      WHERE d.organisation_id = vo.id
+      ORDER BY uploaded_at DESC
+      LIMIT 1
+    ) doc ON true
+    ORDER BY vo.active DESC, vo.performance_score DESC NULLS LAST, vo.institution_name
+    LIMIT 500;
+  `).catch(async error => {
+    if (String(error.message || '').includes('volunteer_organisation_documents')) {
+      const fallback = await pool.query('SELECT * FROM public.vw_volunteer_organisation_performance ORDER BY active DESC, performance_score DESC NULLS LAST, institution_name LIMIT 500;');
+      return fallback;
+    }
+    throw error;
+  });
   return result.rows;
 }
 
@@ -88,36 +131,70 @@ async function getOrganisation(id) {
 
 async function createOrganisation(payload, username = 'system') {
   const body = validateVolunteerPayload(payload);
-  const result = await pool.query(`
-    INSERT INTO public.intervention_institutions
-      (institution_name, institution_code, institution_type, contact_person, contact_phone, contact_email,
-       website, address, district, dsd_name, gnd_name, description, latitude, longitude, geom,
-       active, created_by, updated_by)
-    VALUES
-      ($1::text,$2::varchar,$3::text,$4::text,$5::text,$6::text,$7::text,$8::text,$9::varchar,$10::varchar,$11::varchar,$12::text,
-       $13::numeric,$14::numeric,
-       CASE WHEN $13::numeric IS NOT NULL AND $14::numeric IS NOT NULL THEN ST_SetSRID(ST_MakePoint(($14::numeric)::double precision, ($13::numeric)::double precision), 4326) ELSE NULL END,
-       $15::boolean,$16::text,$16::text)
-    RETURNING *;
-  `, [
-    body.institution_name,
-    body.institution_code,
-    body.institution_type,
-    body.contact_person,
-    body.contact_phone,
-    body.contact_email,
-    body.website,
-    body.address,
-    body.district,
-    body.dsd_name,
-    body.gnd_name,
-    body.description,
-    body.latitude,
-    body.longitude,
-    body.active,
-    username,
-  ]);
-  return result.rows[0];
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(`
+      INSERT INTO public.intervention_institutions
+        (institution_name, institution_code, institution_type, contact_person, contact_phone, contact_email,
+         website, address, district, dsd_name, gnd_name, description, latitude, longitude, geom,
+         active, created_by, updated_by)
+      VALUES
+        ($1::text,$2::varchar,$3::text,$4::text,$5::text,$6::text,$7::text,$8::text,$9::varchar,$10::varchar,$11::varchar,$12::text,
+         $13::numeric,$14::numeric,
+         ST_SetSRID(ST_MakePoint(($14::numeric)::double precision, ($13::numeric)::double precision), 4326),
+         $15::boolean,$16::text,$16::text)
+      RETURNING *;
+    `, [
+      body.institution_name,
+      body.institution_code,
+      body.institution_type,
+      body.contact_person,
+      body.contact_phone,
+      body.contact_email,
+      body.website,
+      body.address,
+      body.district,
+      body.dsd_name,
+      body.gnd_name,
+      body.description,
+      body.latitude,
+      body.longitude,
+      body.active,
+      username,
+    ]);
+
+    const organisation = result.rows[0];
+
+    if (body.supporting_document_url) {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS public.volunteer_organisation_documents (
+          id bigserial PRIMARY KEY,
+          organisation_id bigint NOT NULL,
+          file_name text NOT NULL,
+          file_url text NOT NULL,
+          mime_type text,
+          uploaded_by text,
+          uploaded_at timestamptz NOT NULL DEFAULT now()
+        );
+      `);
+      await client.query(`
+        INSERT INTO public.volunteer_organisation_documents
+          (organisation_id, file_name, file_url, mime_type, uploaded_by)
+        VALUES ($1, $2, $3, $4, $5);
+      `, [organisation.id, body.supporting_document_name || 'supporting-document', body.supporting_document_url, body.supporting_document_mime_type, username]);
+      organisation.supporting_document_url = body.supporting_document_url;
+      organisation.supporting_document_name = body.supporting_document_name;
+    }
+
+    await client.query('COMMIT');
+    return organisation;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
-module.exports = { dashboard, listOrganisations, getOrganisation, createOrganisation };
+module.exports = { dashboard, listOrganisations, getOrganisation, createOrganisation, ensureDocumentTable };
