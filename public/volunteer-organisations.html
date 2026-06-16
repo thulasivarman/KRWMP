@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Volunteer Organisations - KRWMP Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div class="flex min-h-screen">
+    <aside id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></aside>
+
+    <main class="flex-1 p-6 space-y-6 max-w-7xl mx-auto w-full">
+      <header class="border-b border-slate-800 pb-5 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+        <div>
+          <p class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Environmental Monitoring</p>
+          <h1 class="text-2xl font-bold mt-1">Volunteer Organisations</h1>
+          <p class="text-sm text-slate-400 mt-1">View registered volunteer organisations, performance scores, contact details and operational status.</p>
+        </div>
+        <button id="reloadBtn" type="button" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400">Reload</button>
+      </header>
+
+      <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
+
+      <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4" aria-label="Volunteer organisation dashboard summary">
+        <article class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+          <p class="text-xs uppercase tracking-widest text-slate-500 font-bold">Total Organisations</p>
+          <div id="totalOrganisations" class="text-3xl font-bold mt-2">0</div>
+        </article>
+        <article class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+          <p class="text-xs uppercase tracking-widest text-slate-500 font-bold">Active Organisations</p>
+          <div id="activeOrganisations" class="text-3xl font-bold mt-2 text-emerald-400">0</div>
+        </article>
+        <article class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+          <p class="text-xs uppercase tracking-widest text-slate-500 font-bold">Average Score</p>
+          <div id="averageScore" class="text-3xl font-bold mt-2">-</div>
+        </article>
+        <article class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+          <p class="text-xs uppercase tracking-widest text-slate-500 font-bold">Mapped Records</p>
+          <div id="mappedRecords" class="text-3xl font-bold mt-2">0</div>
+        </article>
+      </section>
+
+      <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div>
+            <h2 class="text-sm uppercase tracking-widest text-emerald-400 font-bold">Organisation Directory</h2>
+            <p class="text-xs text-slate-500 mt-1">Data source: Supabase/PostGIS volunteer organisation performance view.</p>
+          </div>
+          <input id="searchInput" type="search" placeholder="Search name, type, DSD, GND or contact" class="w-full lg:w-96 bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+        </div>
+
+        <div class="overflow-x-auto border border-slate-800 rounded-lg">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider">
+              <tr>
+                <th class="text-left px-4 py-3">Organisation</th>
+                <th class="text-left px-4 py-3">Type</th>
+                <th class="text-left px-4 py-3">Contact</th>
+                <th class="text-left px-4 py-3">Location</th>
+                <th class="text-left px-4 py-3">Score</th>
+                <th class="text-left px-4 py-3">Status</th>
+              </tr>
+            </thead>
+            <tbody id="organisationRows" class="divide-y divide-slate-800">
+              <tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">Loading volunteer organisations...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/assets/js/krwmp-global.js"></script>
+  <script>
+    const state = { organisations: [] };
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await window.KRWMP_ENGINE.assembleInterfaceContext();
+      document.getElementById('reloadBtn')?.addEventListener('click', loadVolunteerOrganisations);
+      document.getElementById('searchInput')?.addEventListener('input', renderOrganisationRows);
+      await loadVolunteerOrganisations();
+    });
+
+    async function loadVolunteerOrganisations() {
+      showStatus('Loading volunteer organisation records...', 'info');
+      try {
+        const [dashboardResponse, listResponse] = await Promise.all([
+          fetch('/api/volunteer-organisations/dashboard', { cache: 'no-store' }),
+          fetch('/api/volunteer-organisations', { cache: 'no-store' })
+        ]);
+
+        const dashboardData = await dashboardResponse.json().catch(() => ({}));
+        const listData = await listResponse.json().catch(() => ({}));
+
+        if (!dashboardResponse.ok || !dashboardData.success) throw new Error(dashboardData.message || 'Unable to load volunteer organisation dashboard.');
+        if (!listResponse.ok || !listData.success) throw new Error(listData.message || 'Unable to load volunteer organisation records.');
+
+        state.organisations = Array.isArray(listData.organisations) ? listData.organisations : [];
+        renderSummary(dashboardData.dashboard?.summary || {}, state.organisations);
+        renderOrganisationRows();
+        showStatus(`Loaded ${state.organisations.length} volunteer organisation record(s).`, 'success');
+      } catch (error) {
+        console.error(error);
+        state.organisations = [];
+        renderSummary({}, []);
+        renderOrganisationRows();
+        showStatus(error.message || 'Volunteer organisation records could not be loaded.', 'error');
+      }
+    }
+
+    function renderSummary(summary, rows) {
+      const total = pickNumber(summary.total_organisations, summary.total_count, rows.length);
+      const active = pickNumber(summary.active_organisations, summary.active_count, rows.filter(row => row.active !== false && row.active !== 'false').length);
+      const avg = pickNumber(summary.average_performance_score, summary.avg_performance_score, calculateAverageScore(rows));
+      const mapped = pickNumber(summary.mapped_records, summary.mapped_count, rows.filter(row => row.latitude || row.longitude || row.geom).length);
+
+      setText('totalOrganisations', total);
+      setText('activeOrganisations', active);
+      setText('averageScore', avg === null || avg === undefined || Number.isNaN(Number(avg)) ? '-' : Number(avg).toFixed(1));
+      setText('mappedRecords', mapped);
+    }
+
+    function renderOrganisationRows() {
+      const tbody = document.getElementById('organisationRows');
+      if (!tbody) return;
+
+      const term = String(document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+      const filtered = state.organisations.filter(row => {
+        if (!term) return true;
+        return [
+          row.institution_name,
+          row.organisation_name,
+          row.organisation_type,
+          row.institution_type,
+          row.contact_person,
+          row.contact_phone,
+          row.contact_email,
+          row.dsd_name,
+          row.gnd_name,
+          row.address
+        ].some(value => String(value || '').toLowerCase().includes(term));
+      });
+
+      if (!filtered.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">No volunteer organisations found.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(row => `
+        <tr class="hover:bg-slate-800/40">
+          <td class="px-4 py-3 align-top">
+            <div class="font-semibold text-slate-100">${escapeHtml(row.institution_name || row.organisation_name || 'Unnamed Organisation')}</div>
+            <div class="text-xs text-slate-500">${escapeHtml(row.registration_no || row.institution_code || '-')}</div>
+          </td>
+          <td class="px-4 py-3 align-top text-slate-300">${escapeHtml(row.organisation_type || row.institution_type || '-')}</td>
+          <td class="px-4 py-3 align-top">
+            <div class="text-slate-300">${escapeHtml(row.contact_person || '-')}</div>
+            <div class="text-xs text-slate-500">${escapeHtml(row.contact_phone || row.contact_email || '-')}</div>
+          </td>
+          <td class="px-4 py-3 align-top">
+            <div class="text-slate-300">${escapeHtml(row.dsd_name || '-')}</div>
+            <div class="text-xs text-slate-500">${escapeHtml(row.gnd_name || row.address || '-')}</div>
+          </td>
+          <td class="px-4 py-3 align-top font-semibold">${formatScore(row.performance_score)}</td>
+          <td class="px-4 py-3 align-top">${formatStatus(row.active)}</td>
+        </tr>
+      `).join('');
+    }
+
+    function calculateAverageScore(rows) {
+      const scores = rows.map(row => Number(row.performance_score)).filter(score => !Number.isNaN(score));
+      if (!scores.length) return null;
+      return scores.reduce((sum, score) => sum + score, 0) / scores.length;
+    }
+
+    function pickNumber(...values) {
+      for (const value of values) {
+        if (value !== undefined && value !== null && value !== '') return value;
+      }
+      return 0;
+    }
+
+    function formatScore(value) {
+      const number = Number(value);
+      if (Number.isNaN(number)) return '-';
+      return number.toFixed(1);
+    }
+
+    function formatStatus(value) {
+      const active = !(value === false || value === 'false');
+      return active
+        ? '<span class="inline-flex px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-300 text-xs font-bold">Active</span>'
+        : '<span class="inline-flex px-2 py-1 rounded-full bg-rose-500/10 text-rose-300 text-xs font-bold">Inactive</span>';
+    }
+
+    function showStatus(message, type = 'info') {
+      const box = document.getElementById('statusBox');
+      if (!box) return;
+      const classes = {
+        info: 'bg-sky-500/10 border border-sky-500/20 text-sky-200',
+        success: 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-200',
+        error: 'bg-rose-500/10 border border-rose-500/20 text-rose-200'
+      };
+      box.className = `rounded-lg p-3 text-sm ${classes[type] || classes.info}`;
+      box.textContent = message;
+      box.classList.remove('hidden');
+    }
+
+    function setText(id, value) {
+      const element = document.getElementById(id);
+      if (element) element.textContent = value ?? '-';
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>
