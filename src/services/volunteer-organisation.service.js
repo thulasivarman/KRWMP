@@ -82,8 +82,8 @@ function validateVolunteerPayload(payload = {}) {
   };
 }
 
-async function ensureDocumentTable() {
-  await pool.query(`
+async function ensureDocumentTable(client = pool) {
+  await client.query(`
     CREATE TABLE IF NOT EXISTS public.volunteer_organisation_documents (
       id bigserial PRIMARY KEY,
       organisation_id bigint NOT NULL,
@@ -97,35 +97,84 @@ async function ensureDocumentTable() {
 }
 
 async function dashboard() {
-  const summary = await pool.query('SELECT * FROM public.vw_volunteer_dashboard_summary;');
-  return { summary: summary.rows[0] || {} };
+  await ensureDocumentTable();
+  const result = await pool.query(`
+    SELECT
+      COUNT(*)::integer AS total_organisations,
+      COUNT(*) FILTER (WHERE active = true)::integer AS active_organisations,
+      NULL::numeric AS average_performance_score,
+      COUNT(*) FILTER (WHERE latitude IS NOT NULL AND longitude IS NOT NULL)::integer AS mapped_records
+    FROM public.intervention_institutions
+    WHERE LOWER(COALESCE(institution_type, '')) LIKE '%volunteer%'
+       OR LOWER(COALESCE(institution_type, '')) LIKE '%community based%'
+       OR LOWER(COALESCE(institution_type, '')) LIKE '%youth group%'
+       OR LOWER(COALESCE(institution_type, '')) LIKE '%environmental ngo%'
+       OR LOWER(COALESCE(institution_type, '')) LIKE '%civil society%';
+  `);
+  return { summary: result.rows[0] || {} };
 }
 
 async function listOrganisations() {
+  await ensureDocumentTable();
   const result = await pool.query(`
-    SELECT vo.*, doc.file_url AS supporting_document_url, doc.file_name AS supporting_document_name
-    FROM public.vw_volunteer_organisation_performance vo
+    SELECT
+      i.id,
+      i.institution_name,
+      i.institution_code,
+      i.institution_type,
+      i.institution_type AS organisation_type,
+      i.contact_person,
+      i.contact_phone,
+      i.contact_email,
+      i.website,
+      i.address,
+      i.district,
+      i.dsd_name,
+      i.gnd_name,
+      i.description,
+      i.latitude,
+      i.longitude,
+      i.active,
+      i.created_by,
+      i.created_at,
+      i.updated_by,
+      i.updated_at,
+      NULL::numeric AS performance_score,
+      doc.file_url AS supporting_document_url,
+      doc.file_name AS supporting_document_name
+    FROM public.intervention_institutions i
     LEFT JOIN LATERAL (
       SELECT file_url, file_name
       FROM public.volunteer_organisation_documents d
-      WHERE d.organisation_id = vo.id
+      WHERE d.organisation_id = i.id
       ORDER BY uploaded_at DESC
       LIMIT 1
     ) doc ON true
-    ORDER BY vo.active DESC, vo.performance_score DESC NULLS LAST, vo.institution_name
+    WHERE LOWER(COALESCE(i.institution_type, '')) LIKE '%volunteer%'
+       OR LOWER(COALESCE(i.institution_type, '')) LIKE '%community based%'
+       OR LOWER(COALESCE(i.institution_type, '')) LIKE '%youth group%'
+       OR LOWER(COALESCE(i.institution_type, '')) LIKE '%environmental ngo%'
+       OR LOWER(COALESCE(i.institution_type, '')) LIKE '%civil society%'
+    ORDER BY i.active DESC, i.created_at DESC, i.institution_name ASC
     LIMIT 500;
-  `).catch(async error => {
-    if (String(error.message || '').includes('volunteer_organisation_documents')) {
-      const fallback = await pool.query('SELECT * FROM public.vw_volunteer_organisation_performance ORDER BY active DESC, performance_score DESC NULLS LAST, institution_name LIMIT 500;');
-      return fallback;
-    }
-    throw error;
-  });
+  `);
   return result.rows;
 }
 
 async function getOrganisation(id) {
-  const result = await pool.query('SELECT * FROM public.vw_volunteer_organisation_performance WHERE id = $1;', [id]);
+  await ensureDocumentTable();
+  const result = await pool.query(`
+    SELECT i.*, doc.file_url AS supporting_document_url, doc.file_name AS supporting_document_name
+    FROM public.intervention_institutions i
+    LEFT JOIN LATERAL (
+      SELECT file_url, file_name
+      FROM public.volunteer_organisation_documents d
+      WHERE d.organisation_id = i.id
+      ORDER BY uploaded_at DESC
+      LIMIT 1
+    ) doc ON true
+    WHERE i.id = $1;
+  `, [id]);
   return result.rows[0] || null;
 }
 
@@ -134,6 +183,7 @@ async function createOrganisation(payload, username = 'system') {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await ensureDocumentTable(client);
     const result = await client.query(`
       INSERT INTO public.intervention_institutions
         (institution_name, institution_code, institution_type, contact_person, contact_phone, contact_email,
@@ -167,17 +217,6 @@ async function createOrganisation(payload, username = 'system') {
     const organisation = result.rows[0];
 
     if (body.supporting_document_url) {
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS public.volunteer_organisation_documents (
-          id bigserial PRIMARY KEY,
-          organisation_id bigint NOT NULL,
-          file_name text NOT NULL,
-          file_url text NOT NULL,
-          mime_type text,
-          uploaded_by text,
-          uploaded_at timestamptz NOT NULL DEFAULT now()
-        );
-      `);
       await client.query(`
         INSERT INTO public.volunteer_organisation_documents
           (organisation_id, file_name, file_url, mime_type, uploaded_by)
