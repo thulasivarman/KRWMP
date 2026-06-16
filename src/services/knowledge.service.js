@@ -1,8 +1,8 @@
 const pool = require('../../config/database');
 const spatialService = require('./spatial.service');
 
-const FILE_CONTENT_TYPES = new Set(['document', 'pdf', 'image', 'file', 'research_paper', 'guideline', 'case_study', 'writeup']);
-const LINK_CONTENT_TYPES = new Set(['external_link', 'url', 'video_link', 'video', 'article']);
+const FILE_CONTENT_TYPES = new Set(['document', 'pdf', 'image', 'file', 'research_paper', 'guideline', 'case_study']);
+const LINK_CONTENT_TYPES = new Set(['external_link', 'url', 'video_link', 'video']);
 const VALID_STATUSES = new Set(['draft', 'pending', 'submitted', 'reviewed', 'published', 'rejected', 'archived']);
 
 function cleanText(value) {
@@ -56,6 +56,10 @@ function normalizeContentSource(body = {}, existing = {}) {
     if (!linkValue) throw new Error('An external link is required for the selected content type.');
     if (contentType === 'video' || contentType === 'video_link') videoUrl = linkValue;
     else externalUrl = linkValue;
+  } else {
+    fileUrl = fileUrl || null;
+    externalUrl = externalUrl || null;
+    videoUrl = videoUrl || null;
   }
 
   return { contentType, externalUrl, fileUrl, videoUrl };
