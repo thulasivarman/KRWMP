@@ -219,6 +219,67 @@
     outline: 3px solid #34d399;
 }
 
+/* Fixed / collapsible application sidebar */
+body.krwmp-has-sidebar #sidebar.krwmp-sidebar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 16rem !important;
+    height: 100vh;
+    z-index: 50;
+    overflow: hidden;
+    transform: translateX(0);
+    transition: transform 0.24s ease;
+    box-shadow: 14px 0 34px rgba(2, 6, 23, 0.22);
+}
+
+body.krwmp-has-sidebar main {
+    margin-left: 16rem;
+    transition: margin-left 0.24s ease, width 0.24s ease;
+}
+
+body.krwmp-has-sidebar.krwmp-sidebar-collapsed #sidebar.krwmp-sidebar {
+    transform: translateX(-100%);
+}
+
+body.krwmp-has-sidebar.krwmp-sidebar-collapsed main {
+    margin-left: 0;
+}
+
+.krwmp-sidebar-toggle {
+    position: fixed;
+    top: 1rem;
+    left: 16.75rem;
+    z-index: 70;
+    width: 2.35rem;
+    height: 2.35rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.8rem;
+    border: 1px solid rgba(51, 65, 85, 0.9);
+    background: rgba(15, 23, 42, 0.96);
+    color: #f8fafc;
+    font-size: 1.4rem;
+    font-weight: 900;
+    line-height: 1;
+    box-shadow: 0 12px 28px rgba(2, 6, 23, 0.35);
+    transition: left 0.24s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.krwmp-sidebar-toggle:hover,
+.krwmp-sidebar-toggle:focus-visible {
+    background: #064e3b;
+    border-color: rgba(52, 211, 153, 0.65);
+    outline: 2px solid rgba(52, 211, 153, 0.35);
+    outline-offset: 2px;
+}
+
+body.krwmp-sidebar-collapsed .krwmp-sidebar-toggle {
+    left: 1rem;
+}
+
 .krwmp-nav-group {
     padding-top: 0.25rem;
 }
@@ -385,17 +446,25 @@
         display: inline-flex;
     }
 
-    .krwmp-sidebar {
-        position: fixed;
-        inset: 0 auto 0 0;
+    body.krwmp-has-sidebar main,
+    body.krwmp-has-sidebar.krwmp-sidebar-collapsed main {
+        margin-left: 0;
+    }
+
+    body.krwmp-has-sidebar #sidebar.krwmp-sidebar {
         width: min(86vw, 18rem) !important;
         transform: translateX(-105%);
-        transition: transform 0.22s ease;
         box-shadow: 18px 0 42px rgba(2, 6, 23, 0.45);
     }
 
+    body.krwmp-has-sidebar:not(.krwmp-sidebar-collapsed) #sidebar.krwmp-sidebar,
     .krwmp-sidebar.krwmp-sidebar-open {
-        transform: translateX(0);
+        transform: translateX(0) !important;
+    }
+
+    .krwmp-sidebar-toggle {
+        left: 1rem !important;
+        top: 1rem;
     }
 
     .krwmp-map-toolbar {
