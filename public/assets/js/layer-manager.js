@@ -100,7 +100,17 @@ function getPointPaint(layer) {
 }
 
 function isPointLayer(layer) {
-    return ['community_complaints', 'vwmc_locations'].includes(layer.layer_key) || ['community_complaints', 'vwmc_locations'].includes(layer.popup_type) || String(layer.fill_layer_id || '').includes('_circle');
+    const pointLayerKeys = [
+        'community_complaints',
+        'vwmc_locations',
+        'institution_locations',
+        'volunteer_organisations'
+    ];
+
+    return pointLayerKeys.includes(layer.layer_key)
+        || pointLayerKeys.includes(layer.popup_type)
+        || String(layer.fill_layer_id || '').includes('_circle')
+        || String(layer.fill_layer_id || '').includes('-circle');
 }
 
 function renderDatabaseLayerControls(layers) {
