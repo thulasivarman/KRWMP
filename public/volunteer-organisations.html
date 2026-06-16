@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Volunteer Organisations - KRWMP Portal</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
@@ -33,62 +35,45 @@
       <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
         <div>
           <h2 class="text-sm uppercase tracking-widest text-emerald-400 font-bold">Add Volunteer Organisation</h2>
-          <p class="text-xs text-slate-500 mt-1">New records are saved to the institution registry and displayed in the volunteer organisation performance view.</p>
+          <p class="text-xs text-slate-500 mt-1">Mark the organisation location on the map. DSD, GND and sub-watershed are auto-captured from the selected point.</p>
         </div>
 
-        <form id="volunteerForm" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          <label class="text-sm font-semibold">Organisation Name <span class="text-rose-400">*</span>
-            <input name="institution_name" required class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="e.g. Kelani Youth Volunteers">
-          </label>
-          <label class="text-sm font-semibold">Registration / Code
-            <input name="institution_code" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="e.g. VO-001">
-          </label>
-          <label class="text-sm font-semibold">Organisation Type
-            <select name="institution_type" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
-              <option value="Volunteer Organisation">Volunteer Organisation</option>
-              <option value="Community Based Organisation">Community Based Organisation</option>
-              <option value="Youth Group">Youth Group</option>
-              <option value="Environmental NGO">Environmental NGO</option>
-              <option value="Civil Society Organisation">Civil Society Organisation</option>
-            </select>
-          </label>
-          <label class="text-sm font-semibold">Contact Person
-            <input name="contact_person" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
-          </label>
-          <label class="text-sm font-semibold">Contact Phone
-            <input name="contact_phone" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
-          </label>
-          <label class="text-sm font-semibold">Contact Email
-            <input name="contact_email" type="email" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
-          </label>
-          <label class="text-sm font-semibold">District
-            <input name="district" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
-          </label>
-          <label class="text-sm font-semibold">DSD
-            <input name="dsd_name" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
-          </label>
-          <label class="text-sm font-semibold">GND
-            <input name="gnd_name" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
-          </label>
-          <label class="text-sm font-semibold md:col-span-2">Address <span class="text-rose-400">*</span>
-            <input name="address" required class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
-          </label>
-          <label class="text-sm font-semibold">Website
-            <input name="website" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="https://example.org">
-          </label>
-          <label class="text-sm font-semibold">Latitude
-            <input name="latitude" type="number" step="any" min="-90" max="90" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="Optional">
-          </label>
-          <label class="text-sm font-semibold">Longitude
-            <input name="longitude" type="number" step="any" min="-180" max="180" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="Optional">
-          </label>
-          <label class="text-sm font-semibold">Status
-            <select name="active" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"><option value="true">Active</option><option value="false">Inactive</option></select>
-          </label>
-          <label class="text-sm font-semibold md:col-span-2 xl:col-span-3">Description / Mandate
-            <textarea name="description" rows="3" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></textarea>
-          </label>
-          <div class="md:col-span-2 xl:col-span-3 flex flex-wrap gap-3">
+        <form id="volunteerForm" class="grid grid-cols-1 xl:grid-cols-3 gap-5" enctype="multipart/form-data">
+          <section class="xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label class="text-sm font-semibold">Organisation Name <span class="text-rose-400">*</span><input name="institution_name" required class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="e.g. Kelani Youth Volunteers"></label>
+            <label class="text-sm font-semibold">Registration / Code<input name="institution_code" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="e.g. VO-001"></label>
+            <label class="text-sm font-semibold">Organisation Type<select name="institution_type" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"><option value="Volunteer Organisation">Volunteer Organisation</option><option value="Community Based Organisation">Community Based Organisation</option><option value="Youth Group">Youth Group</option><option value="Environmental NGO">Environmental NGO</option><option value="Civil Society Organisation">Civil Society Organisation</option></select></label>
+            <label class="text-sm font-semibold">Contact Person<input name="contact_person" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
+            <label class="text-sm font-semibold">Contact Phone<input name="contact_phone" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
+            <label class="text-sm font-semibold">Contact Email<input name="contact_email" type="email" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
+            <label class="text-sm font-semibold md:col-span-2">Address <span class="text-rose-400">*</span><input name="address" required class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
+            <label class="text-sm font-semibold">Website<input name="website" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="https://example.org"></label>
+            <label class="text-sm font-semibold">Status<select name="active" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"><option value="true">Active</option><option value="false">Inactive</option></select></label>
+            <label class="text-sm font-semibold md:col-span-2">Supportive Document<input name="supporting_document" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,application/pdf,image/jpeg,image/png,image/webp" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"><span class="block mt-1 text-xs text-slate-500">Allowed: PDF, image, DOC/DOCX, XLS/XLSX.</span></label>
+            <label class="text-sm font-semibold md:col-span-2">Description / Mandate<textarea name="description" rows="3" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></textarea></label>
+          </section>
+
+          <section class="bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-3">
+            <h3 class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Organisation Location</h3>
+            <div id="volunteerLocationPicker" class="space-y-2">
+              <div data-location-map class="h-80 rounded-lg overflow-hidden border border-slate-700 bg-slate-900"></div>
+              <div class="flex gap-2">
+                <button type="button" data-location-gps class="bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded text-xs font-bold">Use GPS</button>
+                <button type="button" data-location-clear class="bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded text-xs font-bold">Clear</button>
+              </div>
+              <p data-location-status class="text-xs text-slate-400">Map is focused on the Kelani River Basin. Click the map to mark the organisation location.</p>
+            </div>
+            <input type="hidden" name="latitude" id="latitudeInput" required>
+            <input type="hidden" name="longitude" id="longitudeInput" required>
+            <input type="hidden" name="district" id="districtInput">
+            <input type="hidden" name="dsd_name" id="dsdNameInput" required>
+            <input type="hidden" name="gnd_name" id="gndNameInput" required>
+            <input type="hidden" name="sub_watershed_id" id="subWatershedIdInput">
+            <input type="hidden" name="sub_watershed_name" id="subWatershedNameInput">
+            <div id="locationInfo" class="rounded-lg bg-slate-900 border border-slate-800 p-3 text-xs text-slate-400 leading-6">No location selected.</div>
+          </section>
+
+          <div class="xl:col-span-3 flex flex-wrap gap-3">
             <button id="saveBtn" type="submit" class="bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 rounded font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400">Save Organisation</button>
             <button type="reset" class="bg-slate-800 hover:bg-slate-700 px-5 py-2.5 rounded font-bold">Clear</button>
           </div>
@@ -102,8 +87,8 @@
         </div>
         <div class="overflow-x-auto border border-slate-800 rounded-lg">
           <table class="min-w-full text-sm">
-            <thead class="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider"><tr><th class="text-left px-4 py-3">Organisation</th><th class="text-left px-4 py-3">Type</th><th class="text-left px-4 py-3">Contact</th><th class="text-left px-4 py-3">Location</th><th class="text-left px-4 py-3">Score</th><th class="text-left px-4 py-3">Status</th></tr></thead>
-            <tbody id="organisationRows" class="divide-y divide-slate-800"><tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">Loading volunteer organisations...</td></tr></tbody>
+            <thead class="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider"><tr><th class="text-left px-4 py-3">Organisation</th><th class="text-left px-4 py-3">Type</th><th class="text-left px-4 py-3">Contact</th><th class="text-left px-4 py-3">Location</th><th class="text-left px-4 py-3">Score</th><th class="text-left px-4 py-3">Document</th><th class="text-left px-4 py-3">Status</th></tr></thead>
+            <tbody id="organisationRows" class="divide-y divide-slate-800"><tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">Loading volunteer organisations...</td></tr></tbody>
           </table>
         </div>
       </section>
@@ -111,46 +96,73 @@
   </div>
 
   <script src="/assets/js/krwmp-global.js"></script>
+  <script src="/assets/js/location-picker.js"></script>
   <script>
-    const state = { organisations: [] };
+    const state = { organisations: [], locationPicker: null };
 
     document.addEventListener('DOMContentLoaded', async () => {
       await window.KRWMP_ENGINE.assembleInterfaceContext();
+      initLocationPicker();
       document.getElementById('reloadBtn')?.addEventListener('click', loadVolunteerOrganisations);
       document.getElementById('searchInput')?.addEventListener('input', renderOrganisationRows);
       document.getElementById('volunteerForm')?.addEventListener('submit', saveVolunteerOrganisation);
+      document.getElementById('volunteerForm')?.addEventListener('reset', () => setTimeout(clearLocationInfo, 0));
       await loadVolunteerOrganisations();
     });
+
+    function initLocationPicker() {
+      if (!window.KRWMPLocationPicker) return;
+      state.locationPicker = new window.KRWMPLocationPicker({
+        containerId: 'volunteerLocationPicker',
+        latitudeInput: '#latitudeInput',
+        longitudeInput: '#longitudeInput',
+        initialCenter: [80.2280810, 7.2334995],
+        initialZoom: 10,
+        onChange: async point => {
+          if (point.cleared) { clearLocationInfo(); return; }
+          await identifyAdministrativeLocation(point.latitude, point.longitude);
+        }
+      });
+    }
+
+    async function identifyAdministrativeLocation(latitude, longitude) {
+      setLocationInfo('Identifying DSD, GND and sub-watershed...', 'info');
+      try {
+        const response = await fetch(`/api/spatial/identify?lat=${encodeURIComponent(latitude)}&lng=${encodeURIComponent(longitude)}`, { cache: 'no-store' });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) throw new Error(data.message || 'Unable to identify location.');
+        document.getElementById('dsdNameInput').value = data.dsd?.dsd_name || '';
+        document.getElementById('gndNameInput').value = data.gnd?.gnd_name || '';
+        document.getElementById('districtInput').value = data.dsd?.iddistrict || '';
+        document.getElementById('subWatershedIdInput').value = data.sub_watershed?.id || '';
+        document.getElementById('subWatershedNameInput').value = data.sub_watershed?.watershed_name || '';
+        const html = `<strong class="text-slate-200">Selected Location</strong><br>Latitude: ${escapeHtml(latitude)}<br>Longitude: ${escapeHtml(longitude)}<br>DSD: ${escapeHtml(data.dsd?.dsd_name || 'Not identified')}<br>GND: ${escapeHtml(data.gnd?.gnd_name || 'Not identified')}<br>Sub-watershed: ${escapeHtml(data.sub_watershed?.watershed_name || 'Not identified')}`;
+        setLocationInfo(html, data.dsd?.dsd_name && data.gnd?.gnd_name ? 'success' : 'error', true);
+      } catch (error) {
+        console.error(error);
+        clearAutoSpatialFields();
+        setLocationInfo(error.message || 'Unable to identify selected location.', 'error');
+      }
+    }
 
     async function saveVolunteerOrganisation(event) {
       event.preventDefault();
       const form = event.currentTarget;
       const saveBtn = document.getElementById('saveBtn');
-      const payload = Object.fromEntries(new FormData(form).entries());
-      if (!payload.latitude) delete payload.latitude;
-      if (!payload.longitude) delete payload.longitude;
+      if (!document.getElementById('latitudeInput').value || !document.getElementById('longitudeInput').value) { showStatus('Please mark the organisation location on the map before saving.', 'error'); return; }
+      if (!document.getElementById('dsdNameInput').value || !document.getElementById('gndNameInput').value) { showStatus('DSD/GND is not captured. Please select a valid point inside the Kelani River Basin area.', 'error'); return; }
 
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Saving...';
-      showStatus('Saving volunteer organisation...', 'info');
-
+      const formData = new FormData(form);
+      saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; showStatus('Saving volunteer organisation...', 'info');
       try {
-        const response = await fetch('/api/volunteer-organisations', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+        const response = await fetch('/api/volunteer-organisations', { method: 'POST', body: formData });
         const data = await response.json().catch(() => ({}));
         if (!response.ok || !data.success) throw new Error(data.message || 'Unable to save volunteer organisation.');
-        form.reset();
-        showStatus('Volunteer organisation saved successfully.', 'success');
-        await loadVolunteerOrganisations();
+        form.reset(); clearLocationInfo(); showStatus('Volunteer organisation saved successfully.', 'success'); await loadVolunteerOrganisations();
       } catch (error) {
-        console.error(error);
-        showStatus(error.message || 'Unable to save volunteer organisation.', 'error');
+        console.error(error); showStatus(error.message || 'Unable to save volunteer organisation.', 'error');
       } finally {
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'Save Organisation';
+        saveBtn.disabled = false; saveBtn.textContent = 'Save Organisation';
       }
     }
 
@@ -163,9 +175,7 @@
         if (!dashboardResponse.ok || !dashboardData.success) throw new Error(dashboardData.message || 'Unable to load volunteer organisation dashboard.');
         if (!listResponse.ok || !listData.success) throw new Error(listData.message || 'Unable to load volunteer organisation records.');
         state.organisations = Array.isArray(listData.organisations) ? listData.organisations : [];
-        renderSummary(dashboardData.dashboard?.summary || {}, state.organisations);
-        renderOrganisationRows();
-        showStatus(`Loaded ${state.organisations.length} volunteer organisation record(s).`, 'success');
+        renderSummary(dashboardData.dashboard?.summary || {}, state.organisations); renderOrganisationRows(); showStatus(`Loaded ${state.organisations.length} volunteer organisation record(s).`, 'success');
       } catch (error) {
         console.error(error); state.organisations = []; renderSummary({}, []); renderOrganisationRows(); showStatus(error.message || 'Volunteer organisation records could not be loaded.', 'error');
       }
@@ -183,13 +193,17 @@
       const tbody = document.getElementById('organisationRows'); if (!tbody) return;
       const term = String(document.getElementById('searchInput')?.value || '').trim().toLowerCase();
       const filtered = state.organisations.filter(row => !term || [row.institution_name, row.organisation_name, row.organisation_type, row.institution_type, row.contact_person, row.contact_phone, row.contact_email, row.dsd_name, row.gnd_name, row.address].some(value => String(value || '').toLowerCase().includes(term)));
-      if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">No volunteer organisations found.</td></tr>'; return; }
-      tbody.innerHTML = filtered.map(row => `<tr class="hover:bg-slate-800/40"><td class="px-4 py-3 align-top"><div class="font-semibold text-slate-100">${escapeHtml(row.institution_name || row.organisation_name || 'Unnamed Organisation')}</div><div class="text-xs text-slate-500">${escapeHtml(row.registration_no || row.institution_code || '-')}</div></td><td class="px-4 py-3 align-top text-slate-300">${escapeHtml(row.organisation_type || row.institution_type || '-')}</td><td class="px-4 py-3 align-top"><div class="text-slate-300">${escapeHtml(row.contact_person || '-')}</div><div class="text-xs text-slate-500">${escapeHtml(row.contact_phone || row.contact_email || '-')}</div></td><td class="px-4 py-3 align-top"><div class="text-slate-300">${escapeHtml(row.dsd_name || '-')}</div><div class="text-xs text-slate-500">${escapeHtml(row.gnd_name || row.address || '-')}</div></td><td class="px-4 py-3 align-top font-semibold">${formatScore(row.performance_score)}</td><td class="px-4 py-3 align-top">${formatStatus(row.active)}</td></tr>`).join('');
+      if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">No volunteer organisations found.</td></tr>'; return; }
+      tbody.innerHTML = filtered.map(row => `<tr class="hover:bg-slate-800/40"><td class="px-4 py-3 align-top"><div class="font-semibold text-slate-100">${escapeHtml(row.institution_name || row.organisation_name || 'Unnamed Organisation')}</div><div class="text-xs text-slate-500">${escapeHtml(row.registration_no || row.institution_code || '-')}</div></td><td class="px-4 py-3 align-top text-slate-300">${escapeHtml(row.organisation_type || row.institution_type || '-')}</td><td class="px-4 py-3 align-top"><div class="text-slate-300">${escapeHtml(row.contact_person || '-')}</div><div class="text-xs text-slate-500">${escapeHtml(row.contact_phone || row.contact_email || '-')}</div></td><td class="px-4 py-3 align-top"><div class="text-slate-300">${escapeHtml(row.dsd_name || '-')}</div><div class="text-xs text-slate-500">${escapeHtml(row.gnd_name || row.address || '-')}</div></td><td class="px-4 py-3 align-top font-semibold">${formatScore(row.performance_score)}</td><td class="px-4 py-3 align-top">${formatDocument(row)}</td><td class="px-4 py-3 align-top">${formatStatus(row.active)}</td></tr>`).join('');
     }
 
+    function clearAutoSpatialFields() { ['dsdNameInput','gndNameInput','districtInput','subWatershedIdInput','subWatershedNameInput'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; }); }
+    function clearLocationInfo() { clearAutoSpatialFields(); setLocationInfo('No location selected.', 'info'); }
+    function setLocationInfo(message, type = 'info', html = false) { const box = document.getElementById('locationInfo'); if (!box) return; box.className = `rounded-lg border p-3 text-xs leading-6 ${type === 'error' ? 'bg-rose-500/10 border-rose-500/20 text-rose-200' : type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-200' : 'bg-slate-900 border-slate-800 text-slate-400'}`; if (html) box.innerHTML = message; else box.textContent = message; }
     function calculateAverageScore(rows) { const scores = rows.map(row => Number(row.performance_score)).filter(score => !Number.isNaN(score)); return scores.length ? scores.reduce((sum, score) => sum + score, 0) / scores.length : null; }
     function pickNumber(...values) { for (const value of values) if (value !== undefined && value !== null && value !== '') return value; return 0; }
     function formatScore(value) { const number = Number(value); return Number.isNaN(number) ? '-' : number.toFixed(1); }
+    function formatDocument(row) { const url = row.supporting_document_url; if (!url) return '<span class="text-slate-500">-</span>'; return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="text-emerald-300 hover:text-emerald-200 font-semibold">Open</a>`; }
     function formatStatus(value) { const active = !(value === false || value === 'false'); return active ? '<span class="inline-flex px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-300 text-xs font-bold">Active</span>' : '<span class="inline-flex px-2 py-1 rounded-full bg-rose-500/10 text-rose-300 text-xs font-bold">Inactive</span>'; }
     function showStatus(message, type = 'info') { const box = document.getElementById('statusBox'); if (!box) return; const classes = { info: 'bg-sky-500/10 border border-sky-500/20 text-sky-200', success: 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-200', error: 'bg-rose-500/10 border border-rose-500/20 text-rose-200' }; box.className = `rounded-lg p-3 text-sm ${classes[type] || classes.info}`; box.textContent = message; box.classList.remove('hidden'); }
     function setText(id, value) { const element = document.getElementById(id); if (element) element.textContent = value ?? '-'; }
