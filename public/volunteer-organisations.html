@@ -18,7 +18,7 @@
         <div>
           <p class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Environmental Monitoring</p>
           <h1 class="text-2xl font-bold mt-1">Volunteer Organisations</h1>
-          <p class="text-sm text-slate-400 mt-1">Register, view and monitor volunteer organisations supporting watershed management activities.</p>
+          <p class="text-sm text-slate-400 mt-1">Register, view, map and manage volunteer organisations supporting watershed management activities.</p>
         </div>
         <button id="reloadBtn" type="button" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400">Reload</button>
       </header>
@@ -82,13 +82,13 @@
 
       <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <div><h2 class="text-sm uppercase tracking-widest text-emerald-400 font-bold">Organisation Directory</h2><p class="text-xs text-slate-500 mt-1">Data source: Supabase/PostGIS volunteer organisation performance view.</p></div>
+          <div><h2 class="text-sm uppercase tracking-widest text-emerald-400 font-bold">Organisation Directory</h2><p class="text-xs text-slate-500 mt-1">Admin users can delete volunteer organisation records.</p></div>
           <input id="searchInput" type="search" placeholder="Search name, type, DSD, GND or contact" class="w-full lg:w-96 bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
         </div>
         <div class="overflow-x-auto border border-slate-800 rounded-lg">
           <table class="min-w-full text-sm">
-            <thead class="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider"><tr><th class="text-left px-4 py-3">Organisation</th><th class="text-left px-4 py-3">Type</th><th class="text-left px-4 py-3">Contact</th><th class="text-left px-4 py-3">Location</th><th class="text-left px-4 py-3">Score</th><th class="text-left px-4 py-3">Document</th><th class="text-left px-4 py-3">Status</th></tr></thead>
-            <tbody id="organisationRows" class="divide-y divide-slate-800"><tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">Loading volunteer organisations...</td></tr></tbody>
+            <thead class="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider"><tr><th class="text-left px-4 py-3">Organisation</th><th class="text-left px-4 py-3">Type</th><th class="text-left px-4 py-3">Contact</th><th class="text-left px-4 py-3">Location</th><th class="text-left px-4 py-3">Score</th><th class="text-left px-4 py-3">Document</th><th class="text-left px-4 py-3">Status</th><th class="text-left px-4 py-3 admin-only hidden">Action</th></tr></thead>
+            <tbody id="organisationRows" class="divide-y divide-slate-800"><tr><td colspan="8" class="px-4 py-6 text-center text-slate-500">Loading volunteer organisations...</td></tr></tbody>
           </table>
         </div>
       </section>
@@ -98,31 +98,31 @@
   <script src="/assets/js/krwmp-global.js"></script>
   <script src="/assets/js/location-picker.js"></script>
   <script>
-    const state = { organisations: [], locationPicker: null };
+    const state = { organisations: [], locationPicker: null, isAdmin: false };
 
     document.addEventListener('DOMContentLoaded', async () => {
       await window.KRWMP_ENGINE.assembleInterfaceContext();
+      state.isAdmin = isAdminUser();
+      document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !state.isAdmin));
       initLocationPicker();
       document.getElementById('reloadBtn')?.addEventListener('click', loadVolunteerOrganisations);
       document.getElementById('searchInput')?.addEventListener('input', renderOrganisationRows);
       document.getElementById('volunteerForm')?.addEventListener('submit', saveVolunteerOrganisation);
       document.getElementById('volunteerForm')?.addEventListener('reset', () => setTimeout(clearLocationInfo, 0));
+      document.getElementById('organisationRows')?.addEventListener('click', handleTableAction);
       await loadVolunteerOrganisations();
     });
 
+    function isAdminUser() {
+      const user = window.KRWMP_ENGINE?.Session?.user || JSON.parse(localStorage.getItem('krwmp_user') || '{}');
+      const identifier = String(user.identifier || user.username || '').toLowerCase();
+      const role = String(user.role_name || user.role || '').toLowerCase();
+      return identifier === 'thulasi' || role === 'admin';
+    }
+
     function initLocationPicker() {
       if (!window.KRWMPLocationPicker) return;
-      state.locationPicker = new window.KRWMPLocationPicker({
-        containerId: 'volunteerLocationPicker',
-        latitudeInput: '#latitudeInput',
-        longitudeInput: '#longitudeInput',
-        initialCenter: [80.2280810, 7.2334995],
-        initialZoom: 10,
-        onChange: async point => {
-          if (point.cleared) { clearLocationInfo(); return; }
-          await identifyAdministrativeLocation(point.latitude, point.longitude);
-        }
-      });
+      state.locationPicker = new window.KRWMPLocationPicker({ containerId: 'volunteerLocationPicker', latitudeInput: '#latitudeInput', longitudeInput: '#longitudeInput', initialCenter: [80.2280810, 7.2334995], initialZoom: 10, onChange: async point => { if (point.cleared) { clearLocationInfo(); return; } await identifyAdministrativeLocation(point.latitude, point.longitude); } });
     }
 
     async function identifyAdministrativeLocation(latitude, longitude) {
@@ -138,65 +138,53 @@
         document.getElementById('subWatershedNameInput').value = data.sub_watershed?.watershed_name || '';
         const html = `<strong class="text-slate-200">Selected Location</strong><br>Latitude: ${escapeHtml(latitude)}<br>Longitude: ${escapeHtml(longitude)}<br>DSD: ${escapeHtml(data.dsd?.dsd_name || 'Not identified')}<br>GND: ${escapeHtml(data.gnd?.gnd_name || 'Not identified')}<br>Sub-watershed: ${escapeHtml(data.sub_watershed?.watershed_name || 'Not identified')}`;
         setLocationInfo(html, data.dsd?.dsd_name && data.gnd?.gnd_name ? 'success' : 'error', true);
-      } catch (error) {
-        console.error(error);
-        clearAutoSpatialFields();
-        setLocationInfo(error.message || 'Unable to identify selected location.', 'error');
-      }
+      } catch (error) { console.error(error); clearAutoSpatialFields(); setLocationInfo(error.message || 'Unable to identify selected location.', 'error'); }
     }
 
     async function saveVolunteerOrganisation(event) {
       event.preventDefault();
-      const form = event.currentTarget;
-      const saveBtn = document.getElementById('saveBtn');
+      const form = event.currentTarget; const saveBtn = document.getElementById('saveBtn');
       if (!document.getElementById('latitudeInput').value || !document.getElementById('longitudeInput').value) { showStatus('Please mark the organisation location on the map before saving.', 'error'); return; }
       if (!document.getElementById('dsdNameInput').value || !document.getElementById('gndNameInput').value) { showStatus('DSD/GND is not captured. Please select a valid point inside the Kelani River Basin area.', 'error'); return; }
-
-      const formData = new FormData(form);
       saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; showStatus('Saving volunteer organisation...', 'info');
       try {
-        const response = await fetch('/api/volunteer-organisations', { method: 'POST', body: formData });
+        const response = await fetch('/api/volunteer-organisations', { method: 'POST', body: new FormData(form) });
         const data = await response.json().catch(() => ({}));
         if (!response.ok || !data.success) throw new Error(data.message || 'Unable to save volunteer organisation.');
-        form.reset(); clearLocationInfo(); showStatus('Volunteer organisation saved successfully.', 'success'); await loadVolunteerOrganisations();
-      } catch (error) {
-        console.error(error); showStatus(error.message || 'Unable to save volunteer organisation.', 'error');
-      } finally {
-        saveBtn.disabled = false; saveBtn.textContent = 'Save Organisation';
-      }
+        form.reset(); clearLocationInfo(); showStatus('Volunteer organisation saved successfully. Enable/refresh the Volunteer Organisations layer in the Map Portal to view it.', 'success'); await loadVolunteerOrganisations();
+      } catch (error) { console.error(error); showStatus(error.message || 'Unable to save volunteer organisation.', 'error'); }
+      finally { saveBtn.disabled = false; saveBtn.textContent = 'Save Organisation'; }
     }
 
     async function loadVolunteerOrganisations() {
       showStatus('Loading volunteer organisation records...', 'info');
       try {
         const [dashboardResponse, listResponse] = await Promise.all([fetch('/api/volunteer-organisations/dashboard', { cache: 'no-store' }), fetch('/api/volunteer-organisations', { cache: 'no-store' })]);
-        const dashboardData = await dashboardResponse.json().catch(() => ({}));
-        const listData = await listResponse.json().catch(() => ({}));
+        const dashboardData = await dashboardResponse.json().catch(() => ({})); const listData = await listResponse.json().catch(() => ({}));
         if (!dashboardResponse.ok || !dashboardData.success) throw new Error(dashboardData.message || 'Unable to load volunteer organisation dashboard.');
         if (!listResponse.ok || !listData.success) throw new Error(listData.message || 'Unable to load volunteer organisation records.');
         state.organisations = Array.isArray(listData.organisations) ? listData.organisations : [];
         renderSummary(dashboardData.dashboard?.summary || {}, state.organisations); renderOrganisationRows(); showStatus(`Loaded ${state.organisations.length} volunteer organisation record(s).`, 'success');
-      } catch (error) {
-        console.error(error); state.organisations = []; renderSummary({}, []); renderOrganisationRows(); showStatus(error.message || 'Volunteer organisation records could not be loaded.', 'error');
-      }
+      } catch (error) { console.error(error); state.organisations = []; renderSummary({}, []); renderOrganisationRows(); showStatus(error.message || 'Volunteer organisation records could not be loaded.', 'error'); }
     }
 
-    function renderSummary(summary, rows) {
-      const total = pickNumber(summary.total_organisations, summary.total_count, rows.length);
-      const active = pickNumber(summary.active_organisations, summary.active_count, rows.filter(row => row.active !== false && row.active !== 'false').length);
-      const avg = pickNumber(summary.average_performance_score, summary.avg_performance_score, calculateAverageScore(rows));
-      const mapped = pickNumber(summary.mapped_records, summary.mapped_count, rows.filter(row => row.latitude || row.longitude || row.geom).length);
-      setText('totalOrganisations', total); setText('activeOrganisations', active); setText('averageScore', avg === null || avg === undefined || Number.isNaN(Number(avg)) ? '-' : Number(avg).toFixed(1)); setText('mappedRecords', mapped);
+    async function handleTableAction(event) {
+      const button = event.target.closest('[data-delete-id]');
+      if (!button) return;
+      if (!state.isAdmin) { showStatus('Only Admin user group can delete volunteer organisations.', 'error'); return; }
+      const id = button.dataset.deleteId; const name = button.dataset.name || 'this volunteer organisation';
+      if (!confirm(`Delete ${name}? This action cannot be undone.`)) return;
+      button.disabled = true; button.textContent = 'Deleting...';
+      try {
+        const response = await fetch(`/api/volunteer-organisations/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) throw new Error(data.message || 'Unable to delete volunteer organisation.');
+        showStatus('Volunteer organisation deleted successfully.', 'success'); await loadVolunteerOrganisations();
+      } catch (error) { console.error(error); showStatus(error.message || 'Unable to delete volunteer organisation.', 'error'); button.disabled = false; button.textContent = 'Delete'; }
     }
 
-    function renderOrganisationRows() {
-      const tbody = document.getElementById('organisationRows'); if (!tbody) return;
-      const term = String(document.getElementById('searchInput')?.value || '').trim().toLowerCase();
-      const filtered = state.organisations.filter(row => !term || [row.institution_name, row.organisation_name, row.organisation_type, row.institution_type, row.contact_person, row.contact_phone, row.contact_email, row.dsd_name, row.gnd_name, row.address].some(value => String(value || '').toLowerCase().includes(term)));
-      if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">No volunteer organisations found.</td></tr>'; return; }
-      tbody.innerHTML = filtered.map(row => `<tr class="hover:bg-slate-800/40"><td class="px-4 py-3 align-top"><div class="font-semibold text-slate-100">${escapeHtml(row.institution_name || row.organisation_name || 'Unnamed Organisation')}</div><div class="text-xs text-slate-500">${escapeHtml(row.registration_no || row.institution_code || '-')}</div></td><td class="px-4 py-3 align-top text-slate-300">${escapeHtml(row.organisation_type || row.institution_type || '-')}</td><td class="px-4 py-3 align-top"><div class="text-slate-300">${escapeHtml(row.contact_person || '-')}</div><div class="text-xs text-slate-500">${escapeHtml(row.contact_phone || row.contact_email || '-')}</div></td><td class="px-4 py-3 align-top"><div class="text-slate-300">${escapeHtml(row.dsd_name || '-')}</div><div class="text-xs text-slate-500">${escapeHtml(row.gnd_name || row.address || '-')}</div></td><td class="px-4 py-3 align-top font-semibold">${formatScore(row.performance_score)}</td><td class="px-4 py-3 align-top">${formatDocument(row)}</td><td class="px-4 py-3 align-top">${formatStatus(row.active)}</td></tr>`).join('');
-    }
-
+    function renderSummary(summary, rows) { const total = pickNumber(summary.total_organisations, summary.total_count, rows.length); const active = pickNumber(summary.active_organisations, summary.active_count, rows.filter(row => row.active !== false && row.active !== 'false').length); const avg = pickNumber(summary.average_performance_score, summary.avg_performance_score, calculateAverageScore(rows)); const mapped = pickNumber(summary.mapped_records, summary.mapped_count, rows.filter(row => row.active !== false && row.active !== 'false' && (row.latitude || row.longitude || row.geom)).length); setText('totalOrganisations', total); setText('activeOrganisations', active); setText('averageScore', avg === null || avg === undefined || Number.isNaN(Number(avg)) ? '-' : Number(avg).toFixed(1)); setText('mappedRecords', mapped); }
+    function renderOrganisationRows() { const tbody = document.getElementById('organisationRows'); if (!tbody) return; const term = String(document.getElementById('searchInput')?.value || '').trim().toLowerCase(); const filtered = state.organisations.filter(row => !term || [row.institution_name, row.organisation_name, row.organisation_type, row.institution_type, row.contact_person, row.contact_phone, row.contact_email, row.dsd_name, row.gnd_name, row.address].some(value => String(value || '').toLowerCase().includes(term))); if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="${state.isAdmin ? 8 : 7}" class="px-4 py-6 text-center text-slate-500">No volunteer organisations found.</td></tr>`; return; } tbody.innerHTML = filtered.map(row => `<tr class="hover:bg-slate-800/40"><td class="px-4 py-3 align-top"><div class="font-semibold text-slate-100">${escapeHtml(row.institution_name || row.organisation_name || 'Unnamed Organisation')}</div><div class="text-xs text-slate-500">${escapeHtml(row.registration_no || row.institution_code || '-')}</div></td><td class="px-4 py-3 align-top text-slate-300">${escapeHtml(row.organisation_type || row.institution_type || '-')}</td><td class="px-4 py-3 align-top"><div class="text-slate-300">${escapeHtml(row.contact_person || '-')}</div><div class="text-xs text-slate-500">${escapeHtml(row.contact_phone || row.contact_email || '-')}</div></td><td class="px-4 py-3 align-top"><div class="text-slate-300">${escapeHtml(row.dsd_name || '-')}</div><div class="text-xs text-slate-500">${escapeHtml(row.gnd_name || row.address || '-')}</div></td><td class="px-4 py-3 align-top font-semibold">${formatScore(row.performance_score)}</td><td class="px-4 py-3 align-top">${formatDocument(row)}</td><td class="px-4 py-3 align-top">${formatStatus(row.active)}</td>${state.isAdmin ? `<td class="px-4 py-3 align-top"><button type="button" data-delete-id="${escapeHtml(row.id)}" data-name="${escapeHtml(row.institution_name || row.organisation_name || 'this record')}" class="bg-rose-600 hover:bg-rose-500 px-3 py-1.5 rounded text-xs font-bold">Delete</button></td>` : ''}</tr>`).join(''); }
     function clearAutoSpatialFields() { ['dsdNameInput','gndNameInput','districtInput','subWatershedIdInput','subWatershedNameInput'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; }); }
     function clearLocationInfo() { clearAutoSpatialFields(); setLocationInfo('No location selected.', 'info'); }
     function setLocationInfo(message, type = 'info', html = false) { const box = document.getElementById('locationInfo'); if (!box) return; box.className = `rounded-lg border p-3 text-xs leading-6 ${type === 'error' ? 'bg-rose-500/10 border-rose-500/20 text-rose-200' : type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-200' : 'bg-slate-900 border-slate-800 text-slate-400'}`; if (html) box.innerHTML = message; else box.textContent = message; }
@@ -207,7 +195,7 @@
     function formatStatus(value) { const active = !(value === false || value === 'false'); return active ? '<span class="inline-flex px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-300 text-xs font-bold">Active</span>' : '<span class="inline-flex px-2 py-1 rounded-full bg-rose-500/10 text-rose-300 text-xs font-bold">Inactive</span>'; }
     function showStatus(message, type = 'info') { const box = document.getElementById('statusBox'); if (!box) return; const classes = { info: 'bg-sky-500/10 border border-sky-500/20 text-sky-200', success: 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-200', error: 'bg-rose-500/10 border border-rose-500/20 text-rose-200' }; box.className = `rounded-lg p-3 text-sm ${classes[type] || classes.info}`; box.textContent = message; box.classList.remove('hidden'); }
     function setText(id, value) { const element = document.getElementById(id); if (element) element.textContent = value ?? '-'; }
-    function escapeHtml(value) { return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
+    function escapeHtml(value) { return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#039;'); }
   </script>
 </body>
 </html>
