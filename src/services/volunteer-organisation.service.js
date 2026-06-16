@@ -28,6 +28,16 @@ function parseCoordinate(value, min, max, label) {
   return numeric;
 }
 
+function volunteerTypeWhere(alias = 'i') {
+  return `
+    LOWER(COALESCE(${alias}.institution_type, '')) LIKE '%volunteer%'
+    OR LOWER(COALESCE(${alias}.institution_type, '')) LIKE '%community based%'
+    OR LOWER(COALESCE(${alias}.institution_type, '')) LIKE '%youth group%'
+    OR LOWER(COALESCE(${alias}.institution_type, '')) LIKE '%environmental ngo%'
+    OR LOWER(COALESCE(${alias}.institution_type, '')) LIKE '%civil society%'
+  `;
+}
+
 function validateVolunteerPayload(payload = {}) {
   const institutionName = cleanText(payload.institution_name || payload.organisation_name);
   const institutionCode = cleanText(payload.institution_code || payload.registration_no)?.toUpperCase() || null;
@@ -132,13 +142,9 @@ async function dashboard() {
       COUNT(*)::integer AS total_organisations,
       COUNT(*) FILTER (WHERE active = true)::integer AS active_organisations,
       NULL::numeric AS average_performance_score,
-      COUNT(*) FILTER (WHERE latitude IS NOT NULL AND longitude IS NOT NULL)::integer AS mapped_records
-    FROM public.intervention_institutions
-    WHERE LOWER(COALESCE(institution_type, '')) LIKE '%volunteer%'
-       OR LOWER(COALESCE(institution_type, '')) LIKE '%community based%'
-       OR LOWER(COALESCE(institution_type, '')) LIKE '%youth group%'
-       OR LOWER(COALESCE(institution_type, '')) LIKE '%environmental ngo%'
-       OR LOWER(COALESCE(institution_type, '')) LIKE '%civil society%';
+      COUNT(*) FILTER (WHERE active = true AND latitude IS NOT NULL AND longitude IS NOT NULL)::integer AS mapped_records
+    FROM public.intervention_institutions i
+    WHERE (${volunteerTypeWhere('i')});
   `);
   return { summary: result.rows[0] || {} };
 }
@@ -179,11 +185,7 @@ async function listOrganisations() {
       ORDER BY uploaded_at DESC
       LIMIT 1
     ) doc ON true
-    WHERE LOWER(COALESCE(i.institution_type, '')) LIKE '%volunteer%'
-       OR LOWER(COALESCE(i.institution_type, '')) LIKE '%community based%'
-       OR LOWER(COALESCE(i.institution_type, '')) LIKE '%youth group%'
-       OR LOWER(COALESCE(i.institution_type, '')) LIKE '%environmental ngo%'
-       OR LOWER(COALESCE(i.institution_type, '')) LIKE '%civil society%'
+    WHERE (${volunteerTypeWhere('i')})
     ORDER BY i.active DESC, i.created_at DESC, i.institution_name ASC
     LIMIT 500;
   `);
@@ -265,4 +267,33 @@ async function createOrganisation(payload, username = 'system') {
   }
 }
 
-module.exports = { dashboard, listOrganisations, getOrganisation, createOrganisation, ensureDocumentTable };
+async function deleteOrganisation(id) {
+  await ensureDocumentTable();
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const existing = await client.query(`
+      SELECT id
+      FROM public.intervention_institutions i
+      WHERE i.id = $1 AND (${volunteerTypeWhere('i')})
+      LIMIT 1;
+    `, [id]);
+
+    if (!existing.rows.length) {
+      await client.query('ROLLBACK');
+      return null;
+    }
+
+    await client.query('DELETE FROM public.volunteer_organisation_documents WHERE organisation_id = $1;', [id]);
+    const result = await client.query('DELETE FROM public.intervention_institutions WHERE id = $1 RETURNING id;', [id]);
+    await client.query('COMMIT');
+    return result.rows[0] || null;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { dashboard, listOrganisations, getOrganisation, createOrganisation, deleteOrganisation, ensureDocumentTable };
