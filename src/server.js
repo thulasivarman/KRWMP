@@ -28,7 +28,13 @@ fastify.register(require('./routes/volunteer-organisation.routes'), { prefix: '/
 fastify.register(require('./routes/knowledge.routes'), { prefix: '/api' });
 
 fastify.setErrorHandler((error, request, reply) => { fastify.log.error(error); reply.status(error.statusCode || 500).send({ success: false, message: error.message || 'Server error' }); });
-fastify.setNotFoundHandler((request, reply) => { if (request.url.startsWith('/api/')) return reply.status(404).send({ success: false, message: 'API endpoint not found' }); return reply.sendFile('map.html'); });
+fastify.setNotFoundHandler((request, reply) => {
+  if (request.url.startsWith('/api/')) {
+    return reply.status(404).send({ success: false, message: 'API endpoint not found' });
+  }
+
+  return reply.status(404).sendFile('404.html');
+});
 fastify.addHook('onClose', async () => { await pool.end(); });
 
 const start = async () => {
