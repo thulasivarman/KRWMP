@@ -167,6 +167,8 @@ function getCategoryTitle(category) {
 function getLayerDescription(layer) {
     if (layer.layer_key === 'community_complaints') return 'Red: high · Amber: medium · Green: low';
     if (layer.layer_key === 'vwmc_locations') return 'Village watershed committee locations';
+    if (layer.layer_key === 'institution_locations') return 'Institution office locations';
+    if (layer.layer_key === 'volunteer_organisations') return 'Volunteer organisation locations';
     if (layer.category === 'uploaded_vector') return 'Supabase/PostGIS uploaded layer';
     return 'Database managed GIS layer';
 }
