@@ -57,7 +57,17 @@ async function getLayerGeoJSON(layerKey, identifier = '') {
     const allowedLayer = await hasPrivilege(identifier, layer.required_privilege || 'map_view', 'view');
     if (!allowedLayer) return null;
 
-    const allowedTables = ['basin_boundary', 'forest_cover', 'dsd_boundary', 'gnd_boundary', 'community_issue_reports', 'vwmc_committees', 'intervention_registry'];
+    const allowedTables = [
+        'basin_boundary',
+        'forest_cover',
+        'dsd_boundary',
+        'gnd_boundary',
+        'community_issue_reports',
+        'vwmc_committees',
+        'intervention_registry',
+        'institutions',
+        'volunteer_organisations'
+    ];
     const isAdminUploadedTable = layer.managed_by_admin === true && String(layer.table_name || '').startsWith('uploaded_') && isSafeIdentifier(layer.table_name);
 
     if (!allowedTables.includes(layer.table_name) && !isAdminUploadedTable) throw new Error('Unauthorized spatial table');
