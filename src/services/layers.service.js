@@ -65,8 +65,8 @@ async function getLayerGeoJSON(layerKey, identifier = '') {
         'community_issue_reports',
         'vwmc_committees',
         'intervention_registry',
-        'institutions',
-        'volunteer_organisations'
+        'intervention_institutions',
+        'vw_volunteer_organisation_performance'
     ];
     const isAdminUploadedTable = layer.managed_by_admin === true && String(layer.table_name || '').startsWith('uploaded_') && isSafeIdentifier(layer.table_name);
 
