@@ -426,3 +426,24 @@
         justify-content: flex-end;
     }
 }
+
+#dynamic-layer-control-list::-webkit-scrollbar,
+#raster-layer-control-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+#dynamic-layer-control-list::-webkit-scrollbar-track,
+#raster-layer-control-list::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+
+#dynamic-layer-control-list::-webkit-scrollbar-thumb,
+#raster-layer-control-list::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 999px;
+}
+
+#dynamic-layer-control-list::-webkit-scrollbar-thumb:hover,
+#raster-layer-control-list::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
