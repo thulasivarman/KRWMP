@@ -1,5 +1,8 @@
 const pool = require('../../config/database');
 
+let documentTableReady = false;
+let documentTableInitPromise = null;
+
 function cleanText(value) {
   const text = String(value ?? '').trim();
   return text || null;
@@ -83,17 +86,43 @@ function validateVolunteerPayload(payload = {}) {
 }
 
 async function ensureDocumentTable(client = pool) {
-  await client.query(`
-    CREATE TABLE IF NOT EXISTS public.volunteer_organisation_documents (
-      id bigserial PRIMARY KEY,
-      organisation_id bigint NOT NULL,
-      file_name text NOT NULL,
-      file_url text NOT NULL,
-      mime_type text,
-      uploaded_by text,
-      uploaded_at timestamptz NOT NULL DEFAULT now()
-    );
-  `);
+  if (documentTableReady) return;
+
+  const createTable = async () => {
+    try {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS public.volunteer_organisation_documents (
+          id bigserial PRIMARY KEY,
+          organisation_id bigint NOT NULL,
+          file_name text NOT NULL,
+          file_url text NOT NULL,
+          mime_type text,
+          uploaded_by text,
+          uploaded_at timestamptz NOT NULL DEFAULT now()
+        );
+      `);
+    } catch (error) {
+      const isConcurrentCreateRace = error.code === '23505'
+        || String(error.message || '').includes('pg_type_typname_nsp_index')
+        || String(error.message || '').includes('already exists');
+      if (!isConcurrentCreateRace) throw error;
+    }
+
+    documentTableReady = true;
+  };
+
+  if (client !== pool) {
+    await createTable();
+    return;
+  }
+
+  if (!documentTableInitPromise) {
+    documentTableInitPromise = createTable().finally(() => {
+      documentTableInitPromise = null;
+    });
+  }
+
+  await documentTableInitPromise;
 }
 
 async function dashboard() {
@@ -180,10 +209,10 @@ async function getOrganisation(id) {
 
 async function createOrganisation(payload, username = 'system') {
   const body = validateVolunteerPayload(payload);
+  await ensureDocumentTable();
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    await ensureDocumentTable(client);
     const result = await client.query(`
       INSERT INTO public.intervention_institutions
         (institution_name, institution_code, institution_type, contact_person, contact_phone, contact_email,
