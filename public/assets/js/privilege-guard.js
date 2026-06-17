@@ -16,14 +16,6 @@ window.KRWMP_PRIVILEGES = {
     return identifier === 'thulasi' || role === 'admin';
   },
 
-  headers() {
-    const user = this.getUser() || {};
-    return {
-      'X-KRWMP-User': user.identifier || user.username || user.name || '',
-      'X-KRWMP-Role': user.role_name || user.role || ''
-    };
-  },
-
   async load() {
     if (this.loaded) return this;
     if (this.isMasterAdmin()) {
@@ -31,8 +23,7 @@ window.KRWMP_PRIVILEGES = {
       this.loaded = true;
       return this;
     }
-    const response = await fetch('/api/me/privileges', { headers: this.headers() });
-    const data = await response.json().catch(() => ({}));
+    const data = await window.KRWMP_UTILS.apiRequest('/api/me/privileges');
     this.rows = data.privileges || [];
     this.map = {};
     this.rows.forEach(p => {
@@ -54,19 +45,35 @@ window.KRWMP_PRIVILEGES = {
   async applyVisibility() {
     await this.load();
     if (this.isMasterAdmin()) {
-      document.querySelectorAll('.hidden-admin, [data-admin-only]').forEach(el => el.classList.remove('hidden'));
+      document.querySelectorAll('.hidden-admin, [data-admin-only], #section-data-layers, #section-user-management').forEach(el => el.classList.remove('hidden'));
       return;
     }
+    const sectionRules = [
+      ['#section-data-layers', [['vector_layers', 'view'], ['raster_layers', 'view']]],
+      ['#section-user-management', [['user_management_settings', 'view'], ['institution_management', 'view']]]
+    ];
+    sectionRules.forEach(([selector, allowed]) => {
+      document.querySelectorAll(selector).forEach(el => {
+        el.classList.toggle('hidden', !allowed.some(([key, action]) => this.can(key, action)));
+      });
+    });
     const rules = [
-      ['a[href="/admin.html"]', 'user_management', 'view'],
-      ['a[href="/admin-vector-layers.html"]', 'vector_layers_manage', 'view'],
-      ['a[href="/admin-raster-layers.html"]', 'raster_layers_manage', 'view'],
+      ['a[href="/admin.html"]', 'user_management_settings', 'view'],
+      ['a[href="/privilege-group-management.html"]', 'user_management_settings', 'view'],
+      ['a[href="/admin-institutions.html"]', 'institution_management', 'view'],
+      ['a[href="/admin-vector-layers.html"]', 'vector_layers', 'view'],
+      ['a[href="/admin-raster-layers.html"]', 'raster_layers', 'view'],
       ['a[href="/admin-solution-library.html"]', 'community_issues_review', 'view'],
       ['a[href="/admin-community-issues.html"]', 'community_issues_review', 'view'],
       ['a[href="/vwmc-management.html"]', 'vwmc_view', 'view'],
       ['a[href="/intervention-registry.html"]', 'intervention_registry_view', 'view'],
       ['a[href="/intervention-library.html"]', 'intervention_library_manage', 'view'],
-      ['a[href="/community-report.html"]', 'community_issue_submit', 'create'],
+      ['a[href="/reports.html"]', 'reports_export', 'view'],
+      ['a[href="/knowledge.html"]', 'knowledge_portal', 'view'],
+      ['a[href="/water-quality-records.html"]', 'water_quality_records', 'view'],
+      ['a[href="/pollution-sources.html"]', 'pollution_sources_management', 'view'],
+      ['a[href="/volunteer-organisations.html"]', 'volunteer_organisation_management', 'view'],
+      ['a[href="/community-report.html"]', 'map_view', 'view'],
       ['#floating-data-layers-btn', 'map_view', 'view'],
       ['#floating-raster-layers-btn', 'map_view', 'view'],
       ['#basemap-selector', 'map_view', 'view']

@@ -13,30 +13,15 @@ let availableKeys = [];
 let privileges = [];
 let selectedRoleId = '';
 
-function headers(extra = {}) {
-  return {
-    ...extra,
-    'X-KRWMP-User': currentUser?.identifier || currentUser?.username || 'admin',
-    'X-KRWMP-Role': currentUser?.role_name || currentUser?.role || 'admin',
-  };
-}
-
 function showStatus(message, error = false) {
-  statusBox.className = `rounded-lg p-3 text-sm ${error ? 'bg-rose-500/10 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'}`;
-  statusBox.textContent = message;
-  statusBox.classList.remove('hidden');
+  window.KRWMP_UTILS.showStatus(statusBox, message, error);
 }
 
-async function json(url, options = {}) {
-  options.headers = headers(options.headers || {});
-  const response = await fetch(url, options);
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok || data.success === false) throw new Error(data.message || 'Request failed');
-  return data;
-}
+const { apiRequest: json, escapeHtml } = window.KRWMP_UTILS;
 
 async function initSidebar() {
   if (window.KRWMP_ENGINE) await window.KRWMP_ENGINE.assembleInterfaceContext('/sidebar.html', 'sidebar');
+  await window.KRWMP_PRIVILEGES.protectPage('user_management_settings', 'view');
   document.querySelector('.krwmp-panel-section')?.classList.add('hidden');
   document.getElementById('section-data-layers')?.classList.add('hidden');
   document.getElementById('section-raster-layers')?.classList.add('hidden');
@@ -170,8 +155,7 @@ async function savePrivileges() {
   try {
     await json('/api/admin/role-privileges/matrix', {
       method: 'POST',
-      headers: headers({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ role_id: selectedRoleId, privileges: collectPrivileges() }),
+      body: { role_id: selectedRoleId, privileges: collectPrivileges() },
     });
     showStatus('User group privileges saved successfully.');
     await loadMatrix();
@@ -189,10 +173,6 @@ function setAllVisible(action) {
       input.checked = action === 'view' ? input.name === 'can_view' : false;
     });
   });
-}
-
-function escapeHtml(value) {
-  return String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 }
 
 roleSelect.addEventListener('change', () => {

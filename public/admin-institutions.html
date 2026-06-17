@@ -25,7 +25,7 @@
         <div class="flex items-center justify-between gap-4">
           <div>
             <h2 class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Add / Edit Institution</h2>
-            <p class="text-xs text-slate-500 mt-1">Only Admin users can create or update institution records.</p>
+            <p class="text-xs text-slate-500 mt-1">Users with institution management create or update access can maintain institution records.</p>
           </div>
           <button type="button" id="resetInstitutionBtn" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded text-xs font-bold">New Record</button>
         </div>
@@ -114,6 +114,7 @@
     </main>
   </div>
   <script src="/assets/js/krwmp-global.js"></script>
+  <script src="/assets/js/privilege-guard.js"></script>
   <script src="/assets/js/location-picker.js"></script>
   <script src="/admin-institutions.js"></script>
 </body>

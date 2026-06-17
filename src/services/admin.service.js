@@ -16,6 +16,10 @@ const ENFORCED_PRIVILEGE_KEYS = [
   { privilege_key: 'intervention_progress_update', privilege_name: 'Intervention Progress Updates', group_name: 'Interventions', description: 'Add progress timeline entries for interventions.' },
   { privilege_key: 'institution_management', privilege_name: 'Institution Management', group_name: 'Institutions', description: 'Manage institutions, contacts and institutional lookups.' },
   { privilege_key: 'reports_export', privilege_name: 'Reports Export', group_name: 'Reports', description: 'View and export analytical reports.' },
+  { privilege_key: 'knowledge_portal', privilege_name: 'Knowledge Portal', group_name: 'Knowledge', description: 'Manage knowledge categories, resources, tags and review dashboards.' },
+  { privilege_key: 'pollution_sources_management', privilege_name: 'Pollution Sources Management', group_name: 'Environmental Monitoring', description: 'Manage pollution source inventory, monitoring, enforcement and linkages.' },
+  { privilege_key: 'volunteer_organisation_management', privilege_name: 'Volunteer Organisation Management', group_name: 'Environmental Monitoring', description: 'View and register volunteer organisations that support watershed activities.' },
+  { privilege_key: 'water_quality_records', privilege_name: 'Water Quality Test Records', group_name: 'Environmental Monitoring', description: 'Create, update, delete and view water quality monitoring records.' },
 ];
 
 async function getUsers() {

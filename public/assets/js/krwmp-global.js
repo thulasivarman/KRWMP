@@ -1,21 +1,92 @@
 /**
- * ========================================================================== 
+ * ==========================================================================
  * KRWMP MANAGEMENT PORTAL - CENTRALIZED GLOBAL RUNTIME ORCHESTRATOR
- * ========================================================================== 
+ * ==========================================================================
  */
-(function installKrwmpAuthFetch() {
-    if (window.__KRWMP_AUTH_FETCH_INSTALLED__) return;
-    window.__KRWMP_AUTH_FETCH_INSTALLED__ = true;
-    const nativeFetch = window.fetch.bind(window);
-    window.fetch = function (input, init = {}) {
-        const url = typeof input === 'string' ? input : input?.url || '';
-        const isApiRequest = String(url).startsWith('/api/') || String(url).includes('/api/');
-        if (!isApiRequest) return nativeFetch(input, init);
-        const token = localStorage.getItem('krwmp_token');
-        if (!token) return nativeFetch(input, init);
-        const headers = new Headers(init.headers || (input instanceof Request ? input.headers : {}));
-        if (!headers.has('Authorization')) headers.set('Authorization', `Bearer ${token}`);
-        return nativeFetch(input, { ...init, headers });
+window.KRWMP_UTILS = window.KRWMP_UTILS || (() => {
+    const isPlainObject = value => Object.prototype.toString.call(value) === '[object Object]';
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttribute(value) {
+        return escapeHtml(value);
+    }
+
+    function setText(element, value) {
+        if (element) element.textContent = value ?? '';
+    }
+
+    function setHtml(element, html) {
+        if (element) element.innerHTML = html || '';
+    }
+
+    function renderEmpty(element, message, className = 'text-sm text-slate-400') {
+        setHtml(element, `<p class="${escapeAttribute(className)}">${escapeHtml(message)}</p>`);
+    }
+
+    function showStatus(element, message, error = false) {
+        if (!element) return;
+        element.className = `rounded-lg p-3 text-sm ${error ? 'bg-rose-500/10 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'}`;
+        element.textContent = message || '';
+        element.classList.remove('hidden');
+    }
+
+    function createOption({ value = '', label = '', selected = false } = {}) {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        option.selected = Boolean(selected);
+        return option;
+    }
+
+    function resetSelect(select, placeholder, disabled = false) {
+        if (!select) return;
+        select.innerHTML = '';
+        select.appendChild(createOption({ value: '', label: placeholder }));
+        select.disabled = disabled;
+    }
+
+    async function parseResponse(response) {
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) return response.json().catch(() => ({}));
+        const text = await response.text().catch(() => '');
+        return text ? { success: response.ok, data: text } : {};
+    }
+
+    async function apiRequest(url, options = {}) {
+        const requestOptions = { cache: 'no-store', credentials: 'same-origin', ...options };
+        const headers = { ...(options.headers || {}) };
+
+        if (isPlainObject(options.body)) {
+            requestOptions.body = JSON.stringify(options.body);
+            headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+        }
+
+        if (Object.keys(headers).length) requestOptions.headers = headers;
+        const response = await fetch(url, requestOptions);
+        const data = await parseResponse(response);
+        if (!response.ok || data.success === false) throw new Error(data.message || 'Request failed');
+        return data;
+    }
+
+    return {
+        apiRequest,
+        request: apiRequest,
+        escapeHtml,
+        escapeAttribute,
+        setText,
+        setHtml,
+        renderEmpty,
+        showStatus,
+        createOption,
+        resetSelect,
     };
 })();
 
@@ -25,15 +96,12 @@ window.KRWMP_ENGINE = {
 
     initSession: async function () {
         try {
-            const cachedUser = localStorage.getItem('krwmp_user');
-            const cachedToken = localStorage.getItem('krwmp_token');
-            if (cachedUser && cachedToken) {
-                this.Session.user = JSON.parse(cachedUser);
-                this.Session.isAuthenticated = true;
-            } else {
-                this.Session.user = null;
-                this.Session.isAuthenticated = false;
-            }
+            localStorage.removeItem('krwmp_token');
+            const data = await window.KRWMP_UTILS.apiRequest('/api/auth/profile');
+            if (!data.user) throw new Error(data.message || 'Not authenticated');
+            this.Session.user = data.user;
+            this.Session.isAuthenticated = true;
+            localStorage.setItem('krwmp_user', JSON.stringify(data.user));
         } catch (error) {
             this.Session.user = null;
             this.Session.isAuthenticated = false;
@@ -203,7 +271,10 @@ window.KRWMP_ENGINE = {
         alert('Profile editing is available from the User Management module.');
     },
 
-    dispatchLogout: function () {
+    dispatchLogout: async function () {
+        try {
+            await window.KRWMP_UTILS.apiRequest('/api/logout', { method: 'POST' });
+        } catch (error) {}
         localStorage.removeItem('krwmp_user');
         localStorage.removeItem('krwmp_token');
         this.Session.user = null;

@@ -21,7 +21,11 @@ const ALLOWED_DOCUMENT_TYPES = new Set([
 ]);
 
 function getUser(request) {
-  return String(request.headers['x-krwmp-user'] || getRequestUser(request) || 'system').trim();
+  return getRequestUser(request) || 'system';
+}
+
+function sanitizeFileName(value = 'supporting-document') {
+  return String(value).replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120) || 'supporting-document';
 }
 
 async function requireAdminUserGroup(request, reply) {
@@ -48,10 +52,6 @@ async function requireAdminUserGroup(request, reply) {
   }
 
   return true;
-}
-
-function sanitizeFileName(value = 'supporting-document') {
-  return String(value).replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120) || 'supporting-document';
 }
 
 async function parseVolunteerPayload(request) {

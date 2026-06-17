@@ -4,7 +4,7 @@ const { requirePrivilegeInline, getRequestUser } = require('../middleware/privil
 const PRIVILEGE_KEY = 'pollution_sources_management';
 
 function currentUser(request) {
-  return getRequestUser(request) || String(request.headers['x-krwmp-user'] || request.headers['x-user'] || 'system').trim();
+  return getRequestUser(request) || 'system';
 }
 
 function note(request) {

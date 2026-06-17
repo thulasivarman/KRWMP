@@ -104,9 +104,17 @@
           <span class="text-xs text-slate-500 mt-1 block">Use digits, spaces, hyphens or +. Minimum 7 digits.</span>
         </label>
 
-        <label class="text-sm font-semibold md:col-span-2">Photo Evidence
-          <input name="photo" type="file" accept="image/*" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
-        </label>
+        <section class="text-sm font-semibold md:col-span-2 space-y-3">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <div>Photo Evidence</div>
+              <p class="mt-1 text-xs font-normal text-slate-500">JPG, PNG or WEBP. Up to 5 private images.</p>
+            </div>
+            <span id="photoCountLabel" class="text-xs font-normal text-slate-500">0 / 5</span>
+          </div>
+          <input id="photoEvidenceInput" type="file" accept="image/jpeg,image/png,image/webp" multiple class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
+          <div id="photoPreviewGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+        </section>
 
         <div class="md:col-span-2 flex items-center gap-3">
           <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 rounded font-bold">Submit Issue Report</button>
@@ -116,6 +124,7 @@
     </main>
   </div>
   <script src="/assets/js/krwmp-global.js"></script>
+  <script src="/assets/js/krwmp-file-attachments.js"></script>
   <script src="/assets/js/location-picker.js"></script>
   <script src="/community-report.js"></script>
 </body>

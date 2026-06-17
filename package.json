@@ -6,25 +6,23 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node src/server.js",
-    "lint": "node --check src/server.js && node --check src/middleware/privilege.middleware.js && node --check src/services/auth.service.js && node --check src/routes/community-issues.routes.js && node --check src/routes/vector-layer.routes.js && node --check src/routes/raster-layer.routes.js && node --check src/routes/pollution-source.routes.js && node --check src/services/pollution-source.service.js && node --check src/routes/knowledge.routes.js && node --check src/services/knowledge.service.js",
-    "test": "npm run lint && node scripts/verify-migrations.js",
+    "lint": "node --check src/server.js && node --check src/middleware/privilege.middleware.js && node --check src/services/auth.service.js && node --check src/routes/community-issues.routes.js && node --check src/routes/vector-layer.routes.js && node --check src/routes/raster-layer.routes.js && node --check src/routes/pollution-source.routes.js && node --check src/services/pollution-source.service.js && node --check src/routes/knowledge.routes.js && node --check src/routes/file-attachment.routes.js && node --check src/services/knowledge.service.js && node --check src/services/uploaded-files.repository.js && node --check src/services/file-attachment.service.js && node --check public/assets/js/krwmp-file-attachments.js && node --check public/community-report.js",
+    "test": "npm run lint && npm run test:routes && node scripts/verify-migrations.js",
+    "test:routes": "node --test tests/*.test.js",
     "check:migrations": "node scripts/verify-migrations.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1070.0",
+    "@aws-sdk/s3-request-presigner": "^3.1070.0",
     "@fastify/compress": "^8.3.1",
     "@fastify/multipart": "^10.0.0",
     "@fastify/rate-limit": "^10.3.0",
     "@fastify/static": "^9.1.3",
-    "@octokit/rest": "^22.0.1",
-    "@supabase/supabase-js": "^2.107.0",
     "bcryptjs": "^3.0.2",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1",
     "fastify": "^5.8.5",
     "geotiff": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
-    "maplibre-gl": "^5.24.0",
-    "multer": "^2.1.1",
     "pg": "^8.21.0",
     "pngjs": "^7.0.0"
   }

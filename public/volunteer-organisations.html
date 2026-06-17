@@ -96,13 +96,17 @@
   </div>
 
   <script src="/assets/js/krwmp-global.js"></script>
+  <script src="/assets/js/privilege-guard.js"></script>
   <script src="/assets/js/location-picker.js"></script>
   <script>
-    const state = { organisations: [], locationPicker: null, isAdmin: false };
+    const state = { organisations: [], locationPicker: null, isAdmin: false, canCreate: false };
 
     document.addEventListener('DOMContentLoaded', async () => {
       await window.KRWMP_ENGINE.assembleInterfaceContext();
+      await window.KRWMP_PRIVILEGES.protectPage('volunteer_organisation_management', 'view');
       state.isAdmin = isAdminUser();
+      state.canCreate = window.KRWMP_PRIVILEGES.can('volunteer_organisation_management', 'create');
+      document.getElementById('volunteerForm')?.closest('section')?.classList.toggle('hidden', !state.canCreate);
       document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !state.isAdmin));
       initLocationPicker();
       document.getElementById('reloadBtn')?.addEventListener('click', loadVolunteerOrganisations);
@@ -143,6 +147,7 @@
 
     async function saveVolunteerOrganisation(event) {
       event.preventDefault();
+      if (!state.canCreate) { showStatus('You do not have create access for volunteer organisations.', 'error'); return; }
       const form = event.currentTarget; const saveBtn = document.getElementById('saveBtn');
       if (!document.getElementById('latitudeInput').value || !document.getElementById('longitudeInput').value) { showStatus('Please mark the organisation location on the map before saving.', 'error'); return; }
       if (!document.getElementById('dsdNameInput').value || !document.getElementById('gndNameInput').value) { showStatus('DSD/GND is not captured. Please select a valid point inside the Kelani River Basin area.', 'error'); return; }

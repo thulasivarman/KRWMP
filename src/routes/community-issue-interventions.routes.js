@@ -1,8 +1,8 @@
 const service = require('../services/community-issue-interventions.service');
-const { requirePrivilegeInline } = require('../middleware/privilege.middleware');
+const { getRequestUser, requirePrivilegeInline } = require('../middleware/privilege.middleware');
 
 function getUser(request) {
-  return String(request.headers['x-krwmp-user'] || request.headers['x-user'] || 'system').trim();
+  return getRequestUser(request) || 'system';
 }
 
 async function communityIssueInterventionRoutes(fastify) {

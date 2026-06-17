@@ -1,9 +1,9 @@
 const communityService = require('../services/community-issues.service');
-const { requirePrivilegeInline } = require('../middleware/privilege.middleware');
+const { getRequestUser, requirePrivilegeInline } = require('../middleware/privilege.middleware');
 const { assertImageUpload } = require('../utils/upload-validation');
 
 function getAdminUser(request) {
-  return String(request.headers['x-krwmp-user'] || request.headers['x-user'] || request.auth?.identifier || 'admin').trim();
+  return getRequestUser(request) || 'admin';
 }
 
 async function communityIssueRoutes(fastify) {

@@ -2,9 +2,8 @@ window.KRWMP_RASTER_LAYERS = [];
 
 window.loadRasterLayerRegistry = async function () {
     try {
-        const response = await fetch('/api/raster-layers', { cache: 'no-store' });
-        const data = await response.json();
-        window.KRWMP_RASTER_LAYERS = data.success ? (data.layers || []) : [];
+        const data = await window.KRWMP_UTILS.apiRequest('/api/raster-layers');
+        window.KRWMP_RASTER_LAYERS = data.layers || [];
         return window.KRWMP_RASTER_LAYERS;
     } catch (error) {
         console.error('Raster layer registry loading failed:', error);
@@ -281,5 +280,5 @@ function clampNumber(value, min, max) {
 }
 
 function escapeRasterHtml(value) {
-    return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    return window.KRWMP_UTILS.escapeHtml(value);
 }

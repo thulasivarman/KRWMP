@@ -1,23 +1,10 @@
-const currentRasterUser = JSON.parse(localStorage.getItem('krwmp_user') || 'null');
-const currentRasterRole = String(currentRasterUser?.role_name || currentRasterUser?.role || '').toLowerCase();
+let canCreateRasterLayer = false;
+let canUpdateRasterLayer = false;
+let canDeleteRasterLayer = false;
 const MAX_RASTER_CLASSES = 10;
 const DEFAULT_CLASS_COLORS = ['#1a9850', '#66bd63', '#a6d96a', '#d9ef8b', '#ffffbf', '#fee08b', '#fdae61', '#f46d43', '#d73027', '#7f0000'];
 
-function rasterAdminHeaders(extra = {}) {
-  return {
-    ...extra,
-    'X-KRWMP-User': currentRasterUser?.identifier || currentRasterUser?.username || 'admin',
-    'X-KRWMP-Role': currentRasterUser?.role_name || currentRasterUser?.role || 'admin'
-  };
-}
-
-async function rasterAdminRequest(url, options = {}) {
-  options.headers = rasterAdminHeaders(options.headers || {});
-  const response = await fetch(url, options);
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok || payload.success === false) throw new Error(payload.message || 'Request failed');
-  return payload;
-}
+const { apiRequest: rasterAdminRequest } = window.KRWMP_UTILS;
 
 function showRasterAdminStatus(message, isError = false) {
   const box = document.getElementById('statusBox');
@@ -31,9 +18,14 @@ async function initializeRasterAdminSidebar() {
   if (window.KRWMP_ENGINE) {
     await window.KRWMP_ENGINE.assembleInterfaceContext('/sidebar.html', 'sidebar');
   }
+  await window.KRWMP_PRIVILEGES.protectPage('raster_layers', 'view');
+  canCreateRasterLayer = window.KRWMP_PRIVILEGES.can('raster_layers', 'create');
+  canUpdateRasterLayer = window.KRWMP_PRIVILEGES.can('raster_layers', 'update');
+  canDeleteRasterLayer = window.KRWMP_PRIVILEGES.can('raster_layers', 'delete');
   document.querySelector('.krwmp-panel-section')?.classList.add('hidden');
   document.getElementById('section-data-layers')?.classList.add('hidden');
   document.getElementById('section-raster-layers')?.classList.add('hidden');
+  document.getElementById('uploadRasterForm')?.closest('section')?.classList.toggle('hidden', !canCreateRasterLayer);
 }
 
 async function loadRasterAdminLayers() {
@@ -89,6 +81,7 @@ function renderRasterAdminLayer(layer) {
 
   form.addEventListener('submit', async event => {
     event.preventDefault();
+    if (!canUpdateRasterLayer) return showRasterAdminStatus('You do not have update access for raster layers.', true);
     const payload = {
       opacity: Number(form.opacity.value),
       minZoom: Number(form.minZoom.value),
@@ -100,8 +93,7 @@ function renderRasterAdminLayer(layer) {
       showRasterAdminStatus('Applying raster settings and regenerating preview...');
       await rasterAdminRequest(`/api/raster-layers/${encodeURIComponent(form.id.value)}`, {
         method: 'PUT',
-        headers: rasterAdminHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(payload)
+        body: payload
       });
       showRasterAdminStatus('Raster settings and symbology updated successfully.');
       await loadRasterAdminLayers();
@@ -111,6 +103,7 @@ function renderRasterAdminLayer(layer) {
   });
 
   node.querySelector('[data-action="delete"]').addEventListener('click', async () => {
+    if (!canDeleteRasterLayer) return showRasterAdminStatus('You do not have delete access for raster layers.', true);
     if (!confirm(`Delete raster layer ${layer.layer_name || layer.layer_key}?`)) return;
     try {
       await rasterAdminRequest(`/api/raster-layers/${encodeURIComponent(layer.layer_key)}`, { method: 'DELETE' });
@@ -120,6 +113,8 @@ function renderRasterAdminLayer(layer) {
       showRasterAdminStatus(error.message, true);
     }
   });
+  form.querySelector('button[type="submit"]')?.classList.toggle('hidden', !canUpdateRasterLayer);
+  node.querySelector('[data-action="delete"]')?.classList.toggle('hidden', !canDeleteRasterLayer);
 
   list.appendChild(node);
 }
@@ -228,17 +223,11 @@ function collectSymbology(form) {
 document.addEventListener('DOMContentLoaded', async () => {
   await initializeRasterAdminSidebar();
 
-  if (currentRasterRole !== 'admin') {
-    const authNotice = document.getElementById('authNotice');
-    if (authNotice) authNotice.hidden = false;
-    window.setTimeout(() => { window.location.href = '/index.html'; }, 800);
-    return;
-  }
-
   const uploadForm = document.getElementById('uploadRasterForm');
   if (uploadForm) {
     uploadForm.addEventListener('submit', async event => {
       event.preventDefault();
+      if (!canCreateRasterLayer) return showRasterAdminStatus('You do not have create access for raster layers.', true);
       const formData = new FormData(uploadForm);
       formData.set('visible', uploadForm.visible.checked ? 'true' : 'false');
       try {

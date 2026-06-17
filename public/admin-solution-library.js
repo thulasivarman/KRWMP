@@ -1,4 +1,3 @@
-const user = JSON.parse(localStorage.getItem('krwmp_user') || 'null');
 const statusBox = document.getElementById('statusBox');
 const categoryIssueList = document.getElementById('categoryIssueList');
 const solutionList = document.getElementById('solutionList');
@@ -14,35 +13,21 @@ let issuePage = 1;
 let solutionPage = 1;
 const issuePageSize = 5;
 const solutionPageSize = 5;
-
-function headers(extra = {}) {
-  return {
-    ...extra,
-    'X-KRWMP-User': user?.identifier || user?.username || 'admin',
-    'X-KRWMP-Role': user?.role_name || user?.role || 'admin',
-  };
-}
+let canCreateLibraryEntries = false;
 
 function show(message, error = false) {
-  statusBox.className = `rounded-lg p-3 text-sm ${error ? 'bg-rose-500/10 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'}`;
-  statusBox.textContent = message;
-  statusBox.classList.remove('hidden');
+  window.KRWMP_UTILS.showStatus(statusBox, message, error);
 }
 
-async function json(url, options = {}) {
-  options.headers = headers(options.headers || {});
-  const response = await fetch(url, options);
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok || data.success === false) throw new Error(data.message || 'Request failed');
-  return data;
-}
-
-function escapeHtml(value) {
-  return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
-}
+const { apiRequest: json, escapeHtml } = window.KRWMP_UTILS;
 
 async function initSidebar() {
   if (window.KRWMP_ENGINE) await window.KRWMP_ENGINE.assembleInterfaceContext('/sidebar.html', 'sidebar');
+  await window.KRWMP_PRIVILEGES.protectPage('community_issues_review', 'view');
+  canCreateLibraryEntries = window.KRWMP_PRIVILEGES.can('community_issues_review', 'create');
+  document.getElementById('categoryForm')?.classList.toggle('hidden', !canCreateLibraryEntries);
+  document.getElementById('issueForm')?.classList.toggle('hidden', !canCreateLibraryEntries);
+  document.getElementById('solutionForm')?.classList.toggle('hidden', !canCreateLibraryEntries);
   document.querySelector('.krwmp-panel-section')?.classList.add('hidden');
   document.getElementById('section-data-layers')?.classList.add('hidden');
   document.getElementById('section-raster-layers')?.classList.add('hidden');
@@ -261,14 +246,14 @@ function validateSolution(form) {
 
 document.getElementById('categoryForm').addEventListener('submit', async event => {
   event.preventDefault();
+  if (!canCreateLibraryEntries) return show('You do not have create access for the issue and solution library.', true);
   const form = event.target;
   try {
     validateCategory(form);
     const body = Object.fromEntries(new FormData(form));
     await json('/api/issue-categories', {
       method: 'POST',
-      headers: headers({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify(body),
+      body,
     });
     form.reset();
     issuePage = 1;
@@ -281,14 +266,14 @@ document.getElementById('categoryForm').addEventListener('submit', async event =
 
 document.getElementById('issueForm').addEventListener('submit', async event => {
   event.preventDefault();
+  if (!canCreateLibraryEntries) return show('You do not have create access for the issue and solution library.', true);
   const form = event.target;
   try {
     validateIssue(form);
     const body = Object.fromEntries(new FormData(form));
     await json('/api/specific-issues', {
       method: 'POST',
-      headers: headers({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify(body),
+      body,
     });
     form.reset();
     issuePage = 1;
@@ -301,6 +286,7 @@ document.getElementById('issueForm').addEventListener('submit', async event => {
 
 document.getElementById('solutionForm').addEventListener('submit', async event => {
   event.preventDefault();
+  if (!canCreateLibraryEntries) return show('You do not have create access for the issue and solution library.', true);
   const form = event.target;
   try {
     validateSolution(form);
@@ -308,8 +294,7 @@ document.getElementById('solutionForm').addEventListener('submit', async event =
     body.issue_ids = getMultiSelectValues(solutionIssues);
     await json('/api/solutions', {
       method: 'POST',
-      headers: headers({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify(body),
+      body,
     });
     form.reset();
     solutionPage = 1;

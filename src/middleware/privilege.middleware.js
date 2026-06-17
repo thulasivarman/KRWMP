@@ -1,9 +1,9 @@
 const pool = require('../../config/database');
-const { extractBearerToken, verifyToken } = require('../utils/jwt');
+const { extractAuthToken, verifyToken } = require('../utils/jwt');
 
 function getRequestUser(request) {
   if (request.auth?.identifier) return String(request.auth.identifier).trim().toLowerCase();
-  const token = extractBearerToken(request);
+  const token = extractAuthToken(request);
   if (!token) return '';
   try {
     const decoded = verifyToken(token);

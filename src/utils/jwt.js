@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 
 const DEFAULT_DEV_SECRET = 'krwmp-dev-secret-change-me';
+const SESSION_COOKIE_NAME = 'krwmp_session';
 
 function jwtSecret() {
   const secret = process.env.JWT_SECRET || DEFAULT_DEV_SECRET;
@@ -44,4 +45,62 @@ function extractBearerToken(request) {
   return match ? match[1] : null;
 }
 
-module.exports = { signToken, verifyToken, extractBearerToken };
+function parseCookies(cookieHeader = '') {
+  return String(cookieHeader || '')
+    .split(';')
+    .map(part => part.trim())
+    .filter(Boolean)
+    .reduce((cookies, part) => {
+      const separator = part.indexOf('=');
+      if (separator === -1) return cookies;
+      const key = part.slice(0, separator).trim();
+      const value = part.slice(separator + 1).trim();
+      if (key) {
+        try {
+          cookies[key] = decodeURIComponent(value);
+        } catch (error) {
+          cookies[key] = value;
+        }
+      }
+      return cookies;
+    }, {});
+}
+
+function extractCookieToken(request) {
+  const cookies = parseCookies(request.headers.cookie);
+  return cookies[SESSION_COOKIE_NAME] || null;
+}
+
+function extractAuthToken(request) {
+  return extractBearerToken(request) || extractCookieToken(request);
+}
+
+function cookieAttributes({ clear = false } = {}) {
+  const secure = process.env.NODE_ENV === 'production';
+  return [
+    'Path=/',
+    'HttpOnly',
+    'SameSite=Strict',
+    secure ? 'Secure' : '',
+    clear ? 'Max-Age=0' : '',
+  ].filter(Boolean);
+}
+
+function sessionCookieHeader(token) {
+  return [`${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}`, ...cookieAttributes()].join('; ');
+}
+
+function clearSessionCookieHeader() {
+  return [`${SESSION_COOKIE_NAME}=`, ...cookieAttributes({ clear: true })].join('; ');
+}
+
+module.exports = {
+  signToken,
+  verifyToken,
+  extractBearerToken,
+  extractCookieToken,
+  extractAuthToken,
+  sessionCookieHeader,
+  clearSessionCookieHeader,
+  SESSION_COOKIE_NAME,
+};

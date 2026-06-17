@@ -133,7 +133,7 @@ function renderDatabaseLayerControls(layers) {
             const checkboxId = getCheckboxIdFromConfigKey(layer.layer_key);
             const label = document.createElement('label');
             label.className = 'flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-emerald-500/30 transition';
-            label.innerHTML = `<input type="checkbox" id="${checkboxId}" ${isLayerDefaultVisible(layer) ? 'checked' : ''} class="accent-emerald-500 h-4 w-4 cursor-pointer flex-shrink-0"><div class="flex items-center justify-center w-8 flex-shrink-0">${getLegendSymbol(layer)}</div><div class="min-w-0"><div class="font-semibold text-slate-300">${escapeHtml(layer.layer_name || layer.layer_key)}</div><div class="text-[10px] text-slate-500">${escapeHtml(getLayerDescription(layer))}</div></div>`;
+            label.innerHTML = `<input type="checkbox" id="${checkboxId}" ${isLayerDefaultVisible(layer) ? 'checked' : ''} class="accent-emerald-500 h-4 w-4 cursor-pointer flex-shrink-0"><div class="flex items-center justify-center w-8 flex-shrink-0">${getLegendSymbol(layer)}</div><div class="min-w-0"><div class="font-semibold text-slate-300">${window.KRWMP_UTILS.escapeHtml(layer.layer_name || layer.layer_key)}</div><div class="text-[10px] text-slate-500">${window.KRWMP_UTILS.escapeHtml(getLayerDescription(layer))}</div></div>`;
             container.appendChild(label);
         });
     });
@@ -143,7 +143,7 @@ function renderDatabaseLayerControls(layers) {
 function getLegendSymbol(layer) {
     if (layer.layer_key === 'community_complaints') return '<span class="inline-flex gap-0.5"><i class="h-2.5 w-2.5 rounded-full bg-red-500 border border-white/70"></i><i class="h-2.5 w-2.5 rounded-full bg-amber-500 border border-white/70"></i><i class="h-2.5 w-2.5 rounded-full bg-green-500 border border-white/70"></i></span>';
     if (layer.layer_key === 'vwmc_locations') return '<span class="inline-block h-3.5 w-3.5 rounded-full bg-teal-500 border-2 border-white/80"></span>';
-    return `<span class="inline-block h-4 w-6 rounded-sm border-2" style="border-color:${escapeHtml(layer.line_color || '#10b981')};background:${escapeHtml(layer.fill_color || '#10b981')}33"></span>`;
+    return `<span class="inline-block h-4 w-6 rounded-sm border-2" style="border-color:${window.KRWMP_UTILS.escapeHtml(layer.line_color || '#10b981')};background:${window.KRWMP_UTILS.escapeHtml(layer.fill_color || '#10b981')}33"></span>`;
 }
 
 function groupLayersByCategory(layers) {
@@ -209,4 +209,3 @@ function isLayerDefaultVisible(layer) { return layer?.default_visible === true |
 function getCheckboxIdFromConfigKey(layerKey) { return `chk-layer-${layerKey}`; }
 function getConfigKeyFromCheckboxId(checkboxId) { return checkboxId.replace('chk-layer-', ''); }
 function getLayerDefinitionByKey(layerKey) { return (window.KRWMP_DYNAMIC_LAYERS || []).find(layer => layer.layer_key === layerKey); }
-function escapeHtml(value) { return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }

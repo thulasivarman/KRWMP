@@ -7,9 +7,7 @@
     if (!map || !map.addSource) return;
     if (map.getSource(SOURCE_ID)) return;
 
-    const response = await fetch('/api/knowledge.geojson');
-    if (!response.ok) return;
-    const geojson = await response.json();
+    const geojson = await window.KRWMP_UTILS.apiRequest('/api/knowledge.geojson');
 
     map.addSource(SOURCE_ID, { type: 'geojson', data: geojson });
     map.addLayer({
@@ -30,7 +28,8 @@
       if (!feature) return;
       const p = feature.properties || {};
       const url = p.file_url || p.video_url || p.external_url || `/knowledge.html`;
-      const html = `<div class="text-slate-900"><strong>${p.title || 'Knowledge Resource'}</strong><br><span>${p.content_type || ''}</span><br><span>${p.category_name || ''}</span><br><a href="${url}" target="_blank">Open resource</a></div>`;
+      const esc = window.KRWMP_UTILS.escapeHtml;
+      const html = `<div class="text-slate-900"><strong>${esc(p.title || 'Knowledge Resource')}</strong><br><span>${esc(p.content_type || '')}</span><br><span>${esc(p.category_name || '')}</span><br><a href="${esc(url)}" target="_blank">Open resource</a></div>`;
       new maplibregl.Popup().setLngLat(event.lngLat).setHTML(html).addTo(map);
     });
 

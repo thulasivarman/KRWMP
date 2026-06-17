@@ -1,37 +1,24 @@
 const API_BASE = '/api';
-
-function getCurrentUser() {
-  try {
-    return JSON.parse(localStorage.getItem('krwmp_user') || 'null');
-  } catch (error) {
-    return null;
-  }
-}
-
-function isAdminUser(user) {
-  return String(user?.role_name || user?.role || '').toLowerCase() === 'admin';
-}
-
-const currentUser = getCurrentUser();
+let canCreateVectorLayer = false;
+let canUpdateVectorLayer = false;
+let canDeleteVectorLayer = false;
 
 async function initializeVectorLayerSidebar() {
   if (window.KRWMP_ENGINE) {
     await window.KRWMP_ENGINE.assembleInterfaceContext('/sidebar.html', 'sidebar');
   }
+  await window.KRWMP_PRIVILEGES.protectPage('vector_layers', 'view');
+  canCreateVectorLayer = window.KRWMP_PRIVILEGES.can('vector_layers', 'create');
+  canUpdateVectorLayer = window.KRWMP_PRIVILEGES.can('vector_layers', 'update');
+  canDeleteVectorLayer = window.KRWMP_PRIVILEGES.can('vector_layers', 'delete');
 
   const basemapSection = document.querySelector('.krwmp-panel-section');
   if (basemapSection) basemapSection.classList.add('hidden');
 
   const dataLayersSection = document.getElementById('section-data-layers');
   if (dataLayersSection) dataLayersSection.classList.add('hidden');
-}
-
-if (!isAdminUser(currentUser)) {
-  const authNotice = document.getElementById('authNotice');
-  if (authNotice) authNotice.hidden = false;
-  window.setTimeout(() => {
-    window.location.href = '/index.html';
-  }, 800);
+  const uploadSection = uploadForm?.closest('section');
+  if (uploadSection) uploadSection.classList.toggle('hidden', !canCreateVectorLayer);
 }
 
 const uploadForm = document.getElementById('uploadForm');
@@ -40,13 +27,7 @@ const refreshBtn = document.getElementById('refreshBtn');
 const statusBox = document.getElementById('statusBox');
 const layerTemplate = document.getElementById('layerTemplate');
 
-function adminHeaders(extra = {}) {
-  return {
-    ...extra,
-    'X-KRWMP-User': currentUser?.identifier || currentUser?.username || currentUser?.name || 'admin',
-    'X-KRWMP-Role': currentUser?.role_name || currentUser?.role || 'admin',
-  };
-}
+const { apiRequest: requestJson } = window.KRWMP_UTILS;
 
 function showStatus(message, isError = false) {
   statusBox.hidden = false;
@@ -56,18 +37,6 @@ function showStatus(message, isError = false) {
 
 function normalizeHex(value, fallback) {
   return /^#[0-9a-f]{6}$/i.test(value || '') ? value : fallback;
-}
-
-async function requestJson(url, options = {}) {
-  options.headers = adminHeaders(options.headers || {});
-  const response = await fetch(url, options);
-  const payload = await response.json().catch(() => ({}));
-
-  if (!response.ok || payload.success === false) {
-    throw new Error(payload.message || 'Request failed.');
-  }
-
-  return payload;
 }
 
 async function loadLayers() {
@@ -114,11 +83,14 @@ function renderLayer(layer) {
   card.querySelector('[data-action="delete"]').addEventListener('click', async () => {
     await deleteLayer(layer.id, layer.name || layer.id);
   });
+  form.querySelector('button[type="submit"]')?.classList.toggle('hidden', !canUpdateVectorLayer);
+  card.querySelector('[data-action="delete"]')?.classList.toggle('hidden', !canDeleteVectorLayer);
 
   layersList.appendChild(node);
 }
 
 async function saveStyle(form) {
+  if (!canUpdateVectorLayer) return showStatus('You do not have update access for vector layers.', true);
   const id = form.id.value;
   const payload = {
     style: {
@@ -134,8 +106,7 @@ async function saveStyle(form) {
   try {
     await requestJson(`${API_BASE}/vector-layers/${encodeURIComponent(id)}/style`, {
       method: 'PUT',
-      headers: adminHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify(payload),
+      body: payload,
     });
 
     showStatus(`Symbol updated for ${id}.`);
@@ -146,6 +117,7 @@ async function saveStyle(form) {
 }
 
 async function deleteLayer(id, name) {
+  if (!canDeleteVectorLayer) return showStatus('You do not have delete access for vector layers.', true);
   const confirmed = window.confirm(`Delete ${name}? This will remove the GeoJSON table and layer registry.`);
   if (!confirmed) return;
 
@@ -160,6 +132,7 @@ async function deleteLayer(id, name) {
 
 uploadForm.addEventListener('submit', async event => {
   event.preventDefault();
+  if (!canCreateVectorLayer) return showStatus('You do not have create access for vector layers.', true);
   const formData = new FormData(uploadForm);
   formData.set('visible', uploadForm.visible.checked ? 'true' : 'false');
 
@@ -186,7 +159,5 @@ uploadForm.addEventListener('submit', async event => {
 refreshBtn.addEventListener('click', loadLayers);
 
 initializeVectorLayerSidebar().then(() => {
-  if (isAdminUser(currentUser)) {
-    loadLayers();
-  }
+  loadLayers();
 });

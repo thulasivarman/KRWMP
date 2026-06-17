@@ -20,31 +20,32 @@ const latDisplay = document.getElementById('latDisplay');
 const lngDisplay = document.getElementById('lngDisplay');
 const adminBoundaryDisplay = document.getElementById('adminBoundaryDisplay');
 const subWatershedDisplay = document.getElementById('subWatershedDisplay');
+const photoEvidenceInput = document.getElementById('photoEvidenceInput');
+const photoPreviewGrid = document.getElementById('photoPreviewGrid');
+const photoCountLabel = document.getElementById('photoCountLabel');
 
 const OTHER_VALUE = '__other__';
 const KELANI_CENTER = [80.2280810, 7.2334995];
 const KELANI_ZOOM = 10;
+const MAX_PHOTOS = 5;
+const ALLOWED_PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 let currentSpecificIssues = [];
 let currentSolutions = [];
 let locationPicker = null;
+let selectedPhotos = [];
 
 function currentUser() {
   try { return JSON.parse(localStorage.getItem('krwmp_user') || 'null') || {}; }
   catch (error) { return {}; }
 }
 
-function requestHeaders(extra = {}) {
-  const user = currentUser();
-  const token = localStorage.getItem('krwmp_token');
-  const headers = { ...extra };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  if (user.identifier || user.username) headers['X-KRWMP-User'] = user.identifier || user.username;
-  return headers;
-}
+const { apiRequest: json } = window.KRWMP_UTILS;
 
 async function initializeCommunityReportSidebar() {
-  if (!localStorage.getItem('krwmp_token') || !window.KRWMP_ENGINE) return;
+  if (!window.KRWMP_ENGINE) return;
+  await window.KRWMP_ENGINE.initSession();
+  if (!window.KRWMP_ENGINE.Session.isAuthenticated) return;
   await window.KRWMP_ENGINE.assembleInterfaceContext('/sidebar.html', 'sidebar');
   document.querySelector('.krwmp-panel-section')?.classList.add('hidden');
   document.getElementById('section-data-layers')?.classList.add('hidden');
@@ -52,17 +53,7 @@ async function initializeCommunityReportSidebar() {
 }
 
 function showStatus(message, error = false) {
-  statusBox.className = `rounded-lg p-3 text-sm ${error ? 'bg-rose-500/10 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'}`;
-  statusBox.textContent = message;
-  statusBox.classList.remove('hidden');
-}
-
-async function json(url, options = {}) {
-  options.headers = requestHeaders(options.headers || {});
-  const response = await fetch(url, options);
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok || data.success === false) throw new Error(data.message || 'Request failed');
-  return data;
+  window.KRWMP_UTILS.showStatus(statusBox, message, error);
 }
 
 function resetSelect(select, placeholder, disabled = true) { select.innerHTML = `<option value="">${placeholder}</option>`; select.disabled = disabled; }
@@ -80,10 +71,90 @@ async function identifySelectedLocation({ latitude, longitude, cleared = false }
 function initializeLocationPicker() { if (!window.KRWMPLocationPicker) { showStatus('Location picker module is not available.', true); return; } locationPicker = new window.KRWMPLocationPicker({ containerId: 'communityLocationPicker', latitudeInput: '#latitudeInput', longitudeInput: '#longitudeInput', initialCenter: KELANI_CENTER, initialZoom: KELANI_ZOOM, onChange: identifySelectedLocation }); setTimeout(() => { if (locationPicker?.map) { locationPicker.map.jumpTo({ center: KELANI_CENTER, zoom: KELANI_ZOOM }); locationPicker.map.resize(); } }, 500); }
 function buildJsonPayload() { const formData = new FormData(form); const payload = {}; for (const [key, value] of formData.entries()) { if (value instanceof File) continue; payload[key] = value === '' ? null : value; } normalizeOtherPayload(payload); return payload; }
 function normalizeOtherPayload(payload) { const isOtherCategory = payload.category_id === OTHER_VALUE; const isOtherIssue = payload.issue_id === OTHER_VALUE; if (isOtherCategory) payload.category_id = null; if (isOtherIssue || isOtherCategory) payload.issue_id = null; if (!payload.assigned_solution_id || payload.assigned_solution_id === OTHER_VALUE) payload.assigned_solution_id = null; if ((isOtherCategory || isOtherIssue) && payload.other_issue_name && !payload.issue_title) payload.issue_title = payload.other_issue_name; }
-function getSelectedPhoto() { const input = form.querySelector('input[name="photo"]'); const file = input?.files?.[0] || null; return file && file.size > 0 ? file : null; }
-async function submitCommunityReport() { const selectedPhoto = getSelectedPhoto(); if (!selectedPhoto) { return json('/api/community-reports', { method: 'POST', headers: requestHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(buildJsonPayload()) }); } const formData = new FormData(form); if (formData.get('category_id') === OTHER_VALUE) formData.set('category_id', ''); if (formData.get('issue_id') === OTHER_VALUE || formData.get('category_id') === '') formData.set('issue_id', ''); if (!formData.get('assigned_solution_id')) formData.set('assigned_solution_id', ''); return json('/api/community-reports', { method: 'POST', body: formData }); }
+function validPhoto(file) { return file && file.size > 0 && ALLOWED_PHOTO_TYPES.has(file.type); }
+function revokePhotoUrls() { selectedPhotos.forEach(item => { if (item.previewUrl) URL.revokeObjectURL(item.previewUrl); }); }
+function renderPhotoPreviews() {
+  if (photoCountLabel) photoCountLabel.textContent = `${selectedPhotos.length} / ${MAX_PHOTOS}`;
+  if (!photoPreviewGrid) return;
+  if (!selectedPhotos.length) {
+    photoPreviewGrid.innerHTML = '<div class="rounded border border-slate-800 bg-slate-950/40 p-3 text-xs text-slate-500 sm:col-span-2 lg:col-span-3">No images selected.</div>';
+    return;
+  }
+  photoPreviewGrid.innerHTML = selectedPhotos.map((item, index) => `
+    <div class="overflow-hidden rounded border border-slate-800 bg-slate-950/50" data-photo-index="${index}">
+      <div class="aspect-video bg-slate-900">
+        <img src="${window.KRWMP_UTILS.escapeAttribute(item.previewUrl)}" alt="" class="h-full w-full object-cover">
+      </div>
+      <div class="space-y-2 p-3">
+        <div class="truncate text-xs font-semibold text-slate-200">${window.KRWMP_UTILS.escapeHtml(item.file.name)}</div>
+        <div class="h-1.5 overflow-hidden rounded bg-slate-800">
+          <div data-photo-progress class="h-full w-0 rounded bg-emerald-500 transition-all"></div>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <span data-photo-status class="text-[10px] font-normal text-slate-500">Ready</span>
+          <button type="button" data-remove-photo="${index}" class="rounded border border-rose-900/40 bg-rose-950/30 px-2 py-1 text-[10px] font-semibold text-rose-300 hover:bg-rose-900/50">Delete</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+function setPhotoProgress(index, percent, status = '') {
+  const card = photoPreviewGrid?.querySelector(`[data-photo-index="${index}"]`);
+  const bar = card?.querySelector('[data-photo-progress]');
+  const label = card?.querySelector('[data-photo-status]');
+  if (bar) bar.style.width = `${Math.max(0, Math.min(100, Number(percent) || 0))}%`;
+  if (label && status) label.textContent = status;
+}
+function addSelectedPhotos(files = []) {
+  const accepted = [];
+  for (const file of files) {
+    if (!validPhoto(file)) {
+      showStatus('Only JPG, PNG and WEBP images can be attached.', true);
+      continue;
+    }
+    if (selectedPhotos.length + accepted.length >= MAX_PHOTOS) {
+      showStatus(`Only ${MAX_PHOTOS} images can be attached.`, true);
+      break;
+    }
+    accepted.push({ file, previewUrl: URL.createObjectURL(file) });
+  }
+  selectedPhotos = selectedPhotos.concat(accepted);
+  renderPhotoPreviews();
+  if (photoEvidenceInput) photoEvidenceInput.value = '';
+}
+async function uploadReportPhotos(report) {
+  if (!selectedPhotos.length) return [];
+  if (!window.KRWMP_FILE_ATTACHMENTS?.uploadAttachment) throw new Error('Attachment upload library is not available.');
+  const uploaded = [];
+  for (let index = 0; index < selectedPhotos.length; index += 1) {
+    const item = selectedPhotos[index];
+    setPhotoProgress(index, 1, 'Preparing');
+    const result = await window.KRWMP_FILE_ATTACHMENTS.uploadAttachment(item.file, {
+      moduleKey: 'community_issues',
+      recordId: report.id,
+      recordKind: 'community_issue_report',
+      attachmentRole: 'report_photo',
+      visibility: 'private',
+      metadata: { report_code: report.report_code },
+      onProgress: percent => setPhotoProgress(index, percent, `Uploading ${percent}%`),
+    });
+    uploaded.push(result.attachment);
+    setPhotoProgress(index, 100, 'Uploaded');
+  }
+  return uploaded;
+}
+async function submitCommunityReport() { return json('/api/community-reports', { method: 'POST', body: buildJsonPayload() }); }
 categorySelect.addEventListener('change', async () => { try { toggleOtherFields(); await loadSpecificIssues(categorySelect.value); toggleOtherFields(); } catch (error) { showStatus(error.message || 'Unable to load specific issues.', true); } });
 specificIssueSelect.addEventListener('change', async () => { try { toggleOtherFields(); syncIssueTitle(); await loadApplicableSolutions(categorySelect.value, specificIssueSelect.value); } catch (error) { showStatus(error.message || 'Unable to load applicable solutions.', true); } });
 otherCategoryInput.addEventListener('input', syncIssueTitle); otherIssueInput.addEventListener('input', syncIssueTitle); reporterContactInput.addEventListener('input', () => reporterContactInput.setCustomValidity(''));
-form.addEventListener('submit', async event => { event.preventDefault(); syncIssueTitle(); if (!isValidPhone(reporterContactInput.value)) { reporterContactInput.setCustomValidity('Please enter a valid phone number with 7 to 15 digits.'); reporterContactInput.reportValidity(); return; } if (!form.reportValidity()) return; if (!latitudeInput.value || !longitudeInput.value) { showStatus('Please select the issue location on the map before submission.', true); return; } const submitButton = form.querySelector('button[type="submit"]'); if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'Submitting...'; } try { const data = await submitCommunityReport(); form.reset(); resetDetectedLocation(); resetSelect(specificIssueSelect, 'Select category first', true); resetSelect(solutionSelect, 'No applicable solution selected', true); if (locationPicker) locationPicker.clear(); await loadCategories(); prefillReporterFromSession(); showStatus(`Issue submitted successfully. Reference: ${data.report.report_code}`); } catch (error) { showStatus(error.message, true); } finally { if (submitButton) { submitButton.disabled = false; submitButton.textContent = 'Submit Issue Report'; } } });
-(async () => { await initializeCommunityReportSidebar(); await loadCategories(); prefillReporterFromSession(); initializeLocationPicker(); })().catch(error => showStatus(error.message || 'Unable to initialize community report form.', true));
+photoEvidenceInput?.addEventListener('change', event => addSelectedPhotos(Array.from(event.target.files || [])));
+photoPreviewGrid?.addEventListener('click', event => {
+  const button = event.target.closest('[data-remove-photo]');
+  if (!button) return;
+  const index = Number(button.dataset.removePhoto);
+  const [removed] = selectedPhotos.splice(index, 1);
+  if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl);
+  renderPhotoPreviews();
+});
+form.addEventListener('submit', async event => { event.preventDefault(); syncIssueTitle(); if (!isValidPhone(reporterContactInput.value)) { reporterContactInput.setCustomValidity('Please enter a valid phone number with 7 to 15 digits.'); reporterContactInput.reportValidity(); return; } if (!form.reportValidity()) return; if (!latitudeInput.value || !longitudeInput.value) { showStatus('Please select the issue location on the map before submission.', true); return; } const submitButton = form.querySelector('button[type="submit"]'); if (submitButton) { submitButton.disabled = true; submitButton.textContent = selectedPhotos.length ? 'Submitting and uploading...' : 'Submitting...'; } try { const data = await submitCommunityReport(); await uploadReportPhotos(data.report); form.reset(); revokePhotoUrls(); selectedPhotos = []; renderPhotoPreviews(); resetDetectedLocation(); resetSelect(specificIssueSelect, 'Select category first', true); resetSelect(solutionSelect, 'No applicable solution selected', true); if (locationPicker) locationPicker.clear(); await loadCategories(); prefillReporterFromSession(); showStatus(`Issue submitted successfully. Reference: ${data.report.report_code}`); } catch (error) { showStatus(error.message, true); } finally { if (submitButton) { submitButton.disabled = false; submitButton.textContent = 'Submit Issue Report'; } } });
+(async () => { await initializeCommunityReportSidebar(); await loadCategories(); prefillReporterFromSession(); initializeLocationPicker(); renderPhotoPreviews(); })().catch(error => showStatus(error.message || 'Unable to initialize community report form.', true));

@@ -6,11 +6,13 @@
     <title>Login - Watershed Intelligence System</title>
     <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
     <script>
-        try {
-            const cachedUser = localStorage.getItem('krwmp_user');
-            const cachedToken = localStorage.getItem('krwmp_token');
-            if (cachedUser && cachedToken) window.location.replace('/map.html');
-        } catch (error) {}
+        (async () => {
+            try {
+                localStorage.removeItem('krwmp_token');
+                const response = await fetch('/api/auth/profile', { cache: 'no-store' });
+                if (response.ok) window.location.replace('/map.html');
+            } catch (error) {}
+        })();
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="/assets/css/style.css" rel="stylesheet" />
@@ -51,9 +53,9 @@
             try {
                 const response = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: usernameInput, password: passwordInput }) });
                 const result = await response.json();
-                if (response.ok && result && result.success && result.token) {
+                if (response.ok && result && result.success && result.user) {
                     localStorage.setItem('krwmp_user', JSON.stringify(result.user));
-                    localStorage.setItem('krwmp_token', result.token);
+                    localStorage.removeItem('krwmp_token');
                     window.location.href = '/map.html';
                 } else {
                     throw new Error(result.message || 'Authentication rejected.');

@@ -1,7 +1,6 @@
-const currentUser = JSON.parse(localStorage.getItem('krwmp_user') || 'null');
-const currentRole = String(currentUser?.role_name || currentUser?.role || '').toLowerCase();
-const currentIdentifier = String(currentUser?.identifier || currentUser?.username || '').toLowerCase();
-const canManage = currentRole === 'admin' || currentIdentifier === 'thulasi';
+let canCreateInstitution = false;
+let canUpdateInstitution = false;
+let canDeleteInstitution = false;
 
 const statusBox = document.getElementById('statusBox');
 const writePanel = document.getElementById('writePanel');
@@ -19,32 +18,11 @@ let currentPage = 1;
 const pageSize = 10;
 let locationPicker = null;
 
-function headers(extra = {}) {
-  return {
-    ...extra,
-    'Content-Type': extra['Content-Type'] || 'application/json',
-    'X-KRWMP-User': currentUser?.identifier || currentUser?.username || currentUser?.name || 'system',
-    'X-KRWMP-Role': currentUser?.role_name || currentUser?.role || '',
-  };
-}
-
 function showStatus(message, error = false) {
-  statusBox.className = `rounded-lg p-3 text-sm ${error ? 'bg-rose-500/10 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'}`;
-  statusBox.textContent = message;
-  statusBox.classList.remove('hidden');
+  window.KRWMP_UTILS.showStatus(statusBox, message, error);
 }
 
-async function json(url, options = {}) {
-  options.headers = headers(options.headers || {});
-  const response = await fetch(url, options);
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok || data.success === false) throw new Error(data.message || 'Request failed');
-  return data;
-}
-
-function escapeHtml(value) {
-  return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
-}
+const { apiRequest: json, escapeHtml } = window.KRWMP_UTILS;
 
 function formatDate(value) {
   if (!value) return '-';
@@ -54,11 +32,17 @@ function formatDate(value) {
 
 async function initSidebar() {
   if (window.KRWMP_ENGINE) await window.KRWMP_ENGINE.assembleInterfaceContext('/sidebar.html', 'sidebar');
+  await window.KRWMP_PRIVILEGES.protectPage('institution_management', 'view');
+  canCreateInstitution = window.KRWMP_PRIVILEGES.can('institution_management', 'create');
+  canUpdateInstitution = window.KRWMP_PRIVILEGES.can('institution_management', 'update');
+  canDeleteInstitution = window.KRWMP_PRIVILEGES.can('institution_management', 'delete');
 }
 
 function applyPermissions() {
-  if (canManage) writePanel.classList.remove('hidden');
-  document.querySelectorAll('.manage-action').forEach(el => el.classList.toggle('hidden', !canManage));
+  const canWrite = canCreateInstitution || canUpdateInstitution;
+  writePanel.classList.toggle('hidden', !canWrite);
+  document.querySelectorAll('[data-edit]').forEach(el => el.classList.toggle('hidden', !canUpdateInstitution));
+  document.querySelectorAll('[data-delete]').forEach(el => el.classList.toggle('hidden', !canDeleteInstitution));
   if (locationPicker) locationPicker.refresh();
 }
 
@@ -270,6 +254,7 @@ function fillForm(row) {
 }
 
 function editInstitution(id) {
+  if (!canUpdateInstitution) return showStatus('You do not have update access for institutions.', true);
   const row = institutions.find(item => String(item.id) === String(id));
   if (!row) return;
   fillForm(row);
@@ -293,6 +278,7 @@ function viewInstitution(id) {
 }
 
 async function deactivateInstitution(id) {
+  if (!canDeleteInstitution) return showStatus('You do not have delete access for institutions.', true);
   if (!confirm('Deactivate this institution? Existing linked records will remain unchanged.')) return;
   try {
     await json(`/api/institutions/${id}`, { method: 'DELETE' });
@@ -305,15 +291,16 @@ async function deactivateInstitution(id) {
 
 institutionForm.addEventListener('submit', async event => {
   event.preventDefault();
-  if (!canManage) return showStatus('Only Admin users can save institutions.', true);
   if (!validateForm()) return;
 
   const id = institutionForm.id.value;
+  if (id && !canUpdateInstitution) return showStatus('You do not have update access for institutions.', true);
+  if (!id && !canCreateInstitution) return showStatus('You do not have create access for institutions.', true);
   const method = id ? 'PUT' : 'POST';
   const url = id ? `/api/institutions/${id}` : '/api/institutions';
 
   try {
-    await json(url, { method, body: JSON.stringify(getFormPayload()) });
+    await json(url, { method, body: getFormPayload() });
     showStatus(id ? 'Institution updated successfully.' : 'Institution created successfully.');
     resetForm();
     await loadInstitutions();

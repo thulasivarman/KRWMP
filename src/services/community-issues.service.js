@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const pool = require('../../config/database');
+const fileAttachmentService = require('./file-attachment.service');
 
 const PHOTO_DIR = path.join(__dirname, '../../public/data/community-issue-photos');
 const PHOTO_URL_PREFIX = '/data/community-issue-photos';
@@ -19,10 +20,6 @@ function cleanText(value) {
   return text || null;
 }
 
-function safeFileName(value) {
-  return String(value || 'photo.jpg').replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_+/g, '_');
-}
-
 function toNumber(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
@@ -33,9 +30,19 @@ function toNullableId(value) {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
+function safeFileName(value) {
+  return String(value || 'photo.jpg').replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_+/g, '_');
+}
+
 function toIdArray(value) {
   if (Array.isArray(value)) return value.map(Number).filter(Number.isFinite);
   if (typeof value === 'string') return value.split(',').map(v => Number(v.trim())).filter(Number.isFinite);
+  return [];
+}
+
+function toTextArray(value) {
+  if (Array.isArray(value)) return value.map(v => cleanText(v)).filter(Boolean);
+  if (typeof value === 'string') return value.split(',').map(v => cleanText(v)).filter(Boolean);
   return [];
 }
 
@@ -281,7 +288,18 @@ async function createPublicReport({ fields = {}, photoFile = null } = {}) {
     otherCategoryName,
     otherIssueName
   ]);
-  return result.rows[0];
+  const report = result.rows[0];
+  const attachmentIds = toTextArray(fields.attachment_ids);
+  for (const attachmentId of attachmentIds.slice(0, 5)) {
+    await fileAttachmentService.completeUpload(attachmentId, {
+      record_id: report.id,
+      record_kind: 'community_issue_report',
+      attachment_role: 'report_photo',
+      visibility: 'private',
+      metadata: { report_code: report.report_code },
+    }, 'public');
+  }
+  return report;
 }
 
 async function listReports({ status = null } = {}) {

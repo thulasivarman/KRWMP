@@ -5,6 +5,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
     if (window.KRWMP_ENGINE) {
         await window.KRWMP_ENGINE.assembleInterfaceContext('/sidebar.html', 'sidebar');
+        await window.KRWMP_PRIVILEGES.protectPage('user_management_settings', 'view');
         window.KRWMP_ADMIN_UI.setupSidebarActionsFallback();
     }
 

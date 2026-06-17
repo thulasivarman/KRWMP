@@ -1,24 +1,12 @@
 (() => {
   const apiBase = '/api';
   const qs = id => document.getElementById(id);
-  const esc = value => String(value ?? '').replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
-
-  async function getJson(url) {
-    const res = await fetch(url);
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || data.success === false) throw new Error(data.message || 'Request failed');
-    return data;
-  }
-
-  async function sendJson(url, method, body) {
-    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || data.success === false) throw new Error(data.message || 'Request failed');
-    return data;
-  }
+  const { apiRequest, escapeHtml: esc } = window.KRWMP_UTILS;
 
   let categories = [];
   let resources = [];
+  let canCreateKnowledge = false;
+  let canUpdateKnowledge = false;
 
   function renderCategories() {
     const options = categories.map(c => `<option value="${c.id}">${esc(c.category_name)}</option>`).join('');
@@ -43,7 +31,7 @@
     qs('resource-count').textContent = `${resources.length} records`;
     qs('knowledge-list').innerHTML = resources.map(item => {
       const openUrl = item.file_url || item.video_url || item.external_url || '';
-      return `<article class="p-4 hover:bg-slate-800/40"><div class="flex justify-between gap-4"><div><h3 class="font-bold text-lg">${esc(item.title)}</h3><p class="text-sm text-slate-400 mt-1">${esc(item.summary || item.abstract || 'No summary provided.')}</p><div class="flex flex-wrap gap-2 mt-3 text-xs"><span class="px-2 py-1 rounded border border-slate-700">${esc(item.content_type)}</span><span class="px-2 py-1 rounded border border-slate-700">${esc(item.category_name || 'Uncategorised')}</span><span class="px-2 py-1 rounded border border-emerald-500/30 text-emerald-300">${esc(item.status)}</span></div></div><div class="flex flex-col gap-2 text-xs min-w-24">${openUrl ? `<a class="px-3 py-2 rounded bg-slate-800 hover:bg-slate-700 text-center" href="${esc(openUrl)}">Open</a>` : ''}<button class="btn-edit px-3 py-2 rounded bg-emerald-700 hover:bg-emerald-600" data-id="${item.id}">Edit</button></div></div></article>`;
+      return `<article class="p-4 hover:bg-slate-800/40"><div class="flex justify-between gap-4"><div><h3 class="font-bold text-lg">${esc(item.title)}</h3><p class="text-sm text-slate-400 mt-1">${esc(item.summary || item.abstract || 'No summary provided.')}</p><div class="flex flex-wrap gap-2 mt-3 text-xs"><span class="px-2 py-1 rounded border border-slate-700">${esc(item.content_type)}</span><span class="px-2 py-1 rounded border border-slate-700">${esc(item.category_name || 'Uncategorised')}</span><span class="px-2 py-1 rounded border border-emerald-500/30 text-emerald-300">${esc(item.status)}</span></div></div><div class="flex flex-col gap-2 text-xs min-w-24">${openUrl ? `<a class="px-3 py-2 rounded bg-slate-800 hover:bg-slate-700 text-center" href="${esc(openUrl)}">Open</a>` : ''}${canUpdateKnowledge ? `<button class="btn-edit px-3 py-2 rounded bg-emerald-700 hover:bg-emerald-600" data-id="${item.id}">Edit</button>` : ''}</div></div></article>`;
     }).join('') || '<div class="p-6 text-slate-400 text-sm">No knowledge resources found.</div>';
 
     document.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', () => openEdit(btn.dataset.id)));
@@ -56,9 +44,9 @@
     if (qs('filter-type').value) params.set('content_type', qs('filter-type').value);
     if (qs('filter-status').value) params.set('status', qs('filter-status').value);
     const [catData, dashData, resourceData] = await Promise.all([
-      getJson(`${apiBase}/knowledge/categories?include_inactive=true`),
-      getJson(`${apiBase}/knowledge/dashboard`),
-      getJson(`${apiBase}/knowledge?${params.toString()}`)
+      apiRequest(`${apiBase}/knowledge/categories?include_inactive=true`),
+      apiRequest(`${apiBase}/knowledge/dashboard`),
+      apiRequest(`${apiBase}/knowledge?${params.toString()}`)
     ]);
     categories = catData.categories || [];
     resources = resourceData.resources || [];
@@ -68,6 +56,7 @@
   }
 
   function openCreate() {
+    if (!canCreateKnowledge) return;
     const form = qs('knowledge-form');
     form.reset();
     form.elements.language.value = 'English';
@@ -75,6 +64,7 @@
   }
 
   function openEdit(id) {
+    if (!canUpdateKnowledge) return;
     const item = resources.find(row => String(row.id) === String(id));
     if (!item) return;
     const form = qs('knowledge-form');
@@ -94,11 +84,13 @@
     const body = Object.fromEntries(new FormData(form).entries());
     const id = body.id;
     delete body.id;
+    if (id && !canUpdateKnowledge) throw new Error('You do not have update access for knowledge resources.');
+    if (!id && !canCreateKnowledge) throw new Error('You do not have create access for knowledge resources.');
     body.is_featured = form.elements.is_featured.checked;
     body.tags = body.tags ? body.tags.split(',').map(v => v.trim()).filter(Boolean) : [];
     ['publication_year', 'latitude', 'longitude'].forEach(key => { if (body[key] === '') delete body[key]; });
-    if (id) await sendJson(`${apiBase}/knowledge/${id}`, 'PUT', body);
-    else await sendJson(`${apiBase}/knowledge`, 'POST', body);
+    if (id) await apiRequest(`${apiBase}/knowledge/${id}`, { method: 'PUT', body });
+    else await apiRequest(`${apiBase}/knowledge`, { method: 'POST', body });
     qs('knowledge-modal').close();
     await loadAll();
   }
@@ -106,6 +98,10 @@
   document.addEventListener('DOMContentLoaded', async () => {
     try {
       if (window.KRWMP_ENGINE) await window.KRWMP_ENGINE.assembleInterfaceContext();
+      await window.KRWMP_PRIVILEGES.protectPage('knowledge_portal', 'view');
+      canCreateKnowledge = window.KRWMP_PRIVILEGES.can('knowledge_portal', 'create');
+      canUpdateKnowledge = window.KRWMP_PRIVILEGES.can('knowledge_portal', 'update');
+      qs('btn-open-create')?.classList.toggle('hidden', !canCreateKnowledge);
       await loadAll();
       qs('btn-refresh-knowledge').addEventListener('click', loadAll);
       qs('btn-apply-filters').addEventListener('click', loadAll);

@@ -4,7 +4,7 @@ const { requirePrivilegeInline, getRequestUser } = require('../middleware/privil
 const PRIVILEGE_KEY = 'knowledge_portal';
 
 function currentUser(request) {
-  return getRequestUser(request) || String(request.headers['x-krwmp-user'] || request.headers['x-user'] || 'system').trim();
+  return getRequestUser(request) || 'system';
 }
 
 async function knowledgeRoutes(fastify) {

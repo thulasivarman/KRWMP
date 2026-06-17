@@ -1,9 +1,9 @@
 const rasterLayerService = require('../services/raster-layer.service');
-const { requirePrivilegeInline } = require('../middleware/privilege.middleware');
+const { getRequestUser, requirePrivilegeInline } = require('../middleware/privilege.middleware');
 const { assertRasterUpload } = require('../utils/upload-validation');
 
 function getAdminUser(request) {
-  return String(request.auth?.identifier || request.headers['x-krwmp-user'] || request.headers['x-user'] || 'admin').trim();
+  return getRequestUser(request) || 'admin';
 }
 
 function getFieldValue(fields, fieldName) {

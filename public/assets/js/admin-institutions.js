@@ -5,18 +5,12 @@ window.KRWMP_ADMIN_INSTITUTIONS = {
 
     async init() {
         await window.KRWMP_ENGINE.assembleInterfaceContext('/sidebar.html', 'sidebar');
-        this.canManage = this.isAdminUser();
+        await window.KRWMP_PRIVILEGES.load();
+        this.canManage = window.KRWMP_PRIVILEGES.can('institution_management', 'create') || window.KRWMP_PRIVILEGES.can('institution_management', 'update') || window.KRWMP_PRIVILEGES.can('institution_management', 'delete');
         this.toggleManagementControls();
         this.bindEvents();
         this.initLocationPicker();
         await this.loadInstitutions();
-    },
-
-    isAdminUser() {
-        const user = window.KRWMP_ENGINE?.Session?.user || {};
-        const identifier = String(user.identifier || user.username || '').trim().toLowerCase();
-        const roleName = String(user.role_name || user.role || '').trim().toLowerCase();
-        return identifier === 'thulasi' || roleName === 'admin';
     },
 
     toggleManagementControls() {
@@ -54,9 +48,7 @@ window.KRWMP_ADMIN_INSTITUTIONS = {
         }
         try {
             const url = `/api/spatial/identify?lat=${encodeURIComponent(location.latitude)}&lng=${encodeURIComponent(location.longitude)}`;
-            const response = await fetch(url);
-            const data = await response.json();
-            if (!response.ok || data.success === false) throw new Error(data.message || 'Unable to identify location');
+            const data = await window.KRWMP_UTILS.apiRequest(url);
             if (dsd) dsd.value = data.dsd?.dsd_name || '';
             if (gnd) gnd.value = data.gnd?.gnd_name || '';
         } catch (error) {
@@ -131,9 +123,10 @@ window.KRWMP_ADMIN_INSTITUTIONS = {
 
     async saveInstitution(event) {
         event.preventDefault();
-        if (!this.canManage) return window.KRWMP_ADMIN_UI.showError('Only Admin users can manage institutions.');
         try {
             const id = document.getElementById('institutionId').value;
+            if (id && !window.KRWMP_PRIVILEGES.can('institution_management', 'update')) return window.KRWMP_ADMIN_UI.showError('You do not have update access for institutions.');
+            if (!id && !window.KRWMP_PRIVILEGES.can('institution_management', 'create')) return window.KRWMP_ADMIN_UI.showError('You do not have create access for institutions.');
             const payload = this.getPayload();
             if (id) await window.KRWMP_ADMIN_API.updateInstitution(id, payload);
             else await window.KRWMP_ADMIN_API.createInstitution(payload);
@@ -175,6 +168,7 @@ window.KRWMP_ADMIN_INSTITUTIONS = {
     },
 
     async deactivateInstitution(row) {
+        if (!window.KRWMP_PRIVILEGES.can('institution_management', 'delete')) return window.KRWMP_ADMIN_UI.showError('You do not have delete access for institutions.');
         if (!confirm(`Deactivate institution: ${row.institution_name}?`)) return;
         try {
             await window.KRWMP_ADMIN_API.deleteInstitution(row.id);
@@ -186,7 +180,7 @@ window.KRWMP_ADMIN_INSTITUTIONS = {
     },
 
     escapeHtml(value) {
-        return String(value ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');
+        return window.KRWMP_UTILS.escapeHtml(value);
     }
 };
 

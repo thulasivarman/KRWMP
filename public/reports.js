@@ -13,16 +13,11 @@ function activeUser() {
   return window.KRWMP_ENGINE?.Session?.user || JSON.parse(localStorage.getItem('krwmp_user') || 'null') || {};
 }
 
-function headers() {
-  const user = activeUser();
-  return { 'X-KRWMP-User': user.identifier || 'thulasi', 'X-KRWMP-Role': user.role_name || 'admin' };
+function show(message, error = false) {
+  window.KRWMP_UTILS.showStatus(statusBox, message, error);
 }
 
-function show(message, error = false) {
-  statusBox.className = `rounded-lg p-3 text-sm ${error ? 'bg-rose-500/10 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'}`;
-  statusBox.textContent = message;
-  statusBox.classList.remove('hidden');
-}
+const { apiRequest, escapeHtml: esc } = window.KRWMP_UTILS;
 
 async function init() {
   if (window.KRWMP_ENGINE) await window.KRWMP_ENGINE.assembleInterfaceContext('/sidebar.html', 'sidebar');
@@ -52,9 +47,7 @@ function buildUrl() {
 async function loadReport() {
   try {
     show('Loading report...');
-    const res = await fetch(buildUrl(), { headers: headers() });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || data.success === false) throw new Error(data.message || 'Report loading failed');
+    const data = await apiRequest(buildUrl());
     render(data.report || {});
     statusBox.classList.add('hidden');
   } catch (e) {
@@ -104,7 +97,6 @@ function exportPdf() {
 }
 
 function title(v) { return String(v).replaceAll('_', ' ').replace(/\b\w/g, c => c.toUpperCase()); }
-function esc(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
 
 reportType.addEventListener('change', () => { fillStatus(); loadReport(); });
 document.getElementById('loadReportBtn').addEventListener('click', loadReport);
