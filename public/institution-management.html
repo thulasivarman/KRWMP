@@ -13,20 +13,20 @@
     <div class="flex min-h-screen">
         <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
 
-        <main class="flex-1 p-8 space-y-8 max-w-7xl mx-auto">
-            <header class="border-b border-slate-800 pb-4 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <main class="flex-1 krwmp-page krwmp-stack-lg">
+            <header class="krwmp-page-header flex flex-col md:flex-row md:items-end md:justify-between gap-4">
                 <div>
-                    <h1 class="text-xl font-bold uppercase tracking-wider text-slate-200">Institution Management</h1>
-                    <p class="text-xs text-slate-500 mt-1">Maintain implementing agencies, contact details, active status, and optional GIS location.</p>
+                    <h1 class="krwmp-page-title">Institution Management</h1>
+                    <p class="krwmp-body-text">Maintain implementing agencies, contact details, active status, and optional GIS location.</p>
                 </div>
                 <div class="text-[11px] text-slate-500 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2">
                     Admin users can create, edit and deactivate institutions. Other authorised users can view records.
                 </div>
             </header>
 
-            <section id="institution-form-section" class="bg-slate-900 border border-slate-800/80 rounded-xl p-6 shadow-xl hidden">
+            <section id="institution-form-section" class="krwmp-panel hidden">
                 <div class="flex items-center justify-between gap-4 mb-5">
-                    <h2 class="text-xs font-bold uppercase tracking-widest text-emerald-400">Institution Record</h2>
+                    <h2 class="krwmp-section-title">Institution Record</h2>
                     <button type="button" id="btn-reset-institution-form" class="text-[11px] text-slate-400 hover:text-white">Clear Form</button>
                 </div>
 
@@ -35,94 +35,94 @@
 
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-slate-400 mb-1 font-medium">Institution Name <span class="text-rose-400">*</span></label>
-                            <input type="text" id="institutionName" maxlength="200" required class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500/50" placeholder="e.g. Department of Irrigation">
+                            <label  class="krwmp-field">Institution Name <span class="text-rose-400">*</span></label>
+                            <input type="text" id="institutionName" maxlength="200" required  class="krwmp-input" placeholder="e.g. Department of Irrigation">
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-slate-400 mb-1 font-medium">Institution Type</label>
-                                <input type="text" id="institutionType" maxlength="100" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500/50" placeholder="Government / NGO / CBO">
+                                <label  class="krwmp-field">Institution Type</label>
+                                <input type="text" id="institutionType" maxlength="100"  class="krwmp-input" placeholder="Government / NGO / CBO">
                             </div>
                             <div>
-                                <label class="block text-slate-400 mb-1 font-medium">Active Status</label>
-                                <select id="institutionActive" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500/50">
+                                <label  class="krwmp-field">Active Status</label>
+                                <select id="institutionActive"  class="krwmp-select">
                                     <option value="true">Active</option>
                                     <option value="false">Inactive</option>
                                 </select>
                             </div>
                         </div>
                         <div>
-                            <label class="block text-slate-400 mb-1 font-medium">Office / Address</label>
-                            <textarea id="institutionAddress" rows="3" maxlength="500" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500/50" placeholder="Institution office address or description"></textarea>
+                            <label  class="krwmp-field">Office / Address</label>
+                            <textarea id="institutionAddress" rows="3" maxlength="500"  class="krwmp-textarea" placeholder="Institution office address or description"></textarea>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-slate-400 mb-1 font-medium">Contact Person</label>
-                                <input type="text" id="contactPerson" maxlength="150" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500/50">
+                                <label  class="krwmp-field">Contact Person</label>
+                                <input type="text" id="contactPerson" maxlength="150"  class="krwmp-input">
                             </div>
                             <div>
-                                <label class="block text-slate-400 mb-1 font-medium">Contact Phone</label>
-                                <input type="tel" id="contactPhone" maxlength="30" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500/50" placeholder="+94...">
+                                <label  class="krwmp-field">Contact Phone</label>
+                                <input type="tel" id="contactPhone" maxlength="30"  class="krwmp-input" placeholder="+94...">
                             </div>
                         </div>
                         <div>
-                            <label class="block text-slate-400 mb-1 font-medium">Contact Email</label>
-                            <input type="email" id="contactEmail" maxlength="150" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500/50" placeholder="name@example.lk">
+                            <label  class="krwmp-field">Contact Email</label>
+                            <input type="email" id="contactEmail" maxlength="150"  class="krwmp-input" placeholder="name@example.lk">
                         </div>
                     </div>
 
                     <div class="space-y-4">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-slate-400 mb-1 font-medium">DSD</label>
-                                <input type="text" id="institutionDsd" readonly class="w-full bg-slate-950/70 border border-slate-800 rounded px-3 py-2 text-slate-400" placeholder="Auto detected">
+                                <label  class="krwmp-field">DSD</label>
+                                <input type="text" id="institutionDsd" readonly  class="krwmp-input bg-slate-950/70 text-slate-400" placeholder="Auto detected">
                             </div>
                             <div>
-                                <label class="block text-slate-400 mb-1 font-medium">GND</label>
-                                <input type="text" id="institutionGnd" readonly class="w-full bg-slate-950/70 border border-slate-800 rounded px-3 py-2 text-slate-400" placeholder="Auto detected">
+                                <label  class="krwmp-field">GND</label>
+                                <input type="text" id="institutionGnd" readonly  class="krwmp-input bg-slate-950/70 text-slate-400" placeholder="Auto detected">
                             </div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-slate-400 mb-1 font-medium">Latitude</label>
-                                <input type="number" step="0.0000001" id="institutionLatitude" readonly class="w-full bg-slate-950/70 border border-slate-800 rounded px-3 py-2 text-slate-400" placeholder="Select on map">
+                                <label  class="krwmp-field">Latitude</label>
+                                <input type="number" step="0.0000001" id="institutionLatitude" readonly  class="krwmp-input bg-slate-950/70 text-slate-400" placeholder="Select on map">
                             </div>
                             <div>
-                                <label class="block text-slate-400 mb-1 font-medium">Longitude</label>
-                                <input type="number" step="0.0000001" id="institutionLongitude" readonly class="w-full bg-slate-950/70 border border-slate-800 rounded px-3 py-2 text-slate-400" placeholder="Select on map">
+                                <label  class="krwmp-field">Longitude</label>
+                                <input type="number" step="0.0000001" id="institutionLongitude" readonly  class="krwmp-input bg-slate-950/70 text-slate-400" placeholder="Select on map">
                             </div>
                         </div>
 
                         <div id="institution-location-picker" class="rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
-                            <div data-location-map class="h-72 w-full"></div>
+                            <div data-location-map class="krwmp-location-map h-72 w-full"></div>
                             <div class="p-3 border-t border-slate-800 flex items-center justify-between gap-3">
-                                <p data-location-status class="text-xs text-slate-400">Click the map to select institution location.</p>
+                                <p data-location-status class="krwmp-status-label">Click the map to select institution location.</p>
                                 <div class="flex gap-2">
-                                    <button type="button" data-location-gps class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded text-[11px]">Use GPS</button>
-                                    <button type="button" data-location-clear class="bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 px-3 py-1.5 rounded text-[11px]">Clear</button>
+                                    <button type="button" data-location-gps  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm text-[11px]">Use GPS</button>
+                                    <button type="button" data-location-clear  class="krwmp-btn krwmp-btn-danger krwmp-btn-sm bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 text-[11px]">Clear</button>
                                 </div>
                             </div>
                         </div>
 
                         <div class="flex justify-end gap-2 pt-2">
-                            <button type="button" id="btn-cancel-institution-edit" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded transition">Cancel</button>
-                            <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded transition shadow-lg">Save Institution</button>
+                            <button type="button" id="btn-cancel-institution-edit"  class="krwmp-btn krwmp-btn-secondary text-slate-300">Cancel</button>
+                            <button type="submit"  class="krwmp-btn krwmp-btn-primary">Save Institution</button>
                         </div>
                     </div>
                 </form>
             </section>
 
-            <section class="bg-slate-900 border border-slate-800/80 rounded-xl p-6 shadow-xl">
+            <section class="krwmp-panel">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
                     <div>
-                        <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400">Institution Directory</h2>
-                        <p class="text-[11px] text-slate-500 mt-1">Active and inactive institution records used by user profiles and intervention registry modules.</p>
+                        <h2 class="krwmp-section-title">Institution Directory</h2>
+                        <p class="krwmp-help-text">Active and inactive institution records used by user profiles and intervention registry modules.</p>
                     </div>
                     <div class="flex gap-2">
-                        <label class="flex items-center gap-2 text-[11px] text-slate-400 bg-slate-950 border border-slate-800 rounded px-3 py-2">
+                        <label  class="krwmp-field flex items-center gap-2 text-[11px] bg-slate-950 border border-slate-800 rounded px-3 py-2">
                             <input type="checkbox" id="showInactiveInstitutions"> Show inactive
                         </label>
-                        <button type="button" id="btn-new-institution" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded text-xs font-medium hidden">New Institution</button>
+                        <button type="button" id="btn-new-institution"  class="krwmp-btn krwmp-btn-primary krwmp-btn-sm hidden">New Institution</button>
                     </div>
                 </div>
 

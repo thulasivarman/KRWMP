@@ -37,7 +37,7 @@
             wrapper.className = 'krwmp-table-wrap';
             table.parentNode.insertBefore(wrapper, table);
             wrapper.appendChild(table);
-            table.classList.add('krwmp-data-table');
+            table.classList.add('krwmp-table', 'krwmp-table-compact');
         });
     }
 

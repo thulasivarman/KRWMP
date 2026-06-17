@@ -57,13 +57,13 @@ function renderPagination(container, currentPage, pageCount, totalCount, label, 
   }
 
   container.innerHTML = `
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-xs text-slate-500 border-t border-slate-800 pt-3">
-      <span>${label}: Page ${currentPage} of ${pageCount} | Total ${totalCount}</span>
-      <div class="flex items-center gap-2">
-        <button type="button" data-page="prev" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded font-bold ${currentPage <= 1 ? 'opacity-50 pointer-events-none' : ''}">Previous</button>
-        <button type="button" data-page="next" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded font-bold ${currentPage >= pageCount ? 'opacity-50 pointer-events-none' : ''}">Next</button>
+    <nav class="krwmp-pagination" aria-label="${label} pagination">
+      <span class="krwmp-pagination-meta">${label}: Page ${currentPage} of ${pageCount} | Total ${totalCount}</span>
+      <div class="krwmp-pagination-controls">
+        <button type="button" data-page="prev"  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm ${currentPage <= 1 ? 'opacity-50 pointer-events-none' : ''}">Previous</button>
+        <button type="button" data-page="next"  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm ${currentPage >= pageCount ? 'opacity-50 pointer-events-none' : ''}">Next</button>
       </div>
-    </div>
+    </nav>
   `;
 
   container.querySelector('[data-page="prev"]')?.addEventListener('click', () => onPageChange(currentPage - 1));
@@ -112,14 +112,14 @@ function renderIssueStructure() {
   if (issuePage > pageCount) issuePage = pageCount;
 
   if (!grouped.length) {
-    categoryIssueList.innerHTML = '<p class="text-sm text-slate-500">No issue categories found.</p>';
+    categoryIssueList.innerHTML = '<div class="krwmp-empty-state">No issue categories found.</div>';
     if (issuePagination) issuePagination.innerHTML = '';
     return;
   }
 
   paginate(grouped, issuePage, issuePageSize).forEach(category => {
     const card = document.createElement('article');
-    card.className = 'bg-slate-950/50 border border-slate-800 rounded-lg overflow-hidden';
+    card.className = 'krwmp-card overflow-hidden p-0';
     const accordionId = `category-${category.id}`;
     const issueHtml = category.issues.length
       ? category.issues.map(issue => `
@@ -129,12 +129,12 @@ function renderIssueStructure() {
               <h4 class="text-sm font-bold text-slate-100">${escapeHtml(category.category_name)} - ${escapeHtml(issue.issue_name)}</h4>
               <p class="text-xs text-slate-500 mt-1">${escapeHtml(issue.description || '')}</p>
             </div>
-            <span class="text-[10px] px-2 py-1 rounded bg-emerald-500/10 text-emerald-300 uppercase">${escapeHtml(issue.severity_level || 'medium')}</span>
+            <span class="krwmp-badge krwmp-badge-warning">${escapeHtml(issue.severity_level || 'medium')}</span>
           </div>
           <div class="text-[10px] text-slate-600 mt-2">Linked solutions: ${Number(issue.solution_count || 0)}</div>
         </div>
       `).join('')
-      : '<p class="text-xs text-slate-500">No specific issues under this category.</p>';
+      : '<div class="krwmp-empty-state">No specific issues under this category.</div>';
 
     card.innerHTML = `
       <button type="button" data-accordion-toggle="${accordionId}" class="w-full text-left p-4 flex items-start justify-between gap-3 hover:bg-slate-900/70 transition">
@@ -163,19 +163,19 @@ function renderSolutions() {
   if (solutionPage > pageCount) solutionPage = pageCount;
 
   if (!solutions.length) {
-    solutionList.innerHTML = '<p class="text-sm text-slate-500">No solutions found.</p>';
+    solutionList.innerHTML = '<div class="krwmp-empty-state">No solutions found.</div>';
     if (solutionPagination) solutionPagination.innerHTML = '';
     return;
   }
 
   paginate(solutions, solutionPage, solutionPageSize).forEach(solution => {
     const card = document.createElement('article');
-    card.className = 'bg-slate-950/50 border border-slate-800 rounded-lg overflow-hidden';
+    card.className = 'krwmp-card overflow-hidden p-0';
     const accordionId = `solution-${solution.id}`;
     const links = Array.isArray(solution.linked_issues) ? solution.linked_issues : [];
     const linkHtml = links.length
-      ? links.map(issue => `<span class="inline-flex px-2 py-1 rounded bg-emerald-500/10 text-emerald-300 text-[10px] font-bold uppercase mr-1 mb-1">${escapeHtml(issue.category_name)} - ${escapeHtml(issue.issue_name)}</span>`).join('')
-      : '<span class="text-xs text-rose-300">No linked specific issues</span>';
+      ? links.map(issue => `<span class="krwmp-badge krwmp-badge-success mr-1 mb-1">${escapeHtml(issue.category_name)} - ${escapeHtml(issue.issue_name)}</span>`).join('')
+      : '<span class="krwmp-badge krwmp-badge-danger">No linked specific issues</span>';
 
     card.innerHTML = `
       <button type="button" data-accordion-toggle="${accordionId}" class="w-full text-left p-4 flex items-start justify-between gap-3 hover:bg-slate-900/70 transition">

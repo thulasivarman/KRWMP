@@ -174,7 +174,7 @@
         const meta = attachmentMeta(file);
         const canDelete = options.canDelete !== false;
         const deleteButton = canDelete
-            ? `<button type="button" data-attachment-action="delete" data-file-id="${escapeAttribute(id)}" class="rounded border border-rose-900/40 bg-rose-950/30 px-2.5 py-1 text-[10px] font-semibold text-rose-300 transition hover:bg-rose-900/50">Delete</button>`
+            ? `<button type="button" data-attachment-action="delete" data-file-id="${escapeAttribute(id)}"  class="krwmp-btn krwmp-btn-danger krwmp-btn-sm border border-rose-900/40 bg-rose-950/30 px-2.5 text-[10px] text-rose-300 hover:bg-rose-900/50">Delete</button>`
             : '';
 
         return `
@@ -184,7 +184,7 @@
                     <div class="mt-1 truncate text-[11px] text-slate-500">${escapeHtml(meta || 'File attachment')}</div>
                 </div>
                 <div class="flex shrink-0 items-center gap-1.5">
-                    <button type="button" data-attachment-action="download" data-file-id="${escapeAttribute(id)}" class="rounded border border-slate-700 bg-slate-800 px-2.5 py-1 text-[10px] font-semibold text-slate-200 transition hover:bg-slate-700">Download</button>
+                    <button type="button" data-attachment-action="download" data-file-id="${escapeAttribute(id)}"  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm border border-slate-700 px-2.5 text-[10px]">Download</button>
                     ${deleteButton}
                 </div>
             </div>

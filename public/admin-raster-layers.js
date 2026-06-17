@@ -125,8 +125,8 @@ function renderSymbologyEditor(symbology) {
     const enabled = cls.min !== undefined && cls.max !== undefined;
     return `<article class="raster-class-row rounded-xl border border-slate-800/80 bg-slate-950/55 p-4 shadow-sm" data-class-index="${index}">
       <div class="flex items-center justify-between gap-3 mb-3">
-        <label class="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-300">
-          <input type="checkbox" class="class-enabled h-4 w-4 accent-emerald-500" ${enabled ? 'checked' : ''}>
+        <label  class="krwmp-label inline-flex items-center gap-2 text-[11px] uppercase tracking-wider">
+          <input type="checkbox"  class="class-enabled h-4 w-4 accent-emerald-500" ${enabled ? 'checked' : ''}>
           Class ${index + 1}
         </label>
         <div class="flex items-center gap-2">
@@ -137,22 +137,22 @@ function renderSymbologyEditor(symbology) {
       <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
         <label class="md:col-span-2 space-y-1">
           <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-bold">Min Value</span>
-          <input type="number" step="any" class="class-min w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500/70" placeholder="0" value="${escapeAttr(cls.min ?? '')}">
+          <input type="number" step="any"  class="krwmp-input class-min" placeholder="0" value="${escapeAttr(cls.min ?? '')}">
         </label>
         <label class="md:col-span-2 space-y-1">
           <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-bold">Max Value</span>
-          <input type="number" step="any" class="class-max w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500/70" placeholder="10" value="${escapeAttr(cls.max ?? '')}">
+          <input type="number" step="any"  class="krwmp-input class-max" placeholder="10" value="${escapeAttr(cls.max ?? '')}">
         </label>
         <label class="md:col-span-2 space-y-1">
           <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-bold">Color</span>
           <div class="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5">
-            <input type="color" class="class-color h-9 w-12 rounded border border-slate-600 bg-transparent cursor-pointer" value="${escapeAttr(cls.color || DEFAULT_CLASS_COLORS[index])}">
+            <input type="color"  class="class-color h-9 w-12 rounded border border-slate-600 bg-transparent cursor-pointer" value="${escapeAttr(cls.color || DEFAULT_CLASS_COLORS[index])}">
             <span class="class-color-text text-[10px] font-mono text-slate-400">${escapeAttr(cls.color || DEFAULT_CLASS_COLORS[index])}</span>
           </div>
         </label>
         <label class="md:col-span-6 space-y-1">
           <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-bold">Legend Label</span>
-          <input type="text" class="class-label w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500/70" placeholder="Very Low / Low / Moderate / High" value="${escapeAttr(cls.label || '')}">
+          <input type="text"  class="krwmp-input class-label" placeholder="Very Low / Low / Moderate / High" value="${escapeAttr(cls.label || '')}">
         </label>
       </div>
     </article>`;
@@ -166,7 +166,7 @@ function renderSymbologyEditor(symbology) {
       </div>
       <label class="space-y-1 min-w-[220px]">
         <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-bold">Render Mode</span>
-        <select name="symbologyMode" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500/70">
+        <select name="symbologyMode"  class="krwmp-select">
           <option value="stretch" ${symbology.mode === 'stretch' ? 'selected' : ''}>Stretch / Original</option>
           <option value="classified" ${symbology.mode === 'classified' ? 'selected' : ''}>Classified Heat Map</option>
         </select>

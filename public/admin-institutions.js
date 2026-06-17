@@ -74,14 +74,14 @@ function buildQuery() {
 }
 
 async function loadInstitutions() {
-  tableBody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-500 text-sm">Loading institutions...</td></tr>';
+  tableBody.innerHTML = '<tr><td colspan="6" class="krwmp-table-empty">Loading institutions...</td></tr>';
   try {
     const data = await json(`/api/institutions?${buildQuery()}`);
     institutions = data.institutions || [];
     if (currentPage > totalPages()) currentPage = totalPages();
     renderInstitutions();
   } catch (error) {
-    tableBody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-rose-300 text-sm">${escapeHtml(error.message)}</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="6" class="krwmp-table-empty text-rose-300">${escapeHtml(error.message)}</td></tr>`;
   }
 }
 
@@ -97,23 +97,23 @@ function visibleInstitutions() {
 function renderInstitutions() {
   tableBody.innerHTML = '';
   if (!institutions.length) {
-    tableBody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-500 text-sm">No institutions found.</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="6" class="krwmp-table-empty">No institutions found.</td></tr>';
     paginationBox.innerHTML = '';
     return;
   }
 
   visibleInstitutions().forEach(row => {
     const tr = document.createElement('tr');
-    tr.className = 'hover:bg-slate-950/50';
+    tr.className = '';
     const locationText = [row.dsd_name, row.gnd_name].filter(Boolean).join(' / ') || '-';
     const contactText = [row.contact_person, row.contact_phone, row.contact_email].filter(Boolean).join('<br>') || '-';
     tr.innerHTML = `
-      <td class="p-3 align-top"><div class="font-bold text-slate-100">${escapeHtml(row.institution_name)}</div><div class="text-xs text-slate-500">${escapeHtml(row.institution_code || '-')}</div><div class="text-[10px] text-slate-600 mt-1">Updated ${formatDate(row.updated_at)}</div></td>
-      <td class="p-3 align-top text-slate-300">${escapeHtml(row.institution_type || '-')}</td>
-      <td class="p-3 align-top text-slate-300"><div>${escapeHtml(locationText)}</div><div class="text-xs text-slate-500">${row.latitude && row.longitude ? `${Number(row.latitude).toFixed(6)}, ${Number(row.longitude).toFixed(6)}` : 'No location'}</div></td>
-      <td class="p-3 align-top text-slate-300 text-xs">${contactText}</td>
-      <td class="p-3 align-top"><span class="px-2 py-1 rounded text-[10px] font-bold ${row.active ? 'bg-emerald-500/10 text-emerald-300' : 'bg-slate-700 text-slate-300'}">${row.active ? 'ACTIVE' : 'INACTIVE'}</span></td>
-      <td class="p-3 align-top text-right"><div class="flex justify-end gap-2"><button data-view="${row.id}" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded text-xs font-bold">View</button><button data-edit="${row.id}" class="manage-action hidden bg-emerald-700 hover:bg-emerald-600 px-3 py-1.5 rounded text-xs font-bold">Edit</button><button data-delete="${row.id}" class="manage-action hidden bg-rose-700 hover:bg-rose-600 px-3 py-1.5 rounded text-xs font-bold">Deactivate</button></div></td>
+      <td><div class="font-bold text-slate-100">${escapeHtml(row.institution_name)}</div><div class="krwmp-status-label">${escapeHtml(row.institution_code || '-')}</div><div class="text-[10px] text-slate-600 mt-1">Updated ${formatDate(row.updated_at)}</div></td>
+      <td class="text-slate-300">${escapeHtml(row.institution_type || '-')}</td>
+      <td class="text-slate-300"><div>${escapeHtml(locationText)}</div><div class="krwmp-status-label">${row.latitude && row.longitude ? `${Number(row.latitude).toFixed(6)}, ${Number(row.longitude).toFixed(6)}` : 'No location'}</div></td>
+      <td class="text-slate-300 text-xs">${contactText}</td>
+      <td><span class="krwmp-badge ${row.active ? 'krwmp-badge-success' : 'krwmp-badge-neutral'}">${row.active ? 'ACTIVE' : 'INACTIVE'}</span></td>
+      <td class="text-right"><div class="krwmp-table-actions"><button data-view="${row.id}"  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">View</button><button data-edit="${row.id}"  class="krwmp-btn krwmp-btn-primary krwmp-btn-sm manage-action hidden">Edit</button><button data-delete="${row.id}"  class="krwmp-btn krwmp-btn-danger krwmp-btn-sm manage-action hidden">Deactivate</button></div></td>
     `;
     tableBody.appendChild(tr);
   });
@@ -127,8 +127,10 @@ function renderInstitutions() {
 
 function renderPagination() {
   paginationBox.innerHTML = `
-    <span>Showing ${visibleInstitutions().length} of ${institutions.length} institutions | Page ${currentPage} of ${totalPages()}</span>
-    <div class="flex gap-2"><button id="prevPage" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded ${currentPage <= 1 ? 'opacity-50 pointer-events-none' : ''}">Previous</button><button id="nextPage" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded ${currentPage >= totalPages() ? 'opacity-50 pointer-events-none' : ''}">Next</button></div>
+    <nav class="krwmp-pagination" aria-label="Institution pagination">
+      <span class="krwmp-pagination-meta">Showing ${visibleInstitutions().length} of ${institutions.length} institutions</span>
+      <div class="krwmp-pagination-controls"><button id="prevPage"  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm ${currentPage <= 1 ? 'opacity-50 pointer-events-none' : ''}">Previous</button><span>Page ${currentPage} of ${totalPages()}</span><button id="nextPage"  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm ${currentPage >= totalPages() ? 'opacity-50 pointer-events-none' : ''}">Next</button></div>
+    </nav>
   `;
   document.getElementById('prevPage')?.addEventListener('click', () => { currentPage -= 1; renderInstitutions(); });
   document.getElementById('nextPage')?.addEventListener('click', () => { currentPage += 1; renderInstitutions(); });

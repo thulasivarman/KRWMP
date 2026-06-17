@@ -10,7 +10,7 @@ window.attachInteractivePopupHandshake = function (layerFillId, boundaryTypeKey)
         const popupData = buildPopupData(boundaryTypeKey, props);
         new maplibregl.Popup({ className: 'krwmp-parcel-popup', closeButton: true, closeOnClick: true, offset: 16 })
             .setLngLat(e.lngLat)
-            .setHTML(`<div class="krwmp-glass-popup"><div class="krwmp-glass-header"><div class="krwmp-glass-title">${popupData.title}</div><div class="krwmp-glass-subtitle">${popupData.subtitle}</div></div><div class="krwmp-status-badge"><span class="krwmp-status-dot"></span>${popupData.badge || 'ACTIVE LAYER'}</div><div class="krwmp-attribute-table">${popupData.rows}</div></div>`)
+            .setHTML(`<div class="krwmp-map-popup krwmp-glass-popup"><div class="krwmp-map-popup-header krwmp-glass-header"><div class="krwmp-glass-title">${popupData.title}</div><div class="krwmp-glass-subtitle">${popupData.subtitle}</div></div><div class="krwmp-status-badge"><span class="krwmp-status-dot"></span>${popupData.badge || 'ACTIVE LAYER'}</div><div class="krwmp-attribute-table">${popupData.rows}</div></div>`)
             .addTo(window.KRWMP_MAP);
     });
     window.KRWMP_MAP.on('mouseenter', layerFillId, () => { window.KRWMP_MAP.getCanvas().style.cursor = 'pointer'; });

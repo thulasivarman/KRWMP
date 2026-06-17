@@ -88,7 +88,7 @@ window.KRWMP_PRIVILEGES = {
   async protectPage(key, action = 'view') {
     await this.load();
     if (!this.can(key, action)) {
-      document.body.innerHTML = '<main class="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-8"><div class="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-md text-center"><h1 class="text-lg font-bold text-rose-300">Access Denied</h1><p class="text-sm text-slate-400 mt-2">You do not have the required privilege to access this page.</p><a href="/map.html" class="inline-block mt-4 bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-sm font-bold">Back to Map</a></div></main>';
+      document.body.innerHTML = '<main class="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-8"><div class="krwmp-panel max-w-md text-center"><h1 class="krwmp-section-title text-rose-300">Access Denied</h1><p class="krwmp-body-text mt-2">You do not have the required privilege to access this page.</p><a href="/map.html" class="krwmp-btn krwmp-btn-primary inline-block mt-4">Back to Map</a></div></main>';
       throw new Error('Access denied');
     }
   }

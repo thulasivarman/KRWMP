@@ -32,12 +32,12 @@ window.KRWMP_ADMIN_USERS = {
 
             const users = data.users || [];
             if (users.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-xs text-slate-500">No users found.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="4" class="krwmp-table-empty">No users found.</td></tr>`;
                 return;
             }
             tableBody.innerHTML = users.map(user => this.renderUserRow(user)).join('');
         } catch (error) {
-            if (tableBody) tableBody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-rose-500 font-medium">Failed to synchronize identity data matrix from database rows.</td></tr>`;
+            if (tableBody) tableBody.innerHTML = `<tr><td colspan="4" class="krwmp-table-empty text-rose-400">Failed to synchronize identity data matrix from database rows.</td></tr>`;
             console.error(error);
         }
     },
@@ -53,7 +53,7 @@ window.KRWMP_ADMIN_USERS = {
         const institutionName = this.escapeHtml(user.institution_name || 'No institution');
         const roleText = (user.roles || []).map(r => String(r.role_name).toUpperCase()).join(', ') || this.escapeHtml(user.role_name || '-');
 
-        return `<tr class="border-b border-slate-800/30 text-xs text-slate-300 hover:bg-slate-900/40 transition"><td class="py-3.5"><div class="flex items-center gap-2"><div class="h-7 w-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-bold text-emerald-400 uppercase">${safeInitials}</div><div><div class="text-slate-200 font-medium">${safeName}</div><div class="text-[10px] text-slate-500 font-normal">${safeDesignation}</div></div></div></td><td class="py-3.5 text-slate-400 font-mono">${safeIdentifier}</td><td class="py-3.5"><div class="text-[10px] text-slate-500 mb-1">${institutionName}</div><select multiple size="3" data-action="assign-role" data-identifier="${safeIdentifier}" class="bg-slate-950 border border-slate-800 text-slate-300 rounded px-1.5 py-0.5 text-[11px] font-medium cursor-pointer focus:outline-none w-full">${dropdownOptions}</select><div class="text-[10px] text-slate-500 mt-1">${this.escapeHtml(roleText)}</div></td><td class="py-3.5 text-right space-x-1"><button data-action="edit-user" data-identifier="${safeIdentifier}" data-name="${safeName}" data-designation="${safeDesignation}" data-initials="${safeInitials}" data-institution-id="${user.institution_id || ''}" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-2.5 py-1 rounded transition text-[10px] font-semibold">Edit</button><button data-action="delete-user" data-identifier="${safeIdentifier}" class="bg-rose-950/40 hover:bg-rose-900/60 border border-rose-900/40 text-rose-400 px-2.5 py-1 rounded transition text-[10px] font-semibold ${isMasterUser ? 'opacity-30 cursor-not-allowed' : ''}" ${isMasterUser ? 'disabled' : ''}>Delete</button></td></tr>`;
+        return `<tr><td><div class="flex items-center gap-2"><div class="h-7 w-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-bold text-emerald-400 uppercase">${safeInitials}</div><div><div class="text-slate-200 font-medium">${safeName}</div><div class="krwmp-status-label">${safeDesignation}</div></div></div></td><td class="text-slate-400 font-mono">${safeIdentifier}</td><td><div class="krwmp-status-label mb-1">${institutionName}</div><select multiple size="3" data-action="assign-role" data-identifier="${safeIdentifier}"  class="krwmp-select text-slate-300 px-1.5 py-0.5 text-[11px] font-medium cursor-pointer">${dropdownOptions}</select><div class="krwmp-status-label mt-1">${this.escapeHtml(roleText)}</div></td><td class="text-right"><div class="krwmp-table-actions"><button data-action="edit-user" data-identifier="${safeIdentifier}" data-name="${safeName}" data-designation="${safeDesignation}" data-initials="${safeInitials}" data-institution-id="${user.institution_id || ''}"  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Edit</button><button data-action="delete-user" data-identifier="${safeIdentifier}"  class="krwmp-btn krwmp-btn-danger krwmp-btn-sm ${isMasterUser ? 'opacity-30 cursor-not-allowed' : ''}" ${isMasterUser ? 'disabled' : ''}>Delete</button></div></td></tr>`;
     },
 
     renderRoleList() {
@@ -61,7 +61,7 @@ window.KRWMP_ADMIN_USERS = {
         if (!box) return;
         box.innerHTML = this.roles.map(role => {
             const privileges = this.privileges.filter(p => Number(p.role_id) === Number(role.id));
-            return `<div class="bg-slate-950/50 border border-slate-800 rounded-lg p-3"><div class="flex justify-between gap-2"><div><div class="font-bold text-slate-200">${this.escapeHtml(role.role_name)}</div><div class="text-slate-500">${this.escapeHtml(role.description || '')}</div></div><div class="flex gap-1"><button data-role-edit="${role.id}" class="text-emerald-400 text-[10px]">Edit</button><button data-role-delete="${role.id}" class="text-rose-400 text-[10px]">Delete</button></div></div><div class="mt-2 space-y-1">${privileges.map(p => `<div class="text-[10px] text-slate-500">${this.escapeHtml(p.privilege_name)}: V${p.can_view?'✓':'-'} C${p.can_create?'✓':'-'} U${p.can_update?'✓':'-'} D${p.can_delete?'✓':'-'}</div>`).join('') || '<div class="text-[10px] text-slate-600">No privileges configured.</div>'}</div></div>`;
+            return `<div class="krwmp-card"><div class="flex justify-between gap-2"><div><div class="font-bold text-slate-200">${this.escapeHtml(role.role_name)}</div><div class="krwmp-status-label">${this.escapeHtml(role.description || '')}</div></div><div class="krwmp-table-actions"><button data-role-edit="${role.id}" class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Edit</button><button data-role-delete="${role.id}" class="krwmp-btn krwmp-btn-danger krwmp-btn-sm">Delete</button></div></div><div class="mt-2 space-y-1">${privileges.map(p => `<div class="krwmp-status-label">${this.escapeHtml(p.privilege_name)}: V${p.can_view?'✓':'-'} C${p.can_create?'✓':'-'} U${p.can_update?'✓':'-'} D${p.can_delete?'✓':'-'}</div>`).join('') || '<div class="krwmp-empty-state">No privileges configured.</div>'}</div></div>`;
         }).join('');
     },
 

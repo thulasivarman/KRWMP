@@ -9,39 +9,39 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen">
   <div class="flex min-h-screen">
     <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
-    <main class="flex-1 p-8 space-y-6 max-w-7xl mx-auto w-full">
-      <header class="border-b border-slate-800 pb-4 flex items-start justify-between gap-4">
+    <main class="flex-1 krwmp-page krwmp-stack-lg">
+      <header class="krwmp-page-header flex items-start justify-between gap-4">
         <div>
-          <p class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Reports Module</p>
-          <h1 class="text-xl font-bold uppercase tracking-wider text-slate-200 mt-1">KRWMP Analytical Reports</h1>
-          <p class="text-xs text-slate-500 mt-1">Initial report catalogue for Community Complaints and Intervention Registry. Additional reports can be added later.</p>
+          <p class="krwmp-eyebrow">Reports Module</p>
+          <h1 class="krwmp-page-title">KRWMP Analytical Reports</h1>
+          <p class="krwmp-body-text">Initial report catalogue for Community Complaints and Intervention Registry. Additional reports can be added later.</p>
         </div>
-        <button id="exportPdfBtn" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-sm font-bold shadow-lg">Export PDF</button>
+        <button id="exportPdfBtn"  class="krwmp-btn krwmp-btn-primary">Export PDF</button>
       </header>
 
       <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
 
-      <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 grid grid-cols-1 md:grid-cols-5 gap-4 text-sm print:hidden">
-        <label class="font-semibold text-slate-300">Report Type
-          <select id="reportType" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
+      <section class="krwmp-panel grid grid-cols-1 md:grid-cols-5 gap-4 text-sm print:hidden">
+        <label  class="krwmp-field">Report Type
+          <select id="reportType"  class="krwmp-select mt-1">
             <option value="community-complaints">Community Complaints</option>
             <option value="interventions">Intervention Registry</option>
           </select>
         </label>
-        <label class="font-semibold text-slate-300">Status
-          <select id="statusFilter" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
+        <label  class="krwmp-field">Status
+          <select id="statusFilter"  class="krwmp-select mt-1">
             <option value="">All Status</option>
           </select>
         </label>
-        <label class="font-semibold text-slate-300">From Date
-          <input id="dateFrom" type="date" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
+        <label  class="krwmp-field">From Date
+          <input id="dateFrom" type="date"  class="krwmp-input mt-1">
         </label>
-        <label class="font-semibold text-slate-300">To Date
-          <input id="dateTo" type="date" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
+        <label  class="krwmp-field">To Date
+          <input id="dateTo" type="date"  class="krwmp-input mt-1">
         </label>
         <div class="flex items-end gap-2">
-          <button id="loadReportBtn" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded font-bold w-full">Load</button>
-          <button id="resetBtn" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded font-bold">Reset</button>
+          <button id="loadReportBtn"  class="krwmp-btn krwmp-btn-secondary krwmp-btn-full">Load</button>
+          <button id="resetBtn"  class="krwmp-btn krwmp-btn-secondary">Reset</button>
         </div>
       </section>
 

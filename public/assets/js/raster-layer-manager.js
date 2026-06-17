@@ -213,7 +213,7 @@ function renderRasterLayerControls(layers) {
                 </div>
             </div>
             <div class="raster-accordion-body ${index === 0 ? '' : 'hidden'} p-3 pt-0 space-y-3 border-t border-slate-800/70">
-                <div class="flex justify-end"><button type="button" class="raster-zoom text-[10px] px-2 py-1 rounded bg-slate-800 hover:bg-emerald-600 text-slate-200 transition">Zoom</button></div>
+                <div class="flex justify-end"><button type="button"  class="krwmp-btn krwmp-btn-primary krwmp-btn-sm raster-zoom text-[10px]">Zoom</button></div>
                 ${rangeControl('Opacity', 'raster-opacity', 0, 1, 0.05, opacity, `${Math.round(opacity * 100)}%`)}
                 ${rangeControl('Brightness Min', 'raster-brightness-min', 0, 1, 0.05, brightnessMin, brightnessMin.toFixed(2))}
                 ${rangeControl('Brightness Max', 'raster-brightness-max', 0, 1, 0.05, brightnessMax, brightnessMax.toFixed(2))}

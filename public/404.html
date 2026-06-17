@@ -5,15 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Page Not Found - KRWMP Portal</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body class="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-6">
-  <main class="max-w-xl text-center bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
-    <p class="text-xs uppercase tracking-[0.3em] text-emerald-400 font-bold">KRWMP Portal</p>
-    <h1 class="mt-4 text-3xl font-bold">Page not found</h1>
-    <p class="mt-3 text-slate-400 leading-7">The requested page is not available. Please return to the portal workspace or use the navigation menu.</p>
+  <main class="krwmp-panel max-w-xl text-center">
+    <p class="krwmp-eyebrow">KRWMP Portal</p>
+    <h1 class="krwmp-page-title">Page not found</h1>
+    <p class="krwmp-body-text">The requested page is not available. Please return to the portal workspace or use the navigation menu.</p>
     <div class="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-      <a href="/map.html" class="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold">Open Map Portal</a>
-      <a href="/index.html" class="px-5 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 font-semibold">Go to Home</a>
+      <a href="/map.html"  class="krwmp-btn krwmp-btn-primary">Open Map Portal</a>
+      <a href="/index.html"  class="krwmp-btn krwmp-btn-secondary">Go to Home</a>
     </div>
   </main>
 </body>

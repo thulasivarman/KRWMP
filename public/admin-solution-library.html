@@ -10,79 +10,79 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen">
   <div class="flex min-h-screen">
     <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
-    <main class="flex-1 p-8 space-y-6 max-w-7xl mx-auto w-full">
-      <header class="border-b border-slate-800 pb-4">
-        <p class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Community Participation Master Data</p>
-        <h1 class="text-xl font-bold uppercase tracking-wider text-slate-200 mt-1">Issue & Solution Library</h1>
-        <p class="text-xs text-slate-500 mt-1">Manage issue categories, specific reportable issues, and recommended solutions linked to one or more issues.</p>
+    <main class="flex-1 krwmp-page krwmp-stack-lg">
+      <header class="krwmp-page-header">
+        <p class="krwmp-eyebrow">Community Participation Master Data</p>
+        <h1 class="krwmp-page-title">Issue & Solution Library</h1>
+        <p class="krwmp-body-text">Manage issue categories, specific reportable issues, and recommended solutions linked to one or more issues.</p>
       </header>
 
       <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
 
       <section class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <form id="categoryForm" class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3" novalidate>
-          <h2 class="text-xs uppercase tracking-widest text-emerald-400 font-bold">1. Issue Category</h2>
-          <p class="text-xs text-slate-500">Examples: Drainage, Deforestation, Solid Waste, Water Pollution.</p>
-          <input name="category_name" required minlength="3" maxlength="150" placeholder="Category name" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
-          <textarea name="description" maxlength="500" placeholder="Category description" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></textarea>
-          <select name="severity_level" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
+        <form id="categoryForm" class="krwmp-panel krwmp-stack-sm" novalidate>
+          <h2 class="krwmp-section-title">1. Issue Category</h2>
+          <p class="krwmp-help-text">Examples: Drainage, Deforestation, Solid Waste, Water Pollution.</p>
+          <input name="category_name" required minlength="3" maxlength="150" placeholder="Category name"  class="krwmp-input">
+          <textarea name="description" maxlength="500" placeholder="Category description"  class="krwmp-textarea"></textarea>
+          <select name="severity_level"  class="krwmp-select">
             <option value="low">Low</option>
             <option value="medium" selected>Medium</option>
             <option value="high">High</option>
           </select>
-          <button class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded font-bold text-sm">Save Category</button>
+          <button  class="krwmp-btn krwmp-btn-primary">Save Category</button>
         </form>
 
-        <form id="issueForm" class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3" novalidate>
-          <h2 class="text-xs uppercase tracking-widest text-emerald-400 font-bold">2. Specific Issue</h2>
-          <p class="text-xs text-slate-500">Examples: Solid Waste - Open Dumping, Solid Waste - Garbage thrown into canals.</p>
-          <select name="category_id" id="issueCategory" required class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></select>
-          <input name="issue_name" required minlength="3" maxlength="200" placeholder="Specific issue name" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
-          <textarea name="description" maxlength="700" placeholder="Issue description" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></textarea>
-          <select name="severity_level" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
+        <form id="issueForm" class="krwmp-panel krwmp-stack-sm" novalidate>
+          <h2 class="krwmp-section-title">2. Specific Issue</h2>
+          <p class="krwmp-help-text">Examples: Solid Waste - Open Dumping, Solid Waste - Garbage thrown into canals.</p>
+          <select name="category_id" id="issueCategory" required  class="krwmp-select"></select>
+          <input name="issue_name" required minlength="3" maxlength="200" placeholder="Specific issue name"  class="krwmp-input">
+          <textarea name="description" maxlength="700" placeholder="Issue description"  class="krwmp-textarea"></textarea>
+          <select name="severity_level"  class="krwmp-select">
             <option value="low">Low</option>
             <option value="medium" selected>Medium</option>
             <option value="high">High</option>
           </select>
-          <button class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded font-bold text-sm">Save Specific Issue</button>
+          <button  class="krwmp-btn krwmp-btn-primary">Save Specific Issue</button>
         </form>
 
-        <form id="solutionForm" class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3" novalidate>
-          <h2 class="text-xs uppercase tracking-widest text-emerald-400 font-bold">3. Recommended Solution</h2>
-          <p class="text-xs text-slate-500">Solutions are linked to specific issues, not directly to categories. Hold Ctrl to select multiple issues.</p>
-          <input name="solution_title" required minlength="3" maxlength="200" placeholder="Solution title" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
-          <textarea name="solution_description" required minlength="10" maxlength="1500" placeholder="Solution description" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></textarea>
-          <select name="issue_ids" id="solutionIssues" required multiple size="8" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm"></select>
-          <textarea name="recommended_actions" maxlength="1500" placeholder="Recommended actions / implementation steps" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></textarea>
+        <form id="solutionForm" class="krwmp-panel krwmp-stack-sm" novalidate>
+          <h2 class="krwmp-section-title">3. Recommended Solution</h2>
+          <p class="krwmp-help-text">Solutions are linked to specific issues, not directly to categories. Hold Ctrl to select multiple issues.</p>
+          <input name="solution_title" required minlength="3" maxlength="200" placeholder="Solution title"  class="krwmp-input">
+          <textarea name="solution_description" required minlength="10" maxlength="1500" placeholder="Solution description"  class="krwmp-textarea"></textarea>
+          <select name="issue_ids" id="solutionIssues" required multiple size="8"  class="krwmp-select"></select>
+          <textarea name="recommended_actions" maxlength="1500" placeholder="Recommended actions / implementation steps"  class="krwmp-textarea"></textarea>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input name="responsible_party" maxlength="200" placeholder="Responsible party" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
-            <input name="estimated_timeframe" maxlength="100" placeholder="Estimated timeframe" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
+            <input name="responsible_party" maxlength="200" placeholder="Responsible party"  class="krwmp-input">
+            <input name="estimated_timeframe" maxlength="100" placeholder="Estimated timeframe"  class="krwmp-input">
           </div>
-          <select name="priority_level" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
+          <select name="priority_level"  class="krwmp-select">
             <option value="low">Low Priority</option>
             <option value="medium" selected>Medium Priority</option>
             <option value="high">High Priority</option>
           </select>
-          <button class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded font-bold text-sm">Save Solution</button>
+          <button  class="krwmp-btn krwmp-btn-primary">Save Solution</button>
         </form>
       </section>
 
       <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <section class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <section class="krwmp-panel">
           <div class="flex items-center justify-between gap-3 mb-4">
             <div>
-              <h2 class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Issue Structure</h2>
-              <p class="text-xs text-slate-500 mt-1">Categories with specific issues grouped below. Click a category to expand.</p>
+              <h2 class="krwmp-section-title">Issue Structure</h2>
+              <p class="krwmp-help-text">Categories with specific issues grouped below. Click a category to expand.</p>
             </div>
-            <button id="refreshBtn" class="bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded text-xs font-bold">Refresh</button>
+            <button id="refreshBtn"  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Refresh</button>
           </div>
           <div id="categoryIssueList" class="space-y-3"></div>
           <div id="issuePagination" class="mt-4"></div>
         </section>
 
-        <section class="bg-slate-900 border border-slate-800 rounded-xl p-5">
-          <h2 class="text-xs uppercase tracking-widest text-emerald-400 font-bold mb-1">Solution Records</h2>
-          <p class="text-xs text-slate-500 mb-4">Click a solution title to view details and linked issues.</p>
+        <section class="krwmp-panel">
+          <h2 class="krwmp-section-title mb-1">Solution Records</h2>
+          <p class="krwmp-help-text mb-4">Click a solution title to view details and linked issues.</p>
           <div id="solutionList" class="space-y-3"></div>
           <div id="solutionPagination" class="mt-4"></div>
         </section>

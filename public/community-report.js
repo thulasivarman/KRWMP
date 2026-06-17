@@ -92,7 +92,7 @@ function renderPhotoPreviews() {
         </div>
         <div class="flex items-center justify-between gap-2">
           <span data-photo-status class="text-[10px] font-normal text-slate-500">Ready</span>
-          <button type="button" data-remove-photo="${index}" class="rounded border border-rose-900/40 bg-rose-950/30 px-2 py-1 text-[10px] font-semibold text-rose-300 hover:bg-rose-900/50">Delete</button>
+          <button type="button" data-remove-photo="${index}"  class="krwmp-btn krwmp-btn-danger krwmp-btn-sm border border-rose-900/40 bg-rose-950/30 text-[10px] text-rose-300 hover:bg-rose-900/50">Delete</button>
         </div>
       </div>
     </div>

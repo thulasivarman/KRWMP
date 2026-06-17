@@ -39,7 +39,7 @@ function totalPages() { return Math.max(1, Math.ceil(filteredReports.length / pa
 function visibleReports() { const start = (currentPage - 1) * pageSize; return filteredReports.slice(start, start + pageSize); }
 
 async function loadReports() {
-  reportsList.innerHTML = '<p class="text-sm text-slate-400">Loading reports...</p>';
+  reportsList.innerHTML = '<div class="krwmp-loading-state">Loading reports...</div>';
   const data = await json('/api/community-reports');
   reports = data.reports || [];
   populateFilters();
@@ -119,18 +119,18 @@ function statusClasses(status) {
 
 function statusBadgeClasses(status) {
   const s = status || 'submitted';
-  if (s === 'submitted') return 'bg-sky-500/20 text-sky-200 border-sky-500/40';
-  if (s === 'under_review') return 'bg-amber-500/20 text-amber-200 border-amber-500/40';
-  if (s === 'verified') return 'bg-cyan-500/20 text-cyan-200 border-cyan-500/40';
-  if (s === 'action_required' || s === 'assigned_to_intervention') return 'bg-orange-500/20 text-orange-200 border-orange-500/40';
-  if (s === 'resolved') return 'bg-emerald-500/20 text-emerald-200 border-emerald-500/40';
-  if (s === 'rejected') return 'bg-rose-500/20 text-rose-200 border-rose-500/40';
-  return 'bg-slate-700 text-slate-200 border-slate-600';
+  if (s === 'submitted') return 'krwmp-badge-info';
+  if (s === 'under_review') return 'krwmp-badge-warning';
+  if (s === 'verified') return 'krwmp-badge-info';
+  if (s === 'action_required' || s === 'assigned_to_intervention') return 'krwmp-badge-warning';
+  if (s === 'resolved') return 'krwmp-badge-success';
+  if (s === 'rejected') return 'krwmp-badge-danger';
+  return 'krwmp-badge-neutral';
 }
 
 function renderReportCard(report) {
   const article = document.createElement('article');
-  article.className = 'bg-slate-950/60 border border-slate-800 rounded-lg overflow-hidden';
+  article.className = 'krwmp-card overflow-hidden p-0';
   const hasPhoto = Boolean(report.photo_url && String(report.photo_url).trim());
   const reportStatus = report.status || 'submitted';
   article.innerHTML = `
@@ -138,7 +138,7 @@ function renderReportCard(report) {
       <div class="min-w-0 space-y-1">
         <div class="flex flex-wrap items-center gap-2">
           <h3 class="font-bold text-slate-100 truncate">${escapeHtml(report.report_code)} - ${escapeHtml(report.issue_title || issueName(report))}</h3>
-          <span class="text-[11px] px-2 py-0.5 rounded-full border font-bold ${statusBadgeClasses(reportStatus)}">${escapeHtml(statusLabel(reportStatus))}</span>
+          <span class="krwmp-badge ${statusBadgeClasses(reportStatus)}">${escapeHtml(statusLabel(reportStatus))}</span>
         </div>
         <p class="text-xs text-slate-400">${escapeHtml(categoryName(report))} | ${escapeHtml(issueName(report))} | ${escapeHtml(titleCase(report.severity_level || '-'))} | ${escapeHtml(report.latitude || '-')}, ${escapeHtml(report.longitude || '-')}</p>
       </div>
@@ -155,7 +155,7 @@ function renderReportCard(report) {
         </div>
         ${hasPhoto ? `<a href="${escapeHtml(report.photo_url)}" class="text-xs text-emerald-400" target="_blank">View photo evidence</a>` : ''}
       </div>
-      ${canUpdateReports ? `<form class="review-form space-y-2"><input type="hidden" name="id" value="${report.id}"><select name="status" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm"><option value="submitted">Submitted</option><option value="under_review">Under Review</option><option value="verified">Verified</option><option value="assigned_to_intervention">Assigned To Intervention</option><option value="resolved">Resolved</option><option value="rejected">Rejected</option></select><select name="assigned_solution_id" class="solution-select w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm"><option value="">No solution assigned</option></select><textarea name="admin_notes" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm" placeholder="Admin notes">${escapeHtml(report.admin_notes || '')}</textarea><button class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-sm font-bold">Save Review</button></form>` : '<p class="text-xs text-slate-500">View-only access.</p>'}
+      ${canUpdateReports ? `<form class="review-form space-y-2"><input type="hidden" name="id" value="${report.id}"><select name="status"  class="krwmp-select"><option value="submitted">Submitted</option><option value="under_review">Under Review</option><option value="verified">Verified</option><option value="assigned_to_intervention">Assigned To Intervention</option><option value="resolved">Resolved</option><option value="rejected">Rejected</option></select><select name="assigned_solution_id"  class="krwmp-select solution-select"><option value="">No solution assigned</option></select><textarea name="admin_notes" rows="3"  class="krwmp-textarea" placeholder="Admin notes">${escapeHtml(report.admin_notes || '')}</textarea><button  class="krwmp-btn krwmp-btn-primary">Save Review</button></form>` : '<p class="text-xs text-slate-500">View-only access.</p>'}
     </div>`;
   reportsList.appendChild(article);
   const body = article.querySelector('.accordion-body');
@@ -171,8 +171,8 @@ function renderReportCard(report) {
 function renderPagination() {
   const total = totalPages();
   const pager = document.createElement('div');
-  pager.className = 'flex items-center justify-between border-t border-slate-800 pt-4 mt-4 text-xs text-slate-400';
-  pager.innerHTML = `<div>Showing ${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, filteredReports.length)} of ${filteredReports.length} reports</div><div class="flex items-center gap-2"><button id="prevCommunityPage" class="bg-slate-800 hover:bg-slate-700 disabled:opacity-40 px-3 py-1.5 rounded font-bold" ${currentPage === 1 ? 'disabled' : ''}>Previous</button><span>Page ${currentPage} of ${total}</span><button id="nextCommunityPage" class="bg-slate-800 hover:bg-slate-700 disabled:opacity-40 px-3 py-1.5 rounded font-bold" ${currentPage === total ? 'disabled' : ''}>Next</button></div>`;
+  pager.className = 'krwmp-pagination';
+  pager.innerHTML = `<span class="krwmp-pagination-meta">Showing ${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, filteredReports.length)} of ${filteredReports.length} reports</span><div class="krwmp-pagination-controls"><button id="prevCommunityPage"  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm" ${currentPage === 1 ? 'disabled' : ''}>Previous</button><span>Page ${currentPage} of ${total}</span><button id="nextCommunityPage"  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm" ${currentPage === total ? 'disabled' : ''}>Next</button></div>`;
   reportsList.appendChild(pager);
   pager.querySelector('#prevCommunityPage')?.addEventListener('click', () => { currentPage = Math.max(1, currentPage - 1); renderReports(); });
   pager.querySelector('#nextCommunityPage')?.addEventListener('click', () => { currentPage = Math.min(total, currentPage + 1); renderReports(); });

@@ -13,16 +13,16 @@
     <div class="flex min-h-screen">
         <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
 
-        <main class="flex-1 p-8 space-y-8 max-w-6xl mx-auto">
-            <header class="border-b border-slate-800 pb-4">
-                <h1 class="text-xl font-bold uppercase tracking-wider text-slate-200">Raster Layer Management</h1>
-                <p class="text-xs text-slate-500 mt-1">Upload GeoTIFF rasters. The system stores the original GeoTIFF, extracts bounds, and generates a PNG preview for browser map overlay.</p>
+        <main class="flex-1 krwmp-page krwmp-stack-lg">
+            <header class="krwmp-page-header">
+                <h1 class="krwmp-page-title">Raster Layer Management</h1>
+                <p class="krwmp-body-text">Upload GeoTIFF rasters. The system stores the original GeoTIFF, extracts bounds, and generates a PNG preview for browser map overlay.</p>
             </header>
 
             <section id="authNotice" class="auth-notice" hidden>Login required. Redirecting...</section>
 
             <section class="card vector-card">
-                <h2>Upload New GeoTIFF Raster Layer</h2>
+                <h2 class="krwmp-section-title">Upload New GeoTIFF Raster Layer</h2>
                 <form id="uploadRasterForm" class="form-grid">
                     <label>Layer Name<input type="text" name="name" required placeholder="Example: Land Surface Temperature" /></label>
                     <label>Layer ID<input type="text" name="id" placeholder="Auto-generated if blank" /></label>
@@ -39,7 +39,7 @@
 
             <section class="card vector-card">
                 <div class="section-title-row">
-                    <h2>Existing Raster Layers</h2>
+                    <h2 class="krwmp-section-title">Existing Raster Layers</h2>
                     <button id="refreshRasterBtn" type="button">Refresh</button>
                 </div>
                 <div id="statusBox" class="status-box" hidden></div>

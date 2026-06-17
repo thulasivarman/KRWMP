@@ -16,23 +16,24 @@
 
   function renderDashboard(dashboard) {
     const s = dashboard.summary || {};
+    qs('knowledge-kpis').classList.add('krwmp-stat-grid');
     qs('knowledge-kpis').innerHTML = [
       ['Total Resources', s.total_resources],
       ['Published', s.published_resources],
       ['Pending Review', s.pending_resources],
       ['GIS Linked', s.gis_linked_resources]
-    ].map(([label, value]) => `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4"><div class="text-2xl font-bold text-emerald-300">${esc(value || 0)}</div><div class="text-xs uppercase tracking-wider text-slate-400 mt-1">${esc(label)}</div></div>`).join('');
+    ].map(([label, value]) => `<article class="krwmp-stat-card"><div class="krwmp-stat-value krwmp-stat-value-accent">${esc(value || 0)}</div><p class="krwmp-stat-label">${esc(label)}</p></article>`).join('');
 
-    qs('chart-type').innerHTML = (dashboard.by_type || []).map(r => `<div class="flex justify-between border-b border-slate-800 pb-1"><span>${esc(r.content_type)}</span><strong>${esc(r.count)}</strong></div>`).join('') || '<p class="text-slate-400">No data.</p>';
-    qs('pending-review').innerHTML = (dashboard.pending_review || []).map(r => `<div class="border-b border-slate-800 pb-2"><div class="font-semibold">${esc(r.title)}</div><div class="text-xs text-slate-400">${esc(r.content_type)} - ${esc(r.status)}</div></div>`).join('') || '<p class="text-slate-400">No pending records.</p>';
+    qs('chart-type').innerHTML = (dashboard.by_type || []).map(r => `<div class="flex justify-between border-b border-slate-800 pb-1"><span>${esc(r.content_type)}</span><strong>${esc(r.count)}</strong></div>`).join('') || '<p class="krwmp-empty-state">No data.</p>';
+    qs('pending-review').innerHTML = (dashboard.pending_review || []).map(r => `<div class="border-b border-slate-800 pb-2"><div class="font-semibold">${esc(r.title)}</div><div class="krwmp-status-label">${esc(r.content_type)} - ${esc(r.status)}</div></div>`).join('') || '<p class="krwmp-empty-state">No pending records.</p>';
   }
 
   function renderResources() {
     qs('resource-count').textContent = `${resources.length} records`;
     qs('knowledge-list').innerHTML = resources.map(item => {
       const openUrl = item.file_url || item.video_url || item.external_url || '';
-      return `<article class="p-4 hover:bg-slate-800/40"><div class="flex justify-between gap-4"><div><h3 class="font-bold text-lg">${esc(item.title)}</h3><p class="text-sm text-slate-400 mt-1">${esc(item.summary || item.abstract || 'No summary provided.')}</p><div class="flex flex-wrap gap-2 mt-3 text-xs"><span class="px-2 py-1 rounded border border-slate-700">${esc(item.content_type)}</span><span class="px-2 py-1 rounded border border-slate-700">${esc(item.category_name || 'Uncategorised')}</span><span class="px-2 py-1 rounded border border-emerald-500/30 text-emerald-300">${esc(item.status)}</span></div></div><div class="flex flex-col gap-2 text-xs min-w-24">${openUrl ? `<a class="px-3 py-2 rounded bg-slate-800 hover:bg-slate-700 text-center" href="${esc(openUrl)}">Open</a>` : ''}${canUpdateKnowledge ? `<button class="btn-edit px-3 py-2 rounded bg-emerald-700 hover:bg-emerald-600" data-id="${item.id}">Edit</button>` : ''}</div></div></article>`;
-    }).join('') || '<div class="p-6 text-slate-400 text-sm">No knowledge resources found.</div>';
+      return `<article class="krwmp-card border-x-0 border-t-0 rounded-none"><div class="flex justify-between gap-4"><div><h3 class="font-bold text-lg">${esc(item.title)}</h3><p class="text-sm text-slate-400 mt-1">${esc(item.summary || item.abstract || 'No summary provided.')}</p><div class="flex flex-wrap gap-2 mt-3"><span class="krwmp-badge krwmp-badge-neutral">${esc(item.content_type)}</span><span class="krwmp-badge krwmp-badge-neutral">${esc(item.category_name || 'Uncategorised')}</span><span class="krwmp-badge krwmp-badge-info">${esc(item.status)}</span></div></div><div class="krwmp-table-actions min-w-24">${openUrl ? `<a  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm text-center" href="${esc(openUrl)}">Open</a>` : ''}${canUpdateKnowledge ? `<button  class="krwmp-btn krwmp-btn-primary krwmp-btn-sm btn-edit" data-id="${item.id}">Edit</button>` : ''}</div></div></article>`;
+    }).join('') || '<div class="krwmp-empty-state">No knowledge resources found.</div>';
 
     document.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', () => openEdit(btn.dataset.id)));
   }
@@ -110,7 +111,7 @@
       qs('btn-cancel-form').addEventListener('click', () => qs('knowledge-modal').close());
       qs('knowledge-form').addEventListener('submit', save);
     } catch (error) {
-      qs('knowledge-list').innerHTML = `<div class="p-6 text-red-300 text-sm">${esc(error.message)}</div>`;
+      qs('knowledge-list').innerHTML = `<div class="krwmp-empty-state text-red-300">${esc(error.message)}</div>`;
     }
   });
 })();

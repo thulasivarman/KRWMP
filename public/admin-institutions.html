@@ -12,36 +12,36 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen">
   <div class="flex min-h-screen">
     <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
-    <main class="flex-1 p-8 space-y-6 max-w-7xl mx-auto w-full">
-      <header class="border-b border-slate-800 pb-4">
-        <p class="text-xs uppercase tracking-widest text-emerald-400 font-bold">System Administration</p>
-        <h1 class="text-xl font-bold uppercase tracking-wider text-slate-200 mt-1">Institution Management</h1>
-        <p class="text-xs text-slate-500 mt-1">Maintain implementing agencies, departments, local authorities, CBOs, development partners and other project institutions.</p>
+    <main class="flex-1 krwmp-page krwmp-stack-lg">
+      <header class="krwmp-page-header">
+        <p class="krwmp-eyebrow">System Administration</p>
+        <h1 class="krwmp-page-title">Institution Management</h1>
+        <p class="krwmp-body-text">Maintain implementing agencies, departments, local authorities, CBOs, development partners and other project institutions.</p>
       </header>
 
       <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
 
-      <section id="writePanel" class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 hidden">
+      <section id="writePanel" class="krwmp-panel krwmp-stack-md hidden">
         <div class="flex items-center justify-between gap-4">
           <div>
-            <h2 class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Add / Edit Institution</h2>
-            <p class="text-xs text-slate-500 mt-1">Users with institution management create or update access can maintain institution records.</p>
+            <h2 class="krwmp-section-title">Add / Edit Institution</h2>
+            <p class="krwmp-help-text">Users with institution management create or update access can maintain institution records.</p>
           </div>
-          <button type="button" id="resetInstitutionBtn" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded text-xs font-bold">New Record</button>
+          <button type="button" id="resetInstitutionBtn"  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">New Record</button>
         </div>
 
         <form id="institutionForm" class="grid grid-cols-1 md:grid-cols-3 gap-4" novalidate>
           <input type="hidden" name="id">
-          <label class="text-sm font-semibold">Institution Name <span class="text-rose-400">*</span><input name="institution_name" required minlength="3" maxlength="255" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="e.g., Department of Irrigation"></label>
-          <label class="text-sm font-semibold">Institution Code <input name="institution_code" maxlength="50" pattern="[A-Za-z0-9_-]{2,50}" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 uppercase" placeholder="e.g., DOI"></label>
-          <label class="text-sm font-semibold">Institution Type <span class="text-rose-400">*</span><select name="institution_type" id="institutionTypeSelect" required class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"><option value="">Select type</option></select></label>
+          <label  class="krwmp-field">Institution Name <span class="text-rose-400">*</span><input name="institution_name" required minlength="3" maxlength="255"  class="krwmp-input mt-1" placeholder="e.g., Department of Irrigation"></label>
+          <label  class="krwmp-field">Institution Code <input name="institution_code" maxlength="50" pattern="[A-Za-z0-9_-]{2,50}"  class="krwmp-input mt-1 uppercase" placeholder="e.g., DOI"></label>
+          <label  class="krwmp-field">Institution Type <span class="text-rose-400">*</span><select name="institution_type" id="institutionTypeSelect" required  class="krwmp-select mt-1"><option value="">Select type</option></select></label>
 
-          <label class="text-sm font-semibold">Contact Person<input name="contact_person" maxlength="150" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
-          <label class="text-sm font-semibold">Contact Phone<input name="contact_phone" maxlength="30" pattern="[0-9+()\-\s]{7,30}" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="+94..."></label>
-          <label class="text-sm font-semibold">Contact Email<input name="contact_email" type="email" maxlength="150" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
+          <label  class="krwmp-field">Contact Person<input name="contact_person" maxlength="150"  class="krwmp-input mt-1"></label>
+          <label  class="krwmp-field">Contact Phone<input name="contact_phone" maxlength="30" pattern="[0-9+()\-\s]{7,30}"  class="krwmp-input mt-1" placeholder="+94..."></label>
+          <label  class="krwmp-field">Contact Email<input name="contact_email" type="email" maxlength="150"  class="krwmp-input mt-1"></label>
 
-          <label class="text-sm font-semibold md:col-span-2">Address <span class="text-rose-400">*</span><input name="address" required maxlength="300" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
-          <label class="text-sm font-semibold">Website<input name="website" type="url" maxlength="250" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="https://..."></label>
+          <label  class="krwmp-field md:col-span-2">Address <span class="text-rose-400">*</span><input name="address" required maxlength="300"  class="krwmp-input mt-1"></label>
+          <label  class="krwmp-field">Website<input name="website" type="url" maxlength="250"  class="krwmp-input mt-1" placeholder="https://..."></label>
 
           <input type="hidden" name="district">
           <input type="hidden" name="dsd_name">
@@ -49,23 +49,23 @@
           <input type="hidden" name="latitude">
           <input type="hidden" name="longitude">
 
-          <label class="text-sm font-semibold md:col-span-3">Description<textarea name="description" maxlength="1000" rows="3" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="Brief note on mandate, project relevance or responsibilities"></textarea></label>
+          <label  class="krwmp-field md:col-span-3">Description<textarea name="description" maxlength="1000" rows="3"  class="krwmp-textarea mt-1" placeholder="Brief note on mandate, project relevance or responsibilities"></textarea></label>
 
-          <label class="text-sm font-semibold flex items-center gap-2 md:col-span-3"><input name="active" type="checkbox" checked class="rounded border-slate-700 bg-slate-950"> Active institution</label>
+          <label  class="krwmp-field flex items-center gap-2 md:col-span-3"><input name="active" type="checkbox" checked  class="krwmp-input"> Active institution</label>
 
-          <div id="institutionLocationPicker" class="md:col-span-3 bg-slate-950/70 border border-slate-800 rounded-xl p-4">
+          <div id="institutionLocationPicker" class="md:col-span-3 krwmp-map-panel">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
               <div>
-                <h3 class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Institution Location <span class="text-rose-400">*</span></h3>
+                <h3 class="krwmp-map-panel-title">Institution Location <span class="text-rose-400">*</span></h3>
                 <p class="text-xs text-slate-500 mt-1">Click the map or drag the marker. DSD and GND are auto-detected from PostGIS boundaries.</p>
               </div>
               <div class="flex gap-2">
-                <button type="button" data-location-gps class="bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded text-xs font-bold">Use Browser Location</button>
-                <button type="button" data-location-clear class="bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded text-xs font-bold">Clear</button>
+                <button type="button" data-location-gps  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Use Browser Location</button>
+                <button type="button" data-location-clear  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Clear</button>
               </div>
             </div>
-            <div data-location-map class="h-72 rounded-lg overflow-hidden border border-slate-800"></div>
-            <div data-location-status class="text-xs mt-2 text-slate-400">No location selected.</div>
+            <div data-location-map class="krwmp-location-map h-72"></div>
+            <div data-location-status class="krwmp-status-label mt-2">No location selected.</div>
             <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs mt-3 border-t border-slate-800 pt-3">
               <div class="bg-slate-900/80 border border-slate-800 rounded p-3"><div class="text-slate-500 uppercase tracking-wider font-bold">Latitude</div><div id="latText" class="text-slate-200 mt-1">Not selected</div></div>
               <div class="bg-slate-900/80 border border-slate-800 rounded p-3"><div class="text-slate-500 uppercase tracking-wider font-bold">Longitude</div><div id="lngText" class="text-slate-200 mt-1">Not selected</div></div>
@@ -75,28 +75,28 @@
           </div>
 
           <div class="md:col-span-3 flex gap-2">
-            <button class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-sm font-bold">Save Institution</button>
-            <button type="button" id="cancelEditBtn" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded text-sm font-bold">Cancel</button>
+            <button  class="krwmp-btn krwmp-btn-primary">Save Institution</button>
+            <button type="button" id="cancelEditBtn"  class="krwmp-btn krwmp-btn-secondary">Cancel</button>
           </div>
         </form>
       </section>
 
-      <section class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+      <section class="krwmp-panel">
         <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-4">
           <div>
-            <h2 class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Institution Directory</h2>
-            <p class="text-xs text-slate-500 mt-1">All authenticated project users with view access can browse institutions.</p>
+            <h2 class="krwmp-section-title">Institution Directory</h2>
+            <p class="krwmp-help-text">All authenticated project users with view access can browse institutions.</p>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-2 text-xs w-full lg:w-auto">
-            <input id="searchInput" placeholder="Search name/code/contact" class="bg-slate-950 border border-slate-700 rounded px-3 py-2">
-            <select id="typeFilter" class="bg-slate-950 border border-slate-700 rounded px-3 py-2"><option value="">All types</option></select>
-            <select id="activeFilter" class="bg-slate-950 border border-slate-700 rounded px-3 py-2"><option value="">All status</option><option value="true">Active</option><option value="false">Inactive</option></select>
-            <button id="refreshBtn" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded font-bold">Refresh</button>
+            <input id="searchInput" placeholder="Search name/code/contact"  class="krwmp-input">
+            <select id="typeFilter"  class="krwmp-select"><option value="">All types</option></select>
+            <select id="activeFilter"  class="krwmp-select"><option value="">All status</option><option value="true">Active</option><option value="false">Inactive</option></select>
+            <button id="refreshBtn"  class="krwmp-btn krwmp-btn-primary">Refresh</button>
           </div>
         </div>
-        <div class="overflow-x-auto border border-slate-800 rounded-lg">
-          <table class="w-full text-left border-collapse text-sm">
-            <thead class="bg-slate-950/80 text-[10px] uppercase tracking-wider text-slate-500">
+        <div class="krwmp-table-wrap">
+          <table class="krwmp-table krwmp-table-compact">
+            <thead>
               <tr>
                 <th class="p-3">Institution</th>
                 <th class="p-3">Type</th>
@@ -106,10 +106,10 @@
                 <th class="p-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody id="institutionTableBody" class="divide-y divide-slate-800/60"></tbody>
+            <tbody id="institutionTableBody"></tbody>
           </table>
         </div>
-        <div id="paginationBox" class="flex items-center justify-between mt-4 text-xs text-slate-500"></div>
+        <div id="paginationBox"></div>
       </section>
     </main>
   </div>

@@ -67,7 +67,7 @@ class KRWMPLocationPicker {
   setStatus(message, error = false) {
     if (!this.statusElement) return;
     this.statusElement.textContent = message;
-    this.statusElement.className = 'text-xs mt-2 ' + (error ? 'text-rose-300' : 'text-slate-400');
+    this.statusElement.className = 'krwmp-status-label mt-2 ' + (error ? 'text-rose-300' : '');
   }
 
   refresh() { if (this.map) setTimeout(() => this.map.resize(), 150); }

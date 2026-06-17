@@ -13,55 +13,55 @@
   <div class="flex min-h-screen">
     <aside id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></aside>
 
-    <main class="flex-1 p-6 space-y-6 max-w-7xl mx-auto w-full">
-      <header class="border-b border-slate-800 pb-5 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+    <main class="flex-1 krwmp-page krwmp-stack-lg">
+      <header class="krwmp-page-header flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div>
-          <p class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Environmental Monitoring</p>
-          <h1 class="text-2xl font-bold mt-1">Volunteer Organisations</h1>
-          <p class="text-sm text-slate-400 mt-1">Register, view, map and manage volunteer organisations supporting watershed management activities.</p>
+          <p class="krwmp-eyebrow">Environmental Monitoring</p>
+          <h1 class="krwmp-page-title">Volunteer Organisations</h1>
+          <p class="krwmp-body-text">Register, view, map and manage volunteer organisations supporting watershed management activities.</p>
         </div>
-        <button id="reloadBtn" type="button" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400">Reload</button>
+        <button id="reloadBtn" type="button"  class="krwmp-btn krwmp-btn-secondary">Reload</button>
       </header>
 
       <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
 
-      <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4" aria-label="Volunteer organisation dashboard summary">
-        <article class="bg-slate-900 border border-slate-800 rounded-xl p-5"><p class="text-xs uppercase tracking-widest text-slate-500 font-bold">Total Organisations</p><div id="totalOrganisations" class="text-3xl font-bold mt-2">0</div></article>
-        <article class="bg-slate-900 border border-slate-800 rounded-xl p-5"><p class="text-xs uppercase tracking-widest text-slate-500 font-bold">Active Organisations</p><div id="activeOrganisations" class="text-3xl font-bold mt-2 text-emerald-400">0</div></article>
-        <article class="bg-slate-900 border border-slate-800 rounded-xl p-5"><p class="text-xs uppercase tracking-widest text-slate-500 font-bold">Average Score</p><div id="averageScore" class="text-3xl font-bold mt-2">-</div></article>
-        <article class="bg-slate-900 border border-slate-800 rounded-xl p-5"><p class="text-xs uppercase tracking-widest text-slate-500 font-bold">Mapped Records</p><div id="mappedRecords" class="text-3xl font-bold mt-2">0</div></article>
+      <section class="krwmp-stat-grid" aria-label="Volunteer organisation dashboard summary">
+        <article class="krwmp-stat-card"><p class="krwmp-stat-label">Total Organisations</p><div id="totalOrganisations" class="krwmp-stat-value">0</div></article>
+        <article class="krwmp-stat-card"><p class="krwmp-stat-label">Active Organisations</p><div id="activeOrganisations" class="krwmp-stat-value krwmp-stat-value-accent">0</div></article>
+        <article class="krwmp-stat-card"><p class="krwmp-stat-label">Average Score</p><div id="averageScore" class="krwmp-stat-value">-</div></article>
+        <article class="krwmp-stat-card"><p class="krwmp-stat-label">Mapped Records</p><div id="mappedRecords" class="krwmp-stat-value">0</div></article>
       </section>
 
-      <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+      <section class="krwmp-panel krwmp-stack-md">
         <div>
-          <h2 class="text-sm uppercase tracking-widest text-emerald-400 font-bold">Add Volunteer Organisation</h2>
-          <p class="text-xs text-slate-500 mt-1">Mark the organisation location on the map. DSD, GND and sub-watershed are auto-captured from the selected point.</p>
+          <h2 class="krwmp-section-title">Add Volunteer Organisation</h2>
+          <p class="krwmp-help-text">Mark the organisation location on the map. DSD, GND and sub-watershed are auto-captured from the selected point.</p>
         </div>
 
         <form id="volunteerForm" class="grid grid-cols-1 xl:grid-cols-3 gap-5" enctype="multipart/form-data">
           <section class="xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label class="text-sm font-semibold">Organisation Name <span class="text-rose-400">*</span><input name="institution_name" required class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="e.g. Kelani Youth Volunteers"></label>
-            <label class="text-sm font-semibold">Registration / Code<input name="institution_code" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="e.g. VO-001"></label>
-            <label class="text-sm font-semibold">Organisation Type<select name="institution_type" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"><option value="Volunteer Organisation">Volunteer Organisation</option><option value="Community Based Organisation">Community Based Organisation</option><option value="Youth Group">Youth Group</option><option value="Environmental NGO">Environmental NGO</option><option value="Civil Society Organisation">Civil Society Organisation</option></select></label>
-            <label class="text-sm font-semibold">Contact Person<input name="contact_person" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
-            <label class="text-sm font-semibold">Contact Phone<input name="contact_phone" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
-            <label class="text-sm font-semibold">Contact Email<input name="contact_email" type="email" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
-            <label class="text-sm font-semibold md:col-span-2">Address <span class="text-rose-400">*</span><input name="address" required class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
-            <label class="text-sm font-semibold">Website<input name="website" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="https://example.org"></label>
-            <label class="text-sm font-semibold">Status<select name="active" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"><option value="true">Active</option><option value="false">Inactive</option></select></label>
-            <label class="text-sm font-semibold md:col-span-2">Supportive Document<input name="supporting_document" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,application/pdf,image/jpeg,image/png,image/webp" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"><span class="block mt-1 text-xs text-slate-500">Allowed: PDF, image, DOC/DOCX, XLS/XLSX.</span></label>
-            <label class="text-sm font-semibold md:col-span-2">Description / Mandate<textarea name="description" rows="3" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></textarea></label>
+            <label  class="krwmp-field">Organisation Name <span class="text-rose-400">*</span><input name="institution_name" required  class="krwmp-input mt-1" placeholder="e.g. Kelani Youth Volunteers"></label>
+            <label  class="krwmp-field">Registration / Code<input name="institution_code"  class="krwmp-input mt-1" placeholder="e.g. VO-001"></label>
+            <label  class="krwmp-field">Organisation Type<select name="institution_type"  class="krwmp-select mt-1"><option value="Volunteer Organisation">Volunteer Organisation</option><option value="Community Based Organisation">Community Based Organisation</option><option value="Youth Group">Youth Group</option><option value="Environmental NGO">Environmental NGO</option><option value="Civil Society Organisation">Civil Society Organisation</option></select></label>
+            <label  class="krwmp-field">Contact Person<input name="contact_person"  class="krwmp-input mt-1"></label>
+            <label  class="krwmp-field">Contact Phone<input name="contact_phone"  class="krwmp-input mt-1"></label>
+            <label  class="krwmp-field">Contact Email<input name="contact_email" type="email"  class="krwmp-input mt-1"></label>
+            <label  class="krwmp-field md:col-span-2">Address <span class="text-rose-400">*</span><input name="address" required  class="krwmp-input mt-1"></label>
+            <label  class="krwmp-field">Website<input name="website"  class="krwmp-input mt-1" placeholder="https://example.org"></label>
+            <label  class="krwmp-field">Status<select name="active"  class="krwmp-select mt-1"><option value="true">Active</option><option value="false">Inactive</option></select></label>
+            <label  class="krwmp-field md:col-span-2">Supportive Document<input name="supporting_document" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,application/pdf,image/jpeg,image/png,image/webp"  class="krwmp-input mt-1"><span class="block mt-1 text-xs text-slate-500">Allowed: PDF, image, DOC/DOCX, XLS/XLSX.</span></label>
+            <label  class="krwmp-field md:col-span-2">Description / Mandate<textarea name="description" rows="3"  class="krwmp-textarea mt-1"></textarea></label>
           </section>
 
-          <section class="bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-3">
-            <h3 class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Organisation Location</h3>
+          <section class="krwmp-map-panel space-y-3">
+            <h3 class="krwmp-section-title">Organisation Location</h3>
             <div id="volunteerLocationPicker" class="space-y-2">
-              <div data-location-map class="h-80 rounded-lg overflow-hidden border border-slate-700 bg-slate-900"></div>
+              <div data-location-map class="krwmp-location-map h-80"></div>
               <div class="flex gap-2">
-                <button type="button" data-location-gps class="bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded text-xs font-bold">Use GPS</button>
-                <button type="button" data-location-clear class="bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded text-xs font-bold">Clear</button>
+                <button type="button" data-location-gps  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Use GPS</button>
+                <button type="button" data-location-clear  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Clear</button>
               </div>
-              <p data-location-status class="text-xs text-slate-400">Map is focused on the Kelani River Basin. Click the map to mark the organisation location.</p>
+              <p data-location-status class="krwmp-status-label">Map is focused on the Kelani River Basin. Click the map to mark the organisation location.</p>
             </div>
             <input type="hidden" name="latitude" id="latitudeInput" required>
             <input type="hidden" name="longitude" id="longitudeInput" required>
@@ -70,25 +70,25 @@
             <input type="hidden" name="gnd_name" id="gndNameInput" required>
             <input type="hidden" name="sub_watershed_id" id="subWatershedIdInput">
             <input type="hidden" name="sub_watershed_name" id="subWatershedNameInput">
-            <div id="locationInfo" class="rounded-lg bg-slate-900 border border-slate-800 p-3 text-xs text-slate-400 leading-6">No location selected.</div>
+            <div id="locationInfo" class="krwmp-identify-panel">No location selected.</div>
           </section>
 
           <div class="xl:col-span-3 flex flex-wrap gap-3">
-            <button id="saveBtn" type="submit" class="bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 rounded font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400">Save Organisation</button>
-            <button type="reset" class="bg-slate-800 hover:bg-slate-700 px-5 py-2.5 rounded font-bold">Clear</button>
+            <button id="saveBtn" type="submit"  class="krwmp-btn krwmp-btn-primary">Save Organisation</button>
+            <button type="reset"  class="krwmp-btn krwmp-btn-secondary">Clear</button>
           </div>
         </form>
       </section>
 
-      <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+      <section class="krwmp-panel krwmp-stack-md">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <div><h2 class="text-sm uppercase tracking-widest text-emerald-400 font-bold">Organisation Directory</h2><p class="text-xs text-slate-500 mt-1">Admin users can delete volunteer organisation records.</p></div>
-          <input id="searchInput" type="search" placeholder="Search name, type, DSD, GND or contact" class="w-full lg:w-96 bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+          <div><h2 class="krwmp-section-title">Organisation Directory</h2><p class="krwmp-help-text">Admin users can delete volunteer organisation records.</p></div>
+          <input id="searchInput" type="search" placeholder="Search name, type, DSD, GND or contact"  class="krwmp-input lg:w-96 focus:ring-2 focus:ring-emerald-400">
         </div>
-        <div class="overflow-x-auto border border-slate-800 rounded-lg">
-          <table class="min-w-full text-sm">
-            <thead class="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider"><tr><th class="text-left px-4 py-3">Organisation</th><th class="text-left px-4 py-3">Type</th><th class="text-left px-4 py-3">Contact</th><th class="text-left px-4 py-3">Location</th><th class="text-left px-4 py-3">Score</th><th class="text-left px-4 py-3">Document</th><th class="text-left px-4 py-3">Status</th><th class="text-left px-4 py-3 admin-only hidden">Action</th></tr></thead>
-            <tbody id="organisationRows" class="divide-y divide-slate-800"><tr><td colspan="8" class="px-4 py-6 text-center text-slate-500">Loading volunteer organisations...</td></tr></tbody>
+        <div class="krwmp-table-wrap">
+          <table class="krwmp-table krwmp-table-compact">
+            <thead><tr><th>Organisation</th><th>Type</th><th>Contact</th><th>Location</th><th>Score</th><th>Document</th><th>Status</th><th class="admin-only hidden">Action</th></tr></thead>
+            <tbody id="organisationRows"><tr><td colspan="8" class="krwmp-table-empty">Loading volunteer organisations...</td></tr></tbody>
           </table>
         </div>
       </section>
@@ -189,15 +189,15 @@
     }
 
     function renderSummary(summary, rows) { const total = pickNumber(summary.total_organisations, summary.total_count, rows.length); const active = pickNumber(summary.active_organisations, summary.active_count, rows.filter(row => row.active !== false && row.active !== 'false').length); const avg = pickNumber(summary.average_performance_score, summary.avg_performance_score, calculateAverageScore(rows)); const mapped = pickNumber(summary.mapped_records, summary.mapped_count, rows.filter(row => row.active !== false && row.active !== 'false' && (row.latitude || row.longitude || row.geom)).length); setText('totalOrganisations', total); setText('activeOrganisations', active); setText('averageScore', avg === null || avg === undefined || Number.isNaN(Number(avg)) ? '-' : Number(avg).toFixed(1)); setText('mappedRecords', mapped); }
-    function renderOrganisationRows() { const tbody = document.getElementById('organisationRows'); if (!tbody) return; const term = String(document.getElementById('searchInput')?.value || '').trim().toLowerCase(); const filtered = state.organisations.filter(row => !term || [row.institution_name, row.organisation_name, row.organisation_type, row.institution_type, row.contact_person, row.contact_phone, row.contact_email, row.dsd_name, row.gnd_name, row.address].some(value => String(value || '').toLowerCase().includes(term))); if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="${state.isAdmin ? 8 : 7}" class="px-4 py-6 text-center text-slate-500">No volunteer organisations found.</td></tr>`; return; } tbody.innerHTML = filtered.map(row => `<tr class="hover:bg-slate-800/40"><td class="px-4 py-3 align-top"><div class="font-semibold text-slate-100">${escapeHtml(row.institution_name || row.organisation_name || 'Unnamed Organisation')}</div><div class="text-xs text-slate-500">${escapeHtml(row.registration_no || row.institution_code || '-')}</div></td><td class="px-4 py-3 align-top text-slate-300">${escapeHtml(row.organisation_type || row.institution_type || '-')}</td><td class="px-4 py-3 align-top"><div class="text-slate-300">${escapeHtml(row.contact_person || '-')}</div><div class="text-xs text-slate-500">${escapeHtml(row.contact_phone || row.contact_email || '-')}</div></td><td class="px-4 py-3 align-top"><div class="text-slate-300">${escapeHtml(row.dsd_name || '-')}</div><div class="text-xs text-slate-500">${escapeHtml(row.gnd_name || row.address || '-')}</div></td><td class="px-4 py-3 align-top font-semibold">${formatScore(row.performance_score)}</td><td class="px-4 py-3 align-top">${formatDocument(row)}</td><td class="px-4 py-3 align-top">${formatStatus(row.active)}</td>${state.isAdmin ? `<td class="px-4 py-3 align-top"><button type="button" data-delete-id="${escapeHtml(row.id)}" data-name="${escapeHtml(row.institution_name || row.organisation_name || 'this record')}" class="bg-rose-600 hover:bg-rose-500 px-3 py-1.5 rounded text-xs font-bold">Delete</button></td>` : ''}</tr>`).join(''); }
+    function renderOrganisationRows() { const tbody = document.getElementById('organisationRows'); if (!tbody) return; const term = String(document.getElementById('searchInput')?.value || '').trim().toLowerCase(); const filtered = state.organisations.filter(row => !term || [row.institution_name, row.organisation_name, row.organisation_type, row.institution_type, row.contact_person, row.contact_phone, row.contact_email, row.dsd_name, row.gnd_name, row.address].some(value => String(value || '').toLowerCase().includes(term))); if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="${state.isAdmin ? 8 : 7}" class="krwmp-table-empty">No volunteer organisations found.</td></tr>`; return; } tbody.innerHTML = filtered.map(row => `<tr><td><div class="font-semibold text-slate-100">${escapeHtml(row.institution_name || row.organisation_name || 'Unnamed Organisation')}</div><div class="krwmp-status-label">${escapeHtml(row.registration_no || row.institution_code || '-')}</div></td><td class="text-slate-300">${escapeHtml(row.organisation_type || row.institution_type || '-')}</td><td><div class="text-slate-300">${escapeHtml(row.contact_person || '-')}</div><div class="krwmp-status-label">${escapeHtml(row.contact_phone || row.contact_email || '-')}</div></td><td><div class="text-slate-300">${escapeHtml(row.dsd_name || '-')}</div><div class="krwmp-status-label">${escapeHtml(row.gnd_name || row.address || '-')}</div></td><td class="font-semibold">${formatScore(row.performance_score)}</td><td>${formatDocument(row)}</td><td>${formatStatus(row.active)}</td>${state.isAdmin ? `<td><div class="krwmp-table-actions"><button type="button" data-delete-id="${escapeHtml(row.id)}" data-name="${escapeHtml(row.institution_name || row.organisation_name || 'this record')}"  class="krwmp-btn krwmp-btn-danger krwmp-btn-sm">Delete</button></div></td>` : ''}</tr>`).join(''); }
     function clearAutoSpatialFields() { ['dsdNameInput','gndNameInput','districtInput','subWatershedIdInput','subWatershedNameInput'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; }); }
     function clearLocationInfo() { clearAutoSpatialFields(); setLocationInfo('No location selected.', 'info'); }
-    function setLocationInfo(message, type = 'info', html = false) { const box = document.getElementById('locationInfo'); if (!box) return; box.className = `rounded-lg border p-3 text-xs leading-6 ${type === 'error' ? 'bg-rose-500/10 border-rose-500/20 text-rose-200' : type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-200' : 'bg-slate-900 border-slate-800 text-slate-400'}`; if (html) box.innerHTML = message; else box.textContent = message; }
+    function setLocationInfo(message, type = 'info', html = false) { const box = document.getElementById('locationInfo'); if (!box) return; box.className = `krwmp-identify-panel ${type === 'error' ? 'krwmp-identify-panel-error' : type === 'success' ? 'krwmp-identify-panel-success' : ''}`; if (html) box.innerHTML = message; else box.textContent = message; }
     function calculateAverageScore(rows) { const scores = rows.map(row => Number(row.performance_score)).filter(score => !Number.isNaN(score)); return scores.length ? scores.reduce((sum, score) => sum + score, 0) / scores.length : null; }
     function pickNumber(...values) { for (const value of values) if (value !== undefined && value !== null && value !== '') return value; return 0; }
     function formatScore(value) { const number = Number(value); return Number.isNaN(number) ? '-' : number.toFixed(1); }
     function formatDocument(row) { const url = row.supporting_document_url; if (!url) return '<span class="text-slate-500">-</span>'; return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="text-emerald-300 hover:text-emerald-200 font-semibold">Open</a>`; }
-    function formatStatus(value) { const active = !(value === false || value === 'false'); return active ? '<span class="inline-flex px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-300 text-xs font-bold">Active</span>' : '<span class="inline-flex px-2 py-1 rounded-full bg-rose-500/10 text-rose-300 text-xs font-bold">Inactive</span>'; }
+    function formatStatus(value) { const active = !(value === false || value === 'false'); return active ? '<span class="krwmp-badge krwmp-badge-success">Active</span>' : '<span class="krwmp-badge krwmp-badge-danger">Inactive</span>'; }
     function showStatus(message, type = 'info') { const box = document.getElementById('statusBox'); if (!box) return; const classes = { info: 'bg-sky-500/10 border border-sky-500/20 text-sky-200', success: 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-200', error: 'bg-rose-500/10 border border-rose-500/20 text-rose-200' }; box.className = `rounded-lg p-3 text-sm ${classes[type] || classes.info}`; box.textContent = message; box.classList.remove('hidden'); }
     function setText(id, value) { const element = document.getElementById(id); if (element) element.textContent = value ?? '-'; }
     function escapeHtml(value) { return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#039;'); }

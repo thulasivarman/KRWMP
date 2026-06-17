@@ -12,70 +12,70 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen">
   <div class="flex min-h-screen">
     <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
-    <main class="flex-1 p-6 space-y-6 max-w-6xl mx-auto w-full">
-      <header class="border-b border-slate-800 pb-4">
-        <p class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Community Participation</p>
-        <h1 class="text-2xl font-bold mt-2">Report a Catchment Issue</h1>
-        <p class="text-sm text-slate-400 mt-1">Submit environmental issues with predefined or other issue type, optional solution reference, map location, and photo evidence.</p>
+    <main class="flex-1 krwmp-page krwmp-stack-lg">
+      <header class="krwmp-page-header">
+        <p class="krwmp-eyebrow">Community Participation</p>
+        <h1 class="krwmp-page-title">Report a Catchment Issue</h1>
+        <p class="krwmp-body-text">Submit environmental issues with predefined or other issue type, optional solution reference, map location, and photo evidence.</p>
       </header>
 
       <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
 
-      <form id="communityReportForm" class="bg-slate-900 border border-slate-800 rounded-xl p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <label class="text-sm font-semibold">Issue Category
-          <select name="category_id" id="categorySelect" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" required></select>
+      <form id="communityReportForm" class="krwmp-panel grid grid-cols-1 md:grid-cols-2 gap-4">
+        <label  class="krwmp-field">Issue Category
+          <select name="category_id" id="categorySelect"  class="krwmp-select mt-1" required></select>
         </label>
 
-        <label class="text-sm font-semibold">Specific Issue
-          <select name="issue_id" id="specificIssueSelect" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" required disabled>
+        <label  class="krwmp-field">Specific Issue
+          <select name="issue_id" id="specificIssueSelect"  class="krwmp-select mt-1" required disabled>
             <option value="">Select category first</option>
           </select>
         </label>
 
-        <label id="otherCategoryLabel" class="text-sm font-semibold hidden">Other Category
-          <input name="other_category_name" id="otherCategoryInput" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="Enter issue category">
+        <label id="otherCategoryLabel"  class="krwmp-field hidden">Other Category
+          <input name="other_category_name" id="otherCategoryInput"  class="krwmp-input mt-1" placeholder="Enter issue category">
         </label>
 
-        <label id="otherIssueLabel" class="text-sm font-semibold hidden">Other Specific Issue
-          <input name="other_issue_name" id="otherIssueInput" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="Enter specific issue">
+        <label id="otherIssueLabel"  class="krwmp-field hidden">Other Specific Issue
+          <input name="other_issue_name" id="otherIssueInput"  class="krwmp-input mt-1" placeholder="Enter specific issue">
         </label>
 
-        <label class="text-sm font-semibold">Applicable Solution <span class="text-slate-500 font-normal">(Optional)</span>
-          <select name="assigned_solution_id" id="solutionSelect" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" disabled>
+        <label  class="krwmp-field">Applicable Solution <span class="text-slate-500 font-normal">(Optional)</span>
+          <select name="assigned_solution_id" id="solutionSelect"  class="krwmp-select mt-1" disabled>
             <option value="">No applicable solution selected</option>
           </select>
         </label>
 
-        <label class="text-sm font-semibold">Severity
-          <select name="severity_level" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
+        <label  class="krwmp-field">Severity
+          <select name="severity_level"  class="krwmp-select mt-1">
             <option value="low">Low</option>
             <option value="medium" selected>Medium</option>
             <option value="high">High</option>
           </select>
         </label>
 
-        <label class="text-sm font-semibold md:col-span-2">Issue Title
-          <input name="issue_title" id="issueTitleInput" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" required placeholder="Auto-filled from selected issue; edit if required">
+        <label  class="krwmp-field md:col-span-2">Issue Title
+          <input name="issue_title" id="issueTitleInput"  class="krwmp-input mt-1" required placeholder="Auto-filled from selected issue; edit if required">
         </label>
 
-        <label class="text-sm font-semibold md:col-span-2">Description
-          <textarea name="description" rows="4" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="Describe the issue, visible impacts, urgency, source, and community concerns"></textarea>
+        <label  class="krwmp-field md:col-span-2">Description
+          <textarea name="description" rows="4"  class="krwmp-textarea mt-1" placeholder="Describe the issue, visible impacts, urgency, source, and community concerns"></textarea>
         </label>
 
-        <section class="md:col-span-2 bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-3">
+        <section class="md:col-span-2 krwmp-map-panel space-y-3">
           <div class="flex items-start justify-between gap-3">
             <div>
-              <h2 class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Location Selection</h2>
-              <p class="text-xs text-slate-500 mt-1">Click the map or use browser GPS. DSD, GND and Sub-watershed are detected automatically.</p>
+              <h2 class="krwmp-section-title">Location Selection</h2>
+              <p class="krwmp-help-text">Click the map or use browser GPS. DSD, GND and Sub-watershed are detected automatically.</p>
             </div>
             <div class="flex gap-2 text-xs">
-              <button type="button" data-location-gps class="bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded font-bold">Use My Location</button>
-              <button type="button" data-location-clear class="bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded font-bold">Clear</button>
+              <button type="button" data-location-gps  class="krwmp-btn krwmp-btn-secondary">Use My Location</button>
+              <button type="button" data-location-clear  class="krwmp-btn krwmp-btn-secondary">Clear</button>
             </div>
           </div>
           <div id="communityLocationPicker" class="space-y-2">
-            <div data-location-map class="h-80 rounded-lg overflow-hidden border border-slate-700 bg-slate-900"></div>
-            <p data-location-status class="text-xs text-slate-400">Click the map to select the issue location.</p>
+            <div data-location-map class="krwmp-location-map h-80"></div>
+            <p data-location-status class="krwmp-status-label">Click the map to select the issue location.</p>
           </div>
           <input type="hidden" name="latitude" id="latitudeInput" required>
           <input type="hidden" name="longitude" id="longitudeInput" required>
@@ -83,28 +83,28 @@
           <input type="hidden" name="gnd_name" id="gndNameInput">
           <input type="hidden" name="sub_watershed_id" id="subWatershedIdInput">
           <input type="hidden" name="sub_watershed_name" id="subWatershedNameInput">
-          <div id="detectedLocationPanel" class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
-            <div class="bg-slate-900 border border-slate-800 rounded p-3"><div class="text-slate-500 uppercase tracking-wider">Latitude</div><div id="latDisplay" class="font-semibold text-slate-200 mt-1">Not selected</div></div>
-            <div class="bg-slate-900 border border-slate-800 rounded p-3"><div class="text-slate-500 uppercase tracking-wider">Longitude</div><div id="lngDisplay" class="font-semibold text-slate-200 mt-1">Not selected</div></div>
-            <div class="bg-slate-900 border border-slate-800 rounded p-3"><div class="text-slate-500 uppercase tracking-wider">DSD / GND</div><div id="adminBoundaryDisplay" class="font-semibold text-slate-200 mt-1">Pending location</div></div>
-            <div class="bg-slate-900 border border-slate-800 rounded p-3"><div class="text-slate-500 uppercase tracking-wider">Sub-watershed</div><div id="subWatershedDisplay" class="font-semibold text-slate-200 mt-1">Pending location</div></div>
+          <div id="detectedLocationPanel" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div class="krwmp-identify-panel"><div class="krwmp-stat-label">Latitude</div><div id="latDisplay" class="font-semibold text-slate-200 mt-1">Not selected</div></div>
+            <div class="krwmp-identify-panel"><div class="krwmp-stat-label">Longitude</div><div id="lngDisplay" class="font-semibold text-slate-200 mt-1">Not selected</div></div>
+            <div class="krwmp-identify-panel"><div class="krwmp-stat-label">DSD / GND</div><div id="adminBoundaryDisplay" class="font-semibold text-slate-200 mt-1">Pending location</div></div>
+            <div class="krwmp-identify-panel"><div class="krwmp-stat-label">Sub-watershed</div><div id="subWatershedDisplay" class="font-semibold text-slate-200 mt-1">Pending location</div></div>
           </div>
         </section>
 
-        <label class="text-sm font-semibold md:col-span-2">Location Description
-          <input name="location_description" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="Village, road, landmark, stream name">
+        <label  class="krwmp-field md:col-span-2">Location Description
+          <input name="location_description"  class="krwmp-input mt-1" placeholder="Village, road, landmark, stream name">
         </label>
 
-        <label class="text-sm font-semibold">Reporter Name
-          <input name="reporter_name" id="reporterNameInput" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
+        <label  class="krwmp-field">Reporter Name
+          <input name="reporter_name" id="reporterNameInput"  class="krwmp-input mt-1">
         </label>
 
-        <label class="text-sm font-semibold">Contact Number
-          <input name="reporter_contact" id="reporterContactInput" type="tel" pattern="^[+0-9][0-9 ()-]{6,19}$" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="Example: +94771234567 or 0771234567">
+        <label  class="krwmp-field">Contact Number
+          <input name="reporter_contact" id="reporterContactInput" type="tel" pattern="^[+0-9][0-9 ()-]{6,19}$"  class="krwmp-input mt-1" placeholder="Example: +94771234567 or 0771234567">
           <span class="text-xs text-slate-500 mt-1 block">Use digits, spaces, hyphens or +. Minimum 7 digits.</span>
         </label>
 
-        <section class="text-sm font-semibold md:col-span-2 space-y-3">
+        <section class="krwmp-field md:col-span-2 space-y-3">
           <div class="flex items-center justify-between gap-3">
             <div>
               <div>Photo Evidence</div>
@@ -112,12 +112,12 @@
             </div>
             <span id="photoCountLabel" class="text-xs font-normal text-slate-500">0 / 5</span>
           </div>
-          <input id="photoEvidenceInput" type="file" accept="image/jpeg,image/png,image/webp" multiple class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2">
+          <input id="photoEvidenceInput" type="file" accept="image/jpeg,image/png,image/webp" multiple  class="krwmp-input">
           <div id="photoPreviewGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
         </section>
 
         <div class="md:col-span-2 flex items-center gap-3">
-          <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 rounded font-bold">Submit Issue Report</button>
+          <button type="submit"  class="krwmp-btn krwmp-btn-primary">Submit Issue Report</button>
           <span class="text-xs text-slate-500">Login is not required for public complaint submission.</span>
         </div>
       </form>

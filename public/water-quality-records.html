@@ -11,30 +11,30 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen">
   <div class="flex min-h-screen">
     <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
-    <main class="flex-1 p-6 space-y-5 max-w-7xl mx-auto w-full">
-      <header class="border-b border-slate-800 pb-4 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-        <div><p class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Water Quality</p><h1 class="text-2xl font-bold mt-1">Water Quality Test Records</h1><p class="text-sm text-slate-400 mt-1">Record physical, chemical and biological parameters with signed PDF report.</p></div>
-        <button id="reloadBtn" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded text-sm font-bold">Reload</button>
+    <main class="flex-1 krwmp-page krwmp-stack-lg">
+      <header class="krwmp-page-header flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+        <div><p class="krwmp-eyebrow">Water Quality</p><h1 class="krwmp-page-title">Water Quality Test Records</h1><p class="krwmp-body-text">Record physical, chemical and biological parameters with signed PDF report.</p></div>
+        <button id="reloadBtn"  class="krwmp-btn krwmp-btn-secondary">Reload</button>
       </header>
       <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
       <section class="grid grid-cols-1 xl:grid-cols-3 gap-5">
-        <form id="waterQualityForm" class="xl:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label class="text-sm font-semibold">Sample Code<input name="sample_code" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="Auto-generated if blank"></label>
-          <label class="text-sm font-semibold">Sample Location Name<input name="sample_location_name" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" required></label>
-          <label class="text-sm font-semibold">Collection Date & Time<input name="sample_collection_datetime" type="datetime-local" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" required></label>
-          <label class="text-sm font-semibold">Collected By<input name="collected_by" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" required></label>
-          <section class="md:col-span-2 bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-3">
-            <div id="wqLocationPicker" class="space-y-2"><div data-location-map class="h-72 rounded-lg overflow-hidden border border-slate-700 bg-slate-900"></div><p data-location-status class="text-xs text-slate-400">Click the map to select sample location.</p></div>
+        <form id="waterQualityForm" class="xl:col-span-2 krwmp-panel grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label  class="krwmp-field">Sample Code<input name="sample_code"  class="krwmp-input mt-1" placeholder="Auto-generated if blank"></label>
+          <label  class="krwmp-field">Sample Location Name<input name="sample_location_name"  class="krwmp-input mt-1" required></label>
+          <label  class="krwmp-field">Collection Date & Time<input name="sample_collection_datetime" type="datetime-local"  class="krwmp-input mt-1" required></label>
+          <label  class="krwmp-field">Collected By<input name="collected_by"  class="krwmp-input mt-1" required></label>
+          <section class="md:col-span-2 krwmp-map-panel space-y-3">
+            <div id="wqLocationPicker" class="space-y-2"><div data-location-map class="krwmp-location-map h-72"></div><p data-location-status class="krwmp-status-label">Click the map to select sample location.</p></div>
             <input type="hidden" name="latitude" id="latitudeInput" required><input type="hidden" name="longitude" id="longitudeInput" required>
             <input type="hidden" name="dsd_name" id="dsdNameInput"><input type="hidden" name="gnd_name" id="gndNameInput"><input type="hidden" name="sub_watershed_id" id="subWatershedIdInput"><input type="hidden" name="sub_watershed_name" id="subWatershedNameInput">
-            <div id="locationInfo" class="text-xs text-slate-400">No location selected.</div>
+            <div id="locationInfo" class="krwmp-identify-panel">No location selected.</div>
           </section>
-          <div class="md:col-span-2"><h2 class="text-xs uppercase tracking-widest text-emerald-400 font-bold mb-3">Parameters</h2><div id="parameterTabs" class="flex flex-wrap gap-2 mb-3"></div><div id="parameterGrid" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[520px] overflow-y-auto pr-2"></div></div>
-          <label class="text-sm font-semibold md:col-span-2">Remarks<textarea name="remarks" rows="3" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></textarea></label>
-          <label class="text-sm font-semibold md:col-span-2">Signed Water Quality Report PDF<input name="signed_report_pdf" type="file" accept="application/pdf,.pdf" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
-          <div class="md:col-span-2"><button class="bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 rounded font-bold">Save Water Quality Record</button></div>
+          <div class="md:col-span-2"><h2 class="krwmp-section-title mb-3">Parameters</h2><div id="parameterTabs" class="flex flex-wrap gap-2 mb-3"></div><div id="parameterGrid" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[520px] overflow-y-auto pr-2"></div></div>
+          <label  class="krwmp-field md:col-span-2">Remarks<textarea name="remarks" rows="3"  class="krwmp-textarea mt-1"></textarea></label>
+          <label  class="krwmp-field md:col-span-2">Signed Water Quality Report PDF<input name="signed_report_pdf" type="file" accept="application/pdf,.pdf"  class="krwmp-input mt-1"></label>
+          <div class="md:col-span-2"><button  class="krwmp-btn krwmp-btn-primary">Save Water Quality Record</button></div>
         </form>
-        <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4"><h2 class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Saved Records</h2><input id="searchInput" type="search" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm" placeholder="Search sample/location/collector"><select id="statusFilter" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm"><option value="">All Statuses</option><option value="compliant">Compliant</option><option value="caution">Caution</option><option value="non_compliant">Non-compliant</option><option value="not_assessed">Not assessed</option></select><div id="recordsList" class="space-y-3"></div></section>
+        <section class="krwmp-panel krwmp-stack-md"><h2 class="krwmp-section-title">Saved Records</h2><input id="searchInput" type="search"  class="krwmp-input" placeholder="Search sample/location/collector"><select id="statusFilter"  class="krwmp-select"><option value="">All Statuses</option><option value="compliant">Compliant</option><option value="caution">Caution</option><option value="non_compliant">Non-compliant</option><option value="not_assessed">Not assessed</option></select><div id="recordsList" class="space-y-3"></div></section>
       </section>
     </main>
   </div>

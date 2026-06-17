@@ -11,39 +11,39 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen">
   <div class="flex min-h-screen">
     <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
-    <main class="flex-1 p-8 space-y-6 max-w-7xl mx-auto w-full">
-      <header class="border-b border-slate-800 pb-4">
-        <p class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Village Level Watershed Management Committees</p>
-        <h1 class="text-xl font-bold uppercase tracking-wider text-slate-200 mt-1">VWMC Management</h1>
-        <p class="text-xs text-slate-500 mt-1">Add, edit, view and manage committee details, members, contacts and committee location.</p>
+    <main class="flex-1 krwmp-page krwmp-stack-lg">
+      <header class="krwmp-page-header">
+        <p class="krwmp-eyebrow">Village Level Watershed Management Committees</p>
+        <h1 class="krwmp-page-title">VWMC Management</h1>
+        <p class="krwmp-body-text">Add, edit, view and manage committee details, members, contacts and committee location.</p>
       </header>
       <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
-      <section id="writePanel" class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 hidden">
-        <h2 class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Add / Edit VWMC</h2>
+      <section id="writePanel" class="krwmp-panel krwmp-stack-md hidden">
+        <h2 class="krwmp-section-title">Add / Edit VWMC</h2>
         <form id="committeeForm" class="grid grid-cols-1 md:grid-cols-3 gap-4" novalidate>
           <input type="hidden" name="id">
-          <label class="text-sm font-semibold">VWMC Name<input name="committee_name" required minlength="5" maxlength="150" pattern="[A-Za-z0-9 .,&/()'-]+" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2" placeholder="e.g., Lower Kelani VWMC"></label>
-          <label class="text-sm font-semibold">Village<input name="village_name" required minlength="3" maxlength="120" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
-          <label class="text-sm font-semibold">Status<select name="status" required class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"><option value="active">Active</option><option value="inactive">Inactive</option><option value="under_formation">Under Formation</option><option value="dissolved">Dissolved</option></select></label>
-          <label class="text-sm font-semibold">DSD<select name="dsd_name" id="vwmcDsdSelect" required class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"><option value="">Select DSD</option></select></label>
-          <label class="text-sm font-semibold">GND<select name="gnd_name" id="vwmcGndSelect" required class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"><option value="">Select DSD first</option></select></label>
-          <label class="text-sm font-semibold">Address<input name="address" maxlength="250" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
-          <label class="text-sm font-semibold">Latitude<input name="latitude" id="latitudeInput" type="number" step="any" min="5" max="10" required readonly class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-slate-300"></label>
-          <label class="text-sm font-semibold">Longitude<input name="longitude" id="longitudeInput" type="number" step="any" min="78" max="82" required readonly class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-slate-300"></label>
-          <label class="text-sm font-semibold">Remarks<input name="remarks" maxlength="500" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded px-3 py-2"></label>
-          <div id="vwmcLocationPicker" class="md:col-span-3 bg-slate-950/70 border border-slate-800 rounded-xl p-4">
+          <label  class="krwmp-field">VWMC Name<input name="committee_name" required minlength="5" maxlength="150" pattern="[A-Za-z0-9 .,&/()'-]+"  class="krwmp-input mt-1" placeholder="e.g., Lower Kelani VWMC"></label>
+          <label  class="krwmp-field">Village<input name="village_name" required minlength="3" maxlength="120"  class="krwmp-input mt-1"></label>
+          <label  class="krwmp-field">Status<select name="status" required  class="krwmp-select mt-1"><option value="active">Active</option><option value="inactive">Inactive</option><option value="under_formation">Under Formation</option><option value="dissolved">Dissolved</option></select></label>
+          <label  class="krwmp-field">DSD<select name="dsd_name" id="vwmcDsdSelect" required  class="krwmp-select mt-1"><option value="">Select DSD</option></select></label>
+          <label  class="krwmp-field">GND<select name="gnd_name" id="vwmcGndSelect" required  class="krwmp-select mt-1"><option value="">Select DSD first</option></select></label>
+          <label  class="krwmp-field">Address<input name="address" maxlength="250"  class="krwmp-input mt-1"></label>
+          <label  class="krwmp-field">Latitude<input name="latitude" id="latitudeInput" type="number" step="any" min="5" max="10" required readonly  class="krwmp-input mt-1 text-slate-300"></label>
+          <label  class="krwmp-field">Longitude<input name="longitude" id="longitudeInput" type="number" step="any" min="78" max="82" required readonly  class="krwmp-input mt-1 text-slate-300"></label>
+          <label  class="krwmp-field">Remarks<input name="remarks" maxlength="500"  class="krwmp-input mt-1"></label>
+          <div id="vwmcLocationPicker" class="md:col-span-3 krwmp-map-panel">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
-              <div><h3 class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Committee Location</h3><p class="text-xs text-slate-500 mt-1">Click on the map or drag the marker to select the VWMC location.</p></div>
-              <div class="flex gap-2"><button type="button" data-location-gps class="bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded text-xs font-bold">Use Browser Location</button><button type="button" data-location-clear class="bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded text-xs font-bold">Clear</button></div>
+              <div><h3 class="krwmp-section-title">Committee Location</h3><p class="krwmp-help-text">Click on the map or drag the marker to select the VWMC location.</p></div>
+              <div class="flex gap-2"><button type="button" data-location-gps  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Use Browser Location</button><button type="button" data-location-clear  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Clear</button></div>
             </div>
-            <div data-location-map class="h-72 rounded-lg overflow-hidden border border-slate-800"></div>
-            <div data-location-status class="text-xs mt-2 text-slate-400">No location selected.</div>
+            <div data-location-map class="krwmp-location-map h-72"></div>
+            <div data-location-status class="krwmp-status-label mt-2">No location selected.</div>
           </div>
-          <div class="md:col-span-3 flex gap-2"><button class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-sm font-bold">Save Committee</button><button type="button" id="resetCommitteeBtn" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded text-sm font-bold">Reset</button></div>
+          <div class="md:col-span-3 flex gap-2"><button  class="krwmp-btn krwmp-btn-primary">Save Committee</button><button type="button" id="resetCommitteeBtn"  class="krwmp-btn krwmp-btn-secondary">Reset</button></div>
         </form>
       </section>
-      <section class="bg-slate-900 border border-slate-800 rounded-xl p-5">
-        <div class="flex justify-between items-center mb-4"><h2 class="text-xs uppercase tracking-widest text-emerald-400 font-bold">VWMC Records</h2><button id="refreshBtn" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-sm font-bold">Refresh</button></div>
+      <section class="krwmp-panel">
+        <div class="flex justify-between items-center mb-4"><h2 class="krwmp-section-title">VWMC Records</h2><button id="refreshBtn"  class="krwmp-btn krwmp-btn-primary">Refresh</button></div>
         <div id="committeeList" class="space-y-4"></div>
       </section>
     </main>

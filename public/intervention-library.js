@@ -24,7 +24,7 @@ async function loadLibrary() {
   (data.library || []).forEach(item => {
     const card = document.createElement('article');
     card.className = 'bg-slate-950/60 border border-slate-800 rounded-lg p-4 space-y-2';
-    card.innerHTML = `<div class="flex justify-between gap-3"><div><h3 class="font-bold text-slate-100">${escapeHtml(item.intervention_name)}</h3><p class="text-xs text-slate-500">${escapeHtml(item.intervention_category || '-')} | ${escapeHtml(item.default_priority || '-')}</p></div>${canUpdateLibrary ? `<button data-edit="${item.id}" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded text-xs font-bold">Edit</button>` : ''}</div><p class="text-sm text-slate-300">${escapeHtml(item.description || '')}</p><p class="text-xs text-slate-500">${escapeHtml(item.standard_actions || '')}</p><p class="text-[10px] text-slate-600">Updated by ${escapeHtml(item.updated_by || '-')} on ${formatDate(item.updated_at)}</p>`;
+    card.innerHTML = `<div class="flex justify-between gap-3"><div><h3 class="font-bold text-slate-100">${escapeHtml(item.intervention_name)}</h3><p class="text-xs text-slate-500">${escapeHtml(item.intervention_category || '-')} | ${escapeHtml(item.default_priority || '-')}</p></div>${canUpdateLibrary ? `<button data-edit="${item.id}"  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Edit</button>` : ''}</div><p class="text-sm text-slate-300">${escapeHtml(item.description || '')}</p><p class="text-xs text-slate-500">${escapeHtml(item.standard_actions || '')}</p><p class="text-[10px] text-slate-600">Updated by ${escapeHtml(item.updated_by || '-')} on ${formatDate(item.updated_at)}</p>`;
     list.appendChild(card);
     card.querySelector('[data-edit]')?.addEventListener('click', () => fillForm(item));
   });
