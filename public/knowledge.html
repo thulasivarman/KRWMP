@@ -6,6 +6,8 @@
   <title>Knowledge Portal - KRWMP Portal</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/vendor/maplibre/maplibre-gl.css">
+
+>>>>>>> b8e545042ed90a7430472b8e22da00c608c4cd94
   <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-emerald-500/30">
@@ -62,6 +64,7 @@
     </main>
   </div>
 
+
   <dialog id="knowledge-modal" class="krwmp-modal krwmp-modal-xl">
     <form id="knowledge-form">
       <header class="krwmp-modal-header">
@@ -70,6 +73,8 @@
       </header>
       <div class="krwmp-modal-body krwmp-stack-md">
       <input type="hidden" name="id">
+      <input type="hidden" name="latitude">
+      <input type="hidden" name="longitude">
       <div class="grid md:grid-cols-2 gap-3">
         <label  class="form-label md:col-span-2">Title<input name="title" required  class="form-input mt-1"></label>
         <label  class="form-label">Content Type<select name="content_type"  class="form-select mt-1"><option value="article">Article</option><option value="pdf">PDF</option><option value="video">Video</option><option value="research_paper">Research Paper</option><option value="writeup">Write-up</option><option value="guideline">Guideline</option><option value="case_study">Case Study</option><option value="external_link">External Link</option></select></label>
