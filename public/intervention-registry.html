@@ -34,6 +34,7 @@
           <input type="hidden" name="id">
           <input type="hidden" name="latitude" id="latInput">
           <input type="hidden" name="longitude" id="lngInput">
+          <input type="hidden" name="lead_officer_person_id" id="leadOfficerPersonId">
 
           <label class="form-label">
             Library Type
@@ -127,14 +128,21 @@
             Actual End
             <input name="actual_end_date" type="date" class="form-input mt-1">
           </label>
-          <label class="form-label">
-            Lead Officer
-            <input name="lead_officer_name" class="form-input mt-1">
-          </label>
-          <label class="form-label">
-            Lead Contact
-            <input name="lead_officer_contact" class="form-input mt-1">
-          </label>
+          <section class="md:col-span-4 krwmp-card-muted p-4 krwmp-stack-sm">
+            <h3 class="form-section-heading">Lead Officer</h3>
+            <p class="form-helper">Select the lead officer from the master person registry. Name and contact will be filled automatically.</p>
+            <div id="leadOfficerPersonSelector"></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <label class="form-label">
+                Lead Officer Name
+                <input name="lead_officer_name" id="leadOfficerName" readonly class="form-input mt-1 bg-slate-900/70">
+              </label>
+              <label class="form-label">
+                Lead Contact
+                <input name="lead_officer_contact" id="leadOfficerContact" readonly class="form-input mt-1 bg-slate-900/70">
+              </label>
+            </div>
+          </section>
           <label class="form-label">
             Implementing Institution
             <select name="implementing_office" id="institutionSelect" class="form-select mt-1">
@@ -234,6 +242,7 @@
   <script src="/assets/js/location-picker.js"></script>
   <script src="/assets/js/person-selector.js"></script>
   <script src="/intervention-registry.js"></script>
+  <script src="/intervention-lead-officer-enhance.js"></script>
   <script src="/intervention-accordion-enhance.js"></script>
 </body>
 </html>
