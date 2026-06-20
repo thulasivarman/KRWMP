@@ -26,7 +26,7 @@ function enhanceInterventionAccordions() {
     card.appendChild(body);
 
     header.addEventListener('click', event => {
-      if (event.target.closest('button[data-edit], button[data-delete]')) return;
+      if (event.target.closest('button[data-view], button[data-edit], button[data-action], button[data-delete]')) return;
       body.classList.toggle('hidden');
       header.querySelector('.accordion-icon').textContent = body.classList.contains('hidden') ? '+' : '−';
     });

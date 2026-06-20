@@ -1,4 +1,5 @@
 const authService = require('../services/auth.service');
+const audit = require('../services/audit-log.service');
 const { getRequestUser } = require('../middleware/privilege.middleware');
 const { clearSessionCookieHeader, sessionCookieHeader } = require('../utils/jwt');
 
@@ -8,14 +9,34 @@ async function authRoutes(fastify) {
     const { username, password } = request.body || {};
     if (!username || !password) return reply.status(400).send({ success: false, message: 'Username and password are required' });
     const result = await authService.login(username, password);
-    if (!result.success) return reply.status(401).send(result);
+    if (!result.success) {
+      await audit.logLogin({
+        request,
+        username,
+        severity: 'warning',
+        summary: 'Failed login attempt',
+        details: { username, success: false },
+      });
+      return reply.status(401).send(result);
+    }
     reply.header('Set-Cookie', sessionCookieHeader(result.token));
     const { token, ...publicResult } = result;
+    await audit.logLogin({
+      request,
+      user_id: result.user?.id,
+      username: result.user?.identifier || username,
+      summary: 'User logged in',
+      details: { success: true, role_name: result.user?.role_name || null },
+    });
     return publicResult;
   });
 
   fastify.post('/logout', async (request, reply) => {
     reply.header('Cache-Control', 'no-store');
+    await audit.logLogout({
+      request,
+      summary: 'User logged out',
+    });
     reply.header('Set-Cookie', clearSessionCookieHeader());
     return { success: true, message: 'Logged out successfully' };
   });

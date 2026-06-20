@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Person Profile - KRWMP Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-emerald-500/30">
+  <div class="flex min-h-screen">
+    <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
+    <main class="flex-1 krwmp-page krwmp-stack-lg">
+      <header class="krwmp-page-header krwmp-cluster-between gap-4">
+        <div>
+          <p class="krwmp-eyebrow">Master Person Registry</p>
+          <h1 id="personTitle" class="krwmp-page-title">Person Profile</h1>
+          <p id="personSubtitle" class="krwmp-body-text">Linked module activity and contact relationships for this person.</p>
+        </div>
+        <a href="/vwmc-management.html" class="krwmp-btn krwmp-btn-secondary">Back to Portal</a>
+      </header>
+
+      <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
+
+      <section id="profileSummary" class="krwmp-panel krwmp-stack-md">
+        <div class="krwmp-loading-state">Loading person profile...</div>
+      </section>
+
+      <section class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div id="systemUserSection" class="krwmp-panel krwmp-stack-sm"></div>
+        <div id="vwmcSection" class="krwmp-panel krwmp-stack-sm"></div>
+        <div id="complaintsSection" class="krwmp-panel krwmp-stack-sm"></div>
+        <div id="interventionActionsSection" class="krwmp-panel krwmp-stack-sm"></div>
+        <div id="volunteerSection" class="krwmp-panel krwmp-stack-sm"></div>
+        <div id="monitoringSection" class="krwmp-panel krwmp-stack-sm"></div>
+        <div id="contactSection" class="krwmp-panel krwmp-stack-sm xl:col-span-2"></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="promoteUserModal" class="krwmp-modal krwmp-modal-lg">
+    <header class="krwmp-modal-header">
+      <h2 class="krwmp-modal-title">Create System User</h2>
+      <button id="closePromoteModalBtn" type="button" class="krwmp-modal-close" aria-label="Close create user form">&times;</button>
+    </header>
+    <form id="promoteUserForm" class="krwmp-modal-body krwmp-stack-md">
+      <section id="promoteModalMessage" class="hidden rounded-lg p-3 text-sm"></section>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <label class="form-label md:col-span-2">
+          Full Name
+          <input name="name" required class="form-input mt-1">
+        </label>
+        <label class="form-label">
+          Phone
+          <input name="phone_number" type="tel" class="form-input mt-1">
+        </label>
+        <label class="form-label">
+          Email (Optional)
+          <input name="email" type="email" class="form-input mt-1">
+        </label>
+        <label class="form-label">
+          Username
+          <input name="identifier" required class="form-input mt-1" autocomplete="username">
+        </label>
+        <label class="form-label">
+          Temporary Password
+          <input name="password" type="password" required class="form-input mt-1" autocomplete="new-password">
+        </label>
+        <label class="form-label">
+          Initials
+          <input name="initials" required maxlength="10" class="form-input mt-1">
+        </label>
+        <label class="form-label">
+          Designation
+          <input name="designation" required class="form-input mt-1" value="System User">
+        </label>
+        <label class="form-label md:col-span-2">
+          User Group / Role
+          <select name="role_id" id="promoteRoleSelect" required class="form-select mt-1">
+            <option value="">Loading roles...</option>
+          </select>
+        </label>
+      </div>
+      <footer class="krwmp-modal-actions">
+        <button type="button" id="cancelPromoteBtn" class="krwmp-btn krwmp-btn-secondary">Cancel</button>
+        <button type="submit" id="savePromoteBtn" class="krwmp-btn krwmp-btn-primary">Create System User</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <script src="/assets/js/krwmp-global.js"></script>
+  <script src="/assets/js/privilege-guard.js"></script>
+  <script src="/person-profile.js"></script>
+</body>
+</html>

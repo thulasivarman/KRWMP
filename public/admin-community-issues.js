@@ -7,11 +7,14 @@ const severityFilter = document.getElementById('severityFilter');
 const clearFiltersBtn = document.getElementById('clearFiltersBtn');
 const filterSummary = document.getElementById('filterSummary');
 let solutions = [];
+let interventions = [];
 let reports = [];
 let filteredReports = [];
 let currentPage = 1;
 const pageSize = 6;
 let canUpdateReports = false;
+let canCreateInterventionLinks = false;
+let canUpdateInterventionLinks = false;
 
 const STATUS_LABELS = {
   submitted: 'Submitted',
@@ -25,9 +28,41 @@ const STATUS_LABELS = {
 
 const { apiRequest: json, escapeHtml } = window.KRWMP_UTILS;
 function showStatus(message, error = false) { window.KRWMP_UTILS.showStatus(statusBox, message, error); }
-async function initSidebar() { if (window.KRWMP_ENGINE) await window.KRWMP_ENGINE.assembleInterfaceContext('/sidebar.html', 'sidebar'); await window.KRWMP_PRIVILEGES.protectPage('community_issues_review', 'view'); canUpdateReports = window.KRWMP_PRIVILEGES.can('community_issues_review', 'update'); document.querySelector('.krwmp-panel-section')?.classList.add('hidden'); document.getElementById('section-data-layers')?.classList.add('hidden'); document.getElementById('section-raster-layers')?.classList.add('hidden'); }
+async function initSidebar() { if (window.KRWMP_ENGINE) await window.KRWMP_ENGINE.assembleInterfaceContext('/sidebar.html', 'sidebar'); await window.KRWMP_PRIVILEGES.protectPage('community_issues_review', 'view'); canUpdateReports = window.KRWMP_PRIVILEGES.can('community_issues_review', 'update'); canCreateInterventionLinks = window.KRWMP_PRIVILEGES.can('community_issue_intervention_mapping', 'create'); canUpdateInterventionLinks = window.KRWMP_PRIVILEGES.can('community_issue_intervention_mapping', 'update'); document.querySelector('.krwmp-panel-section')?.classList.add('hidden'); document.getElementById('section-data-layers')?.classList.add('hidden'); document.getElementById('section-raster-layers')?.classList.add('hidden'); }
 async function loadSolutions() { const data = await json('/api/solutions'); solutions = data.solutions || []; }
-function fillSolutions(select, selected) { solutions.forEach(s => { const o = document.createElement('option'); o.value = s.id; o.textContent = `${s.solution_title} (${s.category_name || 'General'})`; if (String(selected || '') === String(s.id)) o.selected = true; select.appendChild(o); }); }
+async function loadInterventions() {
+  if (!canCreateInterventionLinks) {
+    interventions = [];
+    return;
+  }
+  const data = await json('/api/community-issue-interventions/search/interventions?limit=100');
+  interventions = data.interventions || [];
+}
+function fillSolutions(select, selected) {
+  select.innerHTML = '<option value="">No solution assigned</option>';
+  solutions.forEach(s => { const o = document.createElement('option'); o.value = s.id; o.textContent = `${s.solution_title} (${s.category_name || 'General'})`; if (String(selected || '') === String(s.id)) o.selected = true; select.appendChild(o); });
+}
+function fillInterventions(select, selected, currentLabel = '') {
+  select.innerHTML = '<option value="">No intervention assigned</option>';
+  let foundSelected = false;
+  interventions.forEach(i => {
+    const o = document.createElement('option');
+    o.value = i.id;
+    o.textContent = `${i.intervention_code || 'INT'} - ${i.intervention_title || 'Untitled'} (${statusLabel(i.status || 'planned')})`;
+    if (String(selected || '') === String(i.id)) {
+      o.selected = true;
+      foundSelected = true;
+    }
+    select.appendChild(o);
+  });
+  if (selected && !foundSelected) {
+    const option = document.createElement('option');
+    option.value = selected;
+    option.textContent = currentLabel || `Linked intervention ${selected}`;
+    option.selected = true;
+    select.appendChild(option);
+  }
+}
 
 function normalize(value) { return String(value ?? '').trim().toLowerCase(); }
 function categoryName(report) { return report.category_name || report.other_category_name || 'Other'; }
@@ -37,6 +72,74 @@ function titleCase(value) { return String(value || '').replace(/_/g, ' ').replac
 function uniqueSorted(values) { return [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b)); }
 function totalPages() { return Math.max(1, Math.ceil(filteredReports.length / pageSize)); }
 function visibleReports() { const start = (currentPage - 1) * pageSize; return filteredReports.slice(start, start + pageSize); }
+function interventionTitle(report) {
+  if (!report.linked_intervention_id) return 'No intervention assigned';
+  return [report.linked_intervention_code, report.linked_intervention_title].filter(Boolean).join(' - ') || `Intervention ${report.linked_intervention_id}`;
+}
+function reporterName(report) { return report.reporter_person_full_name || report.reporter_name || '-'; }
+function reporterPhone(report) { return report.reporter_person_phone_number || report.reporter_contact || '-'; }
+function reporterEmail(report) { return report.reporter_person_email || report.reporter_email || '-'; }
+function reporterLocation(report) { return [report.reporter_person_gnd, report.reporter_person_dsd].filter(Boolean).join(' / ') || [report.gnd_name, report.dsd_name].filter(Boolean).join(' / ') || '-'; }
+function personProfileLink(personId, label = 'View Person Profile') {
+  if (!personId) return '';
+  return `<a class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm" href="/person-profile.html?id=${encodeURIComponent(personId)}" target="_blank" rel="noopener">${escapeHtml(label)}</a>`;
+}
+function reporterPersonHtml(report) {
+  const linked = Boolean(report.reporter_person_id);
+  return `
+    <section class="krwmp-card-muted p-3 space-y-2">
+      <div class="flex flex-wrap items-center gap-2">
+        <h4 class="form-section-heading text-base">Reporter Information</h4>
+        ${linked ? '<span class="krwmp-badge krwmp-badge-success">Linked Person</span>' : '<span class="krwmp-badge krwmp-badge-neutral">Legacy Reporter</span>'}
+        ${personProfileLink(report.reporter_person_id)}
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+        <div><span class="text-slate-500">Name:</span><div class="mt-1 text-slate-100">${escapeHtml(reporterName(report))}</div></div>
+        <div><span class="text-slate-500">Phone:</span><div class="mt-1 text-slate-100">${escapeHtml(reporterPhone(report))}</div></div>
+        <div><span class="text-slate-500">Email:</span><div class="mt-1 text-slate-100">${escapeHtml(reporterEmail(report))}</div></div>
+        <div><span class="text-slate-500">GND / DSD:</span><div class="mt-1 text-slate-100">${escapeHtml(reporterLocation(report))}</div></div>
+      </div>
+    </section>`;
+}
+function resolutionSummaryHtml(report) {
+  const solutionTitle = report.solution_title || 'No solution assigned';
+  const interventionStatus = report.linked_intervention_status ? statusLabel(report.linked_intervention_status) : 'Not assigned';
+  const responsibleAgency = report.linked_intervention_responsible_agency || report.solution_responsible_party || '-';
+  const viewButton = report.linked_intervention_id
+    ? `<a class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm" href="/intervention-registry.html?intervention_id=${encodeURIComponent(report.linked_intervention_id)}" target="_blank" rel="noopener">View Intervention</a>`
+    : '';
+  return `
+    <section class="krwmp-card-muted p-3 space-y-3">
+      <div class="flex items-center justify-between gap-3">
+        <h4 class="form-section-heading text-base">Resolution Information</h4>
+        ${viewButton}
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+        <div><span class="text-slate-500">Linked Solution:</span><div class="mt-1 text-slate-100">${escapeHtml(solutionTitle)}</div></div>
+        <div><span class="text-slate-500">Linked Intervention:</span><div class="mt-1 text-slate-100">${escapeHtml(interventionTitle(report))}</div></div>
+        <div><span class="text-slate-500">Intervention Status:</span><div class="mt-1"><span class="krwmp-badge ${statusBadgeClasses(report.linked_intervention_status)}">${escapeHtml(interventionStatus)}</span></div></div>
+        <div><span class="text-slate-500">Responsible Agency:</span><div class="mt-1 text-slate-100">${escapeHtml(responsibleAgency)}</div></div>
+      </div>
+    </section>`;
+}
+function resolutionFormFieldsHtml(report) {
+  const interventionDisabled = canCreateInterventionLinks ? '' : 'disabled';
+  const interventionHint = canCreateInterventionLinks
+    ? '<p class="form-helper">Select an intervention from the Intervention Registry.</p>'
+    : '<p class="form-helper">Intervention assignment requires mapping permission.</p>';
+  return `
+    <div class="space-y-3 border-t border-slate-800 pt-3">
+      <h4 class="form-section-heading text-base">Resolution Information</h4>
+      <label class="form-label">Linked Solution
+        <select name="assigned_solution_id" class="form-select mt-1 solution-select"><option value="">No solution assigned</option></select>
+      </label>
+      <label class="form-label">Linked Intervention
+        <select name="assigned_intervention_id" class="form-select mt-1 intervention-select" ${interventionDisabled}><option value="">No intervention assigned</option></select>
+      </label>
+      ${interventionHint}
+      ${report.linked_intervention_id ? `<a class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm" href="/intervention-registry.html?intervention_id=${encodeURIComponent(report.linked_intervention_id)}" target="_blank" rel="noopener">View Intervention</a>` : '<p class="form-helper">No intervention assigned</p>'}
+    </div>`;
+}
 
 async function loadReports() {
   reportsList.innerHTML = '<div class="krwmp-loading-state">Loading reports...</div>';
@@ -85,6 +188,10 @@ function applyFilters(resetPage = true) {
       report.sub_watershed_name,
       report.reporter_name,
       report.reporter_contact,
+      report.reporter_email,
+      report.reporter_person_full_name,
+      report.reporter_person_phone_number,
+      report.reporter_person_email,
     ].join(' '));
 
     return (!query || searchable.includes(query)) &&
@@ -150,12 +257,14 @@ function renderReportCard(report) {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-400">
           <div><span class="text-slate-500">Location:</span> ${escapeHtml(report.location_description || '-')}</div>
           <div><span class="text-slate-500">DSD/GND:</span> ${escapeHtml(report.dsd_name || '-')} / ${escapeHtml(report.gnd_name || '-')}</div>
-          <div><span class="text-slate-500">Reporter:</span> ${escapeHtml(report.reporter_name || '-')}</div>
-          <div><span class="text-slate-500">Contact:</span> ${escapeHtml(report.reporter_contact || '-')}</div>
+          <div><span class="text-slate-500">Reporter:</span> ${escapeHtml(reporterName(report))}</div>
+          <div><span class="text-slate-500">Contact:</span> ${escapeHtml(reporterPhone(report))}</div>
         </div>
         ${hasPhoto ? `<a href="${escapeHtml(report.photo_url)}" class="text-xs text-emerald-400" target="_blank">View photo evidence</a>` : ''}
+        ${reporterPersonHtml(report)}
+        ${resolutionSummaryHtml(report)}
       </div>
-      ${canUpdateReports ? `<form class="review-form space-y-2"><input type="hidden" name="id" value="${report.id}"><select name="status"  class="krwmp-select"><option value="submitted">Submitted</option><option value="under_review">Under Review</option><option value="verified">Verified</option><option value="assigned_to_intervention">Assigned To Intervention</option><option value="resolved">Resolved</option><option value="rejected">Rejected</option></select><select name="assigned_solution_id"  class="krwmp-select solution-select"><option value="">No solution assigned</option></select><textarea name="admin_notes" rows="3"  class="krwmp-textarea" placeholder="Admin notes">${escapeHtml(report.admin_notes || '')}</textarea><button  class="krwmp-btn krwmp-btn-primary">Save Review</button></form>` : '<p class="text-xs text-slate-500">View-only access.</p>'}
+      ${canUpdateReports ? `<form class="review-form space-y-3"><input type="hidden" name="id" value="${report.id}"><input type="hidden" name="current_intervention_id" value="${escapeHtml(report.linked_intervention_id || '')}"><input type="hidden" name="current_mapping_id" value="${escapeHtml(report.linked_intervention_mapping_id || '')}"><label class="form-label">Review Status<select name="status"  class="form-select mt-1"><option value="submitted">Submitted</option><option value="under_review">Under Review</option><option value="verified">Verified</option><option value="assigned_to_intervention">Assigned To Intervention</option><option value="resolved">Resolved</option><option value="rejected">Rejected</option></select></label>${resolutionFormFieldsHtml(report)}<label class="form-label">Admin Notes<textarea name="admin_notes" rows="3"  class="form-textarea mt-1" placeholder="Admin notes">${escapeHtml(report.admin_notes || '')}</textarea></label><button  class="krwmp-btn krwmp-btn-primary krwmp-btn-full">Save Review</button></form>` : '<p class="text-xs text-slate-500">View-only access.</p>'}
     </div>`;
   reportsList.appendChild(article);
   const body = article.querySelector('.accordion-body');
@@ -163,9 +272,64 @@ function renderReportCard(report) {
   article.querySelector('.accordion-toggle').addEventListener('click', () => { body.classList.toggle('hidden'); icon.textContent = body.classList.contains('hidden') ? '+' : '−'; });
   const form = article.querySelector('.review-form');
   if (!form) return;
-  form.status.value = report.status || 'submitted';
-  fillSolutions(form.assigned_solution_id, report.assigned_solution_id);
-  form.addEventListener('submit', async e => { e.preventDefault(); await json(`/api/community-reports/${form.id.value}`, { method: 'PUT', body: { status: form.status.value, assigned_solution_id: form.assigned_solution_id.value || null, admin_notes: form.admin_notes.value } }); showStatus('Report review updated.'); await loadReports(); });
+  form.elements.status.value = report.status || 'submitted';
+  fillSolutions(form.elements.assigned_solution_id, report.assigned_solution_id);
+  fillInterventions(form.elements.assigned_intervention_id, report.linked_intervention_id, interventionTitle(report));
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    try {
+      await saveReview(form);
+    } catch (error) {
+      showStatus(error.message || 'Unable to save review.', true);
+    }
+  });
+}
+
+async function saveReview(form) {
+  const fields = form.elements;
+  const reportId = fields.id?.value || '';
+  const selectedSolutionId = fields.assigned_solution_id?.value || '';
+  const selectedInterventionId = fields.assigned_intervention_id?.value || '';
+  const currentInterventionId = fields.current_intervention_id?.value || '';
+  const currentMappingId = fields.current_mapping_id?.value || '';
+  const saveButton = form.querySelector('button[type="submit"], button:not([type])');
+
+  if (!reportId) throw new Error('Community report id is missing.');
+  if (saveButton) saveButton.disabled = true;
+
+  try {
+    await json(`/api/community-reports/${reportId}`, {
+      method: 'PUT',
+      body: {
+        status: fields.status?.value || 'submitted',
+        assigned_solution_id: selectedSolutionId || null,
+        admin_notes: fields.admin_notes?.value || ''
+      }
+    });
+
+    if (canCreateInterventionLinks && selectedInterventionId && selectedInterventionId !== currentInterventionId) {
+      await json('/api/community-issue-interventions', {
+        method: 'POST',
+        body: { report_id: reportId, intervention_id: selectedInterventionId, link_status: 'active' }
+      });
+      if (currentMappingId && canUpdateInterventionLinks) {
+        await json(`/api/community-issue-interventions/${currentMappingId}`, {
+          method: 'PATCH',
+          body: { link_status: 'not_applicable', link_note: 'Superseded by a new intervention assignment.' }
+        });
+      }
+    } else if (canUpdateInterventionLinks && currentMappingId && !selectedInterventionId) {
+      await json(`/api/community-issue-interventions/${currentMappingId}`, {
+        method: 'PATCH',
+        body: { link_status: 'not_applicable', link_note: 'Intervention assignment cleared from review page.' }
+      });
+    }
+
+    showStatus('Report review updated.');
+    await loadReports();
+  } finally {
+    if (saveButton) saveButton.disabled = false;
+  }
 }
 
 function renderPagination() {
@@ -185,4 +349,4 @@ categoryFilter.addEventListener('change', () => applyFilters(true));
 severityFilter.addEventListener('change', () => applyFilters(true));
 clearFiltersBtn.addEventListener('click', () => { searchInput.value = ''; statusFilter.value = ''; categoryFilter.value = ''; severityFilter.value = ''; applyFilters(true); });
 
-(async () => { await initSidebar(); await loadSolutions(); await loadReports(); })().catch(e => showStatus(e.message, true));
+(async () => { await initSidebar(); await Promise.all([loadSolutions(), loadInterventions()]); await loadReports(); })().catch(e => showStatus(e.message, true));

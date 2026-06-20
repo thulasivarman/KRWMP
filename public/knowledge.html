@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Knowledge Portal - KRWMP Portal</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/vendor/maplibre/maplibre-gl.css">
   <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-emerald-500/30">
@@ -27,12 +28,12 @@
 
       <section class="krwmp-panel">
         <div class="grid md:grid-cols-6 gap-3">
-          <input id="filter-q"  class="krwmp-input md:col-span-2" placeholder="Search title, keyword, abstract">
-          <select id="filter-category"  class="krwmp-select"><option value="">All Categories</option></select>
-          <select id="filter-type"  class="krwmp-select">
+          <input id="filter-q"  class="form-input md:col-span-2" placeholder="Search title, keyword, abstract">
+          <select id="filter-category"  class="form-select"><option value="">All Categories</option></select>
+          <select id="filter-type"  class="form-select">
             <option value="">All Types</option><option value="article">Article</option><option value="pdf">PDF</option><option value="video">Video</option><option value="research_paper">Research Paper</option><option value="writeup">Write-up</option><option value="guideline">Guideline</option><option value="case_study">Case Study</option><option value="external_link">External Link</option>
           </select>
-          <select id="filter-status"  class="krwmp-select">
+          <select id="filter-status"  class="form-select">
             <option value="">All Status</option><option value="draft">Draft</option><option value="submitted">Submitted</option><option value="reviewed">Reviewed</option><option value="published">Published</option><option value="archived">Archived</option>
           </select>
           <button id="btn-apply-filters"  class="krwmp-btn krwmp-btn-primary">Apply</button>
@@ -42,18 +43,18 @@
       <section class="grid lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 krwmp-panel overflow-hidden p-0">
           <div class="p-4 border-b border-slate-800 flex items-center justify-between">
-            <h2 class="krwmp-section-title">Knowledge Resources</h2>
+            <h2 class="form-section-heading">Knowledge Resources</h2>
             <span id="resource-count" class="text-xs text-slate-400">0 records</span>
           </div>
           <div id="knowledge-list" class="divide-y divide-slate-800"></div>
         </div>
         <aside class="space-y-6">
           <div class="krwmp-panel">
-            <h2 class="krwmp-section-title mb-3">Content by Type</h2>
+            <h2 class="form-section-heading mb-3">Content by Type</h2>
             <div id="chart-type" class="space-y-2 text-sm"></div>
           </div>
           <div class="krwmp-panel">
-            <h2 class="krwmp-section-title mb-3">Pending Review</h2>
+            <h2 class="form-section-heading mb-3">Pending Review</h2>
             <div id="pending-review" class="space-y-2 text-sm"></div>
           </div>
         </aside>
@@ -70,33 +71,64 @@
       <div class="krwmp-modal-body krwmp-stack-md">
       <input type="hidden" name="id">
       <div class="grid md:grid-cols-2 gap-3">
-        <label  class="krwmp-field md:col-span-2">Title<input name="title" required  class="krwmp-input mt-1"></label>
-        <label  class="krwmp-field">Content Type<select name="content_type"  class="krwmp-select mt-1"><option value="article">Article</option><option value="pdf">PDF</option><option value="video">Video</option><option value="research_paper">Research Paper</option><option value="writeup">Write-up</option><option value="guideline">Guideline</option><option value="case_study">Case Study</option><option value="external_link">External Link</option></select></label>
-        <label  class="krwmp-field">Category<select name="category_id" id="form-category"  class="krwmp-select mt-1"><option value="">Uncategorised</option></select></label>
-        <label  class="krwmp-field">Status<select name="status"  class="krwmp-select mt-1"><option value="draft">Draft</option><option value="submitted">Submitted</option><option value="reviewed">Reviewed</option><option value="published">Published</option><option value="archived">Archived</option></select></label>
-        <label  class="krwmp-field">Language<input name="language" value="English"  class="krwmp-input mt-1"></label>
-        <label  class="krwmp-field">Publication Year<input name="publication_year" type="number" min="1900" max="2100"  class="krwmp-input mt-1"></label>
-        <label  class="krwmp-field">Tags<input name="tags" placeholder="flood, water quality, community"  class="krwmp-input mt-1"></label>
-        <label  class="krwmp-field md:col-span-2">Summary<textarea name="summary" rows="2"  class="krwmp-textarea mt-1"></textarea></label>
-        <label  class="krwmp-field md:col-span-2">Abstract / Write-up<textarea name="abstract" rows="4"  class="krwmp-textarea mt-1"></textarea></label>
-        <label  class="krwmp-field">External URL<input name="external_url"  class="krwmp-input mt-1"></label>
-        <label  class="krwmp-field">File URL<input name="file_url"  class="krwmp-input mt-1"></label>
-        <label  class="krwmp-field">Video URL<input name="video_url"  class="krwmp-input mt-1"></label>
-        <label  class="krwmp-field">Thumbnail URL<input name="thumbnail_url"  class="krwmp-input mt-1"></label>
-        <label  class="krwmp-field">Latitude<input name="latitude" type="number" step="any"  class="krwmp-input mt-1"></label>
-        <label  class="krwmp-field">Longitude<input name="longitude" type="number" step="any"  class="krwmp-input mt-1"></label>
-        <label  class="krwmp-field flex items-center gap-2"><input name="is_featured" type="checkbox"  class="rounded"> Featured Resource</label>
+        <label  class="form-label md:col-span-2">Title<input name="title" required  class="form-input mt-1"></label>
+        <label  class="form-label">Content Type<select name="content_type"  class="form-select mt-1"><option value="article">Article</option><option value="pdf">PDF</option><option value="video">Video</option><option value="research_paper">Research Paper</option><option value="writeup">Write-up</option><option value="guideline">Guideline</option><option value="case_study">Case Study</option><option value="external_link">External Link</option></select></label>
+        <label  class="form-label">Category<select name="category_id" id="form-category"  class="form-select mt-1"><option value="">Uncategorised</option></select></label>
+        <label  class="form-label">Status<select name="status"  class="form-select mt-1"><option value="draft">Draft</option><option value="submitted">Submitted</option><option value="reviewed">Reviewed</option><option value="published">Published</option><option value="archived">Archived</option></select></label>
+        <label  class="form-label">Language<input name="language" value="English"  class="form-input mt-1"></label>
+        <label  class="form-label">Publication Year<input name="publication_year" type="number" min="1900" max="2100"  class="form-input mt-1"></label>
+        <label  class="form-label">Tags<input name="tags" placeholder="flood, water quality, community"  class="form-input mt-1"></label>
+        <label  class="form-label md:col-span-2">Summary<textarea name="summary" rows="2"  class="form-textarea mt-1"></textarea></label>
+        <label  class="form-label md:col-span-2">Abstract / Write-up<textarea name="abstract" rows="4"  class="form-textarea mt-1"></textarea></label>
+        <label  class="form-label">External URL (Optional)<input name="external_url" type="url" placeholder="https://..."  class="form-input mt-1"></label>
+        <label  class="form-label">Video URL (Optional)<input name="video_url" type="url" placeholder="https://..."  class="form-input mt-1"></label>
+        <label  class="form-label">Thumbnail URL<input name="thumbnail_url"  class="form-input mt-1"></label>
+        <input id="knowledgeLatitudeInput" type="hidden" name="latitude">
+        <input id="knowledgeLongitudeInput" type="hidden" name="longitude">
+
+        <div class="md:col-span-2">
+          <label class="form-label" for="knowledgeFilesInput">Resource Files (Optional)</label>
+          <input id="knowledgeFilesInput" type="file" multiple accept=".pdf,.docx,.xlsx,.jpg,.jpeg,.png,.webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/jpeg,image/png,image/webp" class="form-input mt-1">
+          <p class="form-helper mt-1">Supported formats: PDF, DOCX, XLSX, JPG, PNG and WEBP. Files are uploaded after the resource is saved.</p>
+          <div id="knowledge-selected-files" class="mt-3"></div>
+          <div id="knowledge-upload-status" class="form-helper mt-2"></div>
+        </div>
+
+        <div id="knowledge-location-picker" class="md:col-span-2 krwmp-map-panel">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
+            <div>
+              <h3 class="krwmp-map-panel-title">Location (Optional)</h3>
+              <p class="form-helper mt-1">Click the map or drag the marker to link this resource to a location.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" data-location-gps class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Use Browser Location</button>
+              <button type="button" data-location-clear class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Clear Location</button>
+            </div>
+          </div>
+          <div data-location-map class="krwmp-location-map h-72"></div>
+          <div data-location-status class="krwmp-status-label mt-2">No location selected.</div>
+        </div>
+
+        <div class="md:col-span-2">
+          <h3 class="form-label">Uploaded Files</h3>
+          <div id="knowledge-attachment-list" class="mt-2"></div>
+        </div>
+
+        <label  class="form-label flex items-center gap-2"><input name="is_featured" type="checkbox" class="form-checkbox"> Featured Resource</label>
       </div>
       </div>
       <footer class="krwmp-modal-actions">
         <button type="button" id="btn-cancel-form"  class="krwmp-btn krwmp-btn-secondary">Cancel</button>
-        <button  class="krwmp-btn krwmp-btn-primary">Save Resource</button>
+        <button id="btn-save-resource" class="krwmp-btn krwmp-btn-primary">Save Resource</button>
       </footer>
     </form>
   </dialog>
 
+  <script src="/vendor/maplibre/maplibre-gl.js"></script>
   <script src="/assets/js/krwmp-global.js"></script>
   <script src="/assets/js/privilege-guard.js"></script>
+  <script src="/assets/js/location-picker.js"></script>
+  <script src="/assets/js/krwmp-file-attachments.js"></script>
   <script src="/assets/js/knowledge.js"></script>
 </body>
 </html>

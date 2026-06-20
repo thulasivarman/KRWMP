@@ -25,6 +25,7 @@ const interventionRoutes = require('../src/routes/intervention.routes');
 const institutionRoutes = require('../src/routes/institution.routes');
 const knowledgeRoutes = require('../src/routes/knowledge.routes');
 const fileAttachmentRoutes = require('../src/routes/file-attachment.routes');
+const personRoutes = require('../src/routes/person.routes');
 const pollutionSourceRoutes = require('../src/routes/pollution-source.routes');
 const rasterLayerRoutes = require('../src/routes/raster-layer.routes');
 const reportsRoutes = require('../src/routes/reports.routes');
@@ -35,6 +36,10 @@ const vwmcRoutes = require('../src/routes/vwmc.routes');
 const waterQualityRoutes = require('../src/routes/water-quality.routes');
 const uploadedFilesRepository = require('../src/services/uploaded-files.repository');
 const fileAttachmentService = require('../src/services/file-attachment.service');
+const personService = require('../src/services/person.service');
+const communityIssuesService = require('../src/services/community-issues.service');
+const interventionService = require('../src/services/intervention.service');
+const vwmcService = require('../src/services/vwmc.service');
 
 const defaultPoolQuery = pool.query.bind(pool);
 const defaultPoolConnect = pool.connect.bind(pool);
@@ -266,6 +271,7 @@ const protectedSmokeCases = [
   { name: 'institutions', route: institutionRoutes, method: 'GET', url: '/api/institutions' },
   { name: 'knowledge dashboard', route: knowledgeRoutes, method: 'GET', url: '/api/knowledge/dashboard' },
   { name: 'file attachments', route: fileAttachmentRoutes, method: 'GET', url: '/api/files/knowledge_resources/record-1' },
+  { name: 'person registry', route: personRoutes, method: 'GET', url: '/api/persons/search?q=alice' },
   { name: 'pollution sources', route: pollutionSourceRoutes, method: 'GET', url: '/api/pollution-sources' },
   { name: 'raster layers', route: rasterLayerRoutes, method: 'GET', url: '/api/raster-layers' },
   { name: 'reports export', route: reportsRoutes, method: 'GET', url: '/api/reports/community-complaints' },
@@ -536,6 +542,340 @@ test('file attachment presign route ignores X-KRWMP-User and requires JWT auth',
 
   assert.equal(response.statusCode, 401);
   assert.equal(insertCalled, false);
+});
+
+test('person registry create route enforces create privilege', async () => {
+  let insertCalled = false;
+  const privilegeChecks = [];
+  pool.query = async (sql, params) => {
+    if (String(sql).includes('SELECT EXISTS')) {
+      assert.equal(params[0], 'alice');
+      privilegeChecks.push([params[1], params[2]]);
+      return { rows: [{ allowed: false }], rowCount: 1 };
+    }
+    if (String(sql).includes('INSERT INTO public.persons')) insertCalled = true;
+    return { rows: [], rowCount: 0 };
+  };
+
+  const app = await buildApp([personRoutes]);
+  test.after(() => app.close());
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/persons',
+    headers: { authorization: `Bearer ${tokenFor('alice')}` },
+    payload: { full_name: 'Alice Perera' },
+  });
+
+  assert.equal(response.statusCode, 403);
+  assert.deepEqual(privilegeChecks, [
+    ['person_registry', 'create'],
+    ['vwmc_management', 'create'],
+    ['vwmc_management', 'update'],
+    ['intervention_progress_update', 'create'],
+    ['intervention_progress_update', 'update'],
+  ]);
+  assert.equal(insertCalled, false);
+});
+
+test('VWMC managers can create persons through the shared selector flow', async () => {
+  const privilegeChecks = [];
+  let personInserted = false;
+  pool.query = async (sql, params) => {
+    const statement = String(sql);
+    if (statement.includes('SELECT EXISTS')) {
+      privilegeChecks.push([params[1], params[2]]);
+      return { rows: [{ allowed: params[1] === 'vwmc_management' && params[2] === 'create' }], rowCount: 1 };
+    }
+    if (statement.includes('INSERT INTO public.persons')) {
+      personInserted = true;
+      return { rows: [{ id: '550e8400-e29b-41d4-a716-446655440000', full_name: params[0] }], rowCount: 1 };
+    }
+    return { rows: [], rowCount: 0 };
+  };
+
+  const app = await buildApp([personRoutes]);
+  test.after(() => app.close());
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/persons',
+    headers: { authorization: `Bearer ${tokenFor('alice')}` },
+    payload: { full_name: 'Alice Perera', phone_number: '0712345678' },
+  });
+
+  assert.equal(response.statusCode, 201);
+  assert.equal(response.json().person.id, '550e8400-e29b-41d4-a716-446655440000');
+  assert.equal(personInserted, true);
+  assert.deepEqual(privilegeChecks, [
+    ['person_registry', 'create'],
+    ['vwmc_management', 'create'],
+  ]);
+});
+
+test('VWMC member create returns clear validation errors for missing registry fields', async () => {
+  const originalHasColumn = pool.query;
+  pool.query = async (sql, params) => {
+    const statement = String(sql);
+    if (statement.includes('SELECT EXISTS')) {
+      if (statement.includes('information_schema.columns')) return { rows: [{ exists: true }], rowCount: 1 };
+      return { rows: [{ allowed: params[1] === 'vwmc_management' && params[2] === 'create' }], rowCount: 1 };
+    }
+    return { rows: [], rowCount: 0 };
+  };
+  test.after(() => { pool.query = originalHasColumn; });
+
+  const app = await buildApp([vwmcRoutes]);
+  test.after(() => app.close());
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/vwmc/committees/1/members',
+    headers: { authorization: `Bearer ${tokenFor('alice')}` },
+    payload: { member_name: 'Alice Perera', member_type: 'village_representative' },
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.match(response.json().message, /Committee Role is required|Master Person Registry/);
+});
+
+test('person profile route enforces view privilege and returns module aggregate', async () => {
+  const originalProfile = personService.getPersonProfile;
+  test.after(() => { personService.getPersonProfile = originalProfile; });
+
+  pool.query = async (sql, params) => {
+    if (String(sql).includes('SELECT EXISTS')) {
+      assert.equal(params[0], 'alice');
+      assert.equal(params[1], 'person_registry');
+      assert.equal(params[2], 'view');
+      return { rows: [{ allowed: true }], rowCount: 1 };
+    }
+    return { rows: [], rowCount: 0 };
+  };
+  personService.getPersonProfile = async (id) => {
+    assert.equal(id, '550e8400-e29b-41d4-a716-446655440000');
+    return {
+      person: { id, full_name: 'Alice Perera' },
+      linked_user: null,
+      vwmc_memberships: [{ committee_name: 'Kelani VWMC' }],
+      complaints_reported: [],
+      intervention_actions: [],
+      volunteer_involvement: [],
+      water_quality_involvement: [],
+      pollution_involvement: [],
+      contact_involvement: [],
+    };
+  };
+
+  const app = await buildApp([personRoutes]);
+  test.after(() => app.close());
+
+  const response = await app.inject({
+    method: 'GET',
+    url: '/api/persons/550e8400-e29b-41d4-a716-446655440000/profile',
+    headers: { authorization: `Bearer ${tokenFor('alice')}` },
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.json().profile.person.full_name, 'Alice Perera');
+  assert.equal(response.json().profile.vwmc_memberships.length, 1);
+});
+
+test('person promotion route requires person update and user create privileges', async () => {
+  const originalPromote = personService.promotePersonToUser;
+  test.after(() => { personService.promotePersonToUser = originalPromote; });
+
+  const privilegeChecks = [];
+  pool.query = async (sql, params) => {
+    if (String(sql).includes('SELECT EXISTS')) {
+      privilegeChecks.push([params[1], params[2]]);
+      return { rows: [{ allowed: true }], rowCount: 1 };
+    }
+    return { rows: [], rowCount: 0 };
+  };
+  personService.promotePersonToUser = async (id, body) => {
+    assert.equal(id, '550e8400-e29b-41d4-a716-446655440000');
+    assert.equal(body.identifier, 'alice.user');
+    return {
+      person: { id, linked_user_id: '42', is_system_user: true },
+      user: { id: '42', identifier: 'alice.user' },
+    };
+  };
+
+  const app = await buildApp([personRoutes]);
+  test.after(() => app.close());
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/persons/550e8400-e29b-41d4-a716-446655440000/promote-user',
+    headers: { authorization: `Bearer ${tokenFor('alice')}` },
+    payload: { identifier: 'alice.user', password: 'TempPass123', role_id: 1 },
+  });
+
+  assert.equal(response.statusCode, 201);
+  assert.deepEqual(privilegeChecks, [
+    ['person_registry', 'update'],
+    ['user_management_settings', 'create'],
+  ]);
+  assert.equal(response.json().person.is_system_user, true);
+});
+
+test('person promotion prevents duplicate user link for already linked person', async () => {
+  const originalRegister = adminService.registerUser;
+  test.after(() => { adminService.registerUser = originalRegister; });
+
+  let registerCalled = false;
+  adminService.registerUser = async () => {
+    registerCalled = true;
+    return { success: true, userId: 99 };
+  };
+  pool.query = async (sql) => {
+    if (String(sql).includes('FROM public.persons') && String(sql).includes('WHERE id = $1')) {
+      return {
+        rows: [{
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          full_name: 'Alice Perera',
+          linked_user_id: '42',
+          is_system_user: true,
+          status: 'active',
+        }],
+        rowCount: 1,
+      };
+    }
+    return { rows: [], rowCount: 0 };
+  };
+
+  await assert.rejects(
+    () => personService.promotePersonToUser('550e8400-e29b-41d4-a716-446655440000', {
+      identifier: 'alice.user',
+      password: 'TempPass123',
+      role_id: 1,
+    }),
+    /already linked/
+  );
+  assert.equal(registerCalled, false);
+});
+
+test('person duplicate detection normalizes NIC phone and email', async () => {
+  pool.query = async (sql, params) => {
+    assert.match(sql, /FROM public\.persons/);
+    assert.equal(params[0], '123456789V');
+    assert.equal(params[1], '0712345678');
+    assert.equal(params[2], 'alice@example.com');
+    assert.equal(params[3], 'Alice Perera');
+    assert.equal(params[4], 'Colombo');
+    assert.equal(params[5], 'Kelani');
+    return {
+      rows: [{
+        id: 'person-1',
+        full_name: 'Alice Perera',
+        match_score: 100,
+        match_reasons: ['nic_exact'],
+      }],
+      rowCount: 1,
+    };
+  };
+
+  const matches = await personService.detectPossibleDuplicates({
+    nic_number: '123456789 v',
+    phone_number: '+94712345678',
+    email: 'Alice@Example.COM',
+    full_name: 'Alice Perera',
+    dsd: 'Colombo',
+    gnd: 'Kelani',
+  });
+
+  assert.equal(matches.length, 1);
+  assert.equal(matches[0].match_score, 100);
+});
+
+test('community report links reporter to existing person by phone', async () => {
+  let personInsertCalled = false;
+  pool.query = async (sql, params) => {
+    const statement = String(sql);
+    if (statement.includes('FROM public.persons')) {
+      assert.equal(params[1], '0712345678');
+      return {
+        rows: [{
+          id: '11111111-1111-4111-8111-111111111111',
+          match_score: 90,
+          match_reasons: ['phone_exact'],
+        }],
+        rowCount: 1,
+      };
+    }
+    if (statement.includes('INSERT INTO public.persons')) {
+      personInsertCalled = true;
+      return { rows: [], rowCount: 0 };
+    }
+    if (statement.includes('INSERT INTO public.community_issue_reports')) {
+      assert.equal(params[5], 'Alice Perera');
+      assert.equal(params[6], '+94712345678');
+      assert.equal(params[7], 'alice@example.com');
+      assert.equal(params[20], '11111111-1111-4111-8111-111111111111');
+      return {
+        rows: [{ id: 42, report_code: params[0], reporter_person_id: params[20] }],
+        rowCount: 1,
+      };
+    }
+    return { rows: [], rowCount: 0 };
+  };
+
+  const report = await communityIssuesService.createPublicReport({
+    fields: {
+      issue_title: 'Blocked drain',
+      reporter_name: 'Alice Perera',
+      reporter_contact: '+94712345678',
+      reporter_email: 'alice@example.com',
+      latitude: '7.1',
+      longitude: '80.1',
+      dsd_name: 'Colombo',
+      gnd_name: 'Kelani',
+    },
+  });
+
+  assert.equal(report.reporter_person_id, '11111111-1111-4111-8111-111111111111');
+  assert.equal(personInsertCalled, false);
+});
+
+test('intervention actions store responsible person and keep explicit progress', async () => {
+  const responsiblePersonId = '550e8400-e29b-41d4-a716-446655440000';
+  let recalculated = false;
+
+  pool.query = async (sql, params) => {
+    const statement = String(sql);
+    if (statement.includes('INSERT INTO public.intervention_action_timeline')) {
+      assert.equal(params[0], 12);
+      assert.equal(params[5], 60);
+      assert.equal(params[8], responsiblePersonId);
+      return {
+        rows: [{
+          id: 5,
+          intervention_id: params[0],
+          progress_percent: params[5],
+          responsible_person_id: params[8],
+        }],
+        rowCount: 1,
+      };
+    }
+    if (statement.includes('UPDATE public.intervention_registry')) {
+      recalculated = true;
+      return { rows: [{ progress_percent: 60 }], rowCount: 1 };
+    }
+    return { rows: [], rowCount: 0 };
+  };
+
+  const action = await interventionService.createTimeline(12, {
+    action_title: 'Site visit',
+    progress_percent: 60,
+    responsible_person_id: responsiblePersonId,
+    officer_name: 'Alice Perera',
+    officer_contact: '0712345678',
+  }, 'alice');
+
+  assert.equal(action.responsible_person_id, responsiblePersonId);
+  assert.equal(action.progress_percent, 60);
+  assert.equal(recalculated, true);
 });
 
 test('file attachment presign route enforces module create privilege', async () => {

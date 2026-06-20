@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const pool = require('../../config/database');
 const fileAttachmentService = require('./file-attachment.service');
+const personService = require('./person.service');
 
 const PHOTO_DIR = path.join(__dirname, '../../public/data/community-issue-photos');
 const PHOTO_URL_PREFIX = '/data/community-issue-photos';
@@ -18,6 +19,10 @@ function sanitizeKey(value, fallback = 'item') {
 function cleanText(value) {
   const text = String(value ?? '').trim();
   return text || null;
+}
+
+function hasOwn(payload, key) {
+  return Object.prototype.hasOwnProperty.call(payload || {}, key);
 }
 
 function toNumber(value) {
@@ -44,6 +49,40 @@ function toTextArray(value) {
   if (Array.isArray(value)) return value.map(v => cleanText(v)).filter(Boolean);
   if (typeof value === 'string') return value.split(',').map(v => cleanText(v)).filter(Boolean);
   return [];
+}
+
+function personIdFromMatches(matches = []) {
+  const strong = matches.find(match => {
+    const reasons = Array.isArray(match.match_reasons) ? match.match_reasons : [];
+    return reasons.includes('phone_exact') || reasons.includes('email_exact') || reasons.includes('nic_exact') || Number(match.match_score || 0) >= 85;
+  });
+  return strong?.id || null;
+}
+
+async function resolveReporterPerson(fields = {}) {
+  const reporterName = cleanText(fields.reporter_name);
+  const reporterContact = cleanText(fields.reporter_contact);
+  const reporterEmail = cleanText(fields.reporter_email);
+  if (!reporterName && !reporterContact && !reporterEmail) return null;
+
+  try {
+    const candidate = {
+      full_name: reporterName || 'Community Reporter',
+      phone_number: reporterContact,
+      email: reporterEmail,
+      dsd: cleanText(fields.dsd_name),
+      gnd: cleanText(fields.gnd_name),
+      address: cleanText(fields.location_description),
+    };
+    const matches = await personService.detectPossibleDuplicates(candidate);
+    const existingPersonId = personIdFromMatches(matches);
+    if (existingPersonId) return existingPersonId;
+    if (!reporterName && !reporterContact && !reporterEmail) return null;
+    const person = await personService.createPerson(candidate);
+    return person?.id || null;
+  } catch (_) {
+    return null;
+  }
 }
 
 async function listCategories({ activeOnly = true } = {}) {
@@ -85,6 +124,17 @@ async function updateCategory(id, body = {}) {
     RETURNING *;
   `, [id, cleanText(body.category_name), cleanText(body.description), body.severity_level || null, body.active === undefined ? null : Boolean(body.active)]);
   return result.rows[0] || null;
+}
+
+async function deleteCategory(id) {
+  const result = await pool.query(`
+    UPDATE public.issue_categories
+    SET active = false,
+        updated_at = now()
+    WHERE id = $1
+    RETURNING id;
+  `, [id]);
+  return result.rowCount > 0;
 }
 
 async function listSpecificIssues({ activeOnly = true, categoryId = null } = {}) {
@@ -131,6 +181,17 @@ async function updateSpecificIssue(id, body = {}) {
     RETURNING *;
   `, [id, body.category_id || null, cleanText(body.issue_name), cleanText(body.description), body.severity_level || null, body.active === undefined ? null : Boolean(body.active)]);
   return result.rows[0] || null;
+}
+
+async function deleteSpecificIssue(id) {
+  const result = await pool.query(`
+    UPDATE public.specific_issues
+    SET active = false,
+        updated_at = now()
+    WHERE id = $1
+    RETURNING id;
+  `, [id]);
+  return result.rowCount > 0;
 }
 
 async function setSolutionIssueLinks(client, solutionId, issueIds = []) {
@@ -222,6 +283,17 @@ async function updateSolution(id, body = {}) {
   }
 }
 
+async function deleteSolution(id) {
+  const result = await pool.query(`
+    UPDATE public.solution_library
+    SET active = false,
+        updated_at = now()
+    WHERE id = $1
+    RETURNING id;
+  `, [id]);
+  return result.rowCount > 0;
+}
+
 function generateReportCode() {
   const now = new Date();
   const stamp = now.toISOString().slice(0, 10).replace(/-/g, '');
@@ -255,16 +327,21 @@ async function createPublicReport({ fields = {}, photoFile = null } = {}) {
   const gndName = cleanText(fields.gnd_name);
   const subWatershedId = cleanText(fields.sub_watershed_id);
   const subWatershedName = cleanText(fields.sub_watershed_name);
+  const reporterPersonId = await resolveReporterPerson({
+    ...fields,
+    dsd_name: dsdName,
+    gnd_name: gndName,
+  });
 
   const result = await pool.query(`
     INSERT INTO public.community_issue_reports (
       report_code, category_id, issue_id, issue_title, description, reporter_name, reporter_contact, reporter_email,
       location_description, latitude, longitude, geom, photo_url, status, severity_level, assigned_solution_id,
-      dsd_name, gnd_name, sub_watershed_id, sub_watershed_name, other_category_name, other_issue_name
+      dsd_name, gnd_name, sub_watershed_id, sub_watershed_name, other_category_name, other_issue_name, reporter_person_id
     ) VALUES (
       $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,
       CASE WHEN $10::numeric IS NOT NULL AND $11::numeric IS NOT NULL THEN ST_SetSRID(ST_MakePoint(($11::numeric)::double precision, ($10::numeric)::double precision), 4326) ELSE NULL END,
-      $12,'submitted',$13,$14,$15,$16,$17,$18,$19,$20
+      $12,'submitted',$13,$14,$15,$16,$17,$18,$19,$20,$21
     ) RETURNING *;
   `, [
     reportCode,
@@ -286,7 +363,8 @@ async function createPublicReport({ fields = {}, photoFile = null } = {}) {
     subWatershedId,
     subWatershedName,
     otherCategoryName,
-    otherIssueName
+    otherIssueName,
+    reporterPersonId
   ]);
   const report = result.rows[0];
   const attachmentIds = toTextArray(fields.attachment_ids);
@@ -303,25 +381,109 @@ async function createPublicReport({ fields = {}, photoFile = null } = {}) {
 }
 
 async function listReports({ status = null } = {}) {
-  const result = await pool.query(`
-    SELECT r.*, c.category_name, c.category_key, si.issue_name, s.solution_title
+  const mappingExists = await hasComplaintInterventionMapping();
+  const result = await pool.query(mappingExists ? `
+    SELECT
+      r.*,
+      c.category_name,
+      c.category_key,
+      si.issue_name,
+      s.solution_title,
+      s.responsible_party AS solution_responsible_party,
+      linked.mapping_id AS linked_intervention_mapping_id,
+      linked.intervention_id AS linked_intervention_id,
+      linked.link_status AS linked_intervention_link_status,
+      linked.intervention_code AS linked_intervention_code,
+      linked.intervention_title AS linked_intervention_title,
+      linked.intervention_status AS linked_intervention_status,
+      linked.progress_percent AS linked_intervention_progress_percent,
+      linked.responsible_agency AS linked_intervention_responsible_agency,
+      p.full_name AS reporter_person_full_name,
+      p.phone_number AS reporter_person_phone_number,
+      p.email AS reporter_person_email,
+      p.dsd AS reporter_person_dsd,
+      p.gnd AS reporter_person_gnd,
+      p.nic_number AS reporter_person_nic_number
     FROM public.community_issue_reports r
     LEFT JOIN public.issue_categories c ON c.id = r.category_id
     LEFT JOIN public.specific_issues si ON si.id = r.issue_id
     LEFT JOIN public.solution_library s ON s.id = r.assigned_solution_id
+    LEFT JOIN public.persons p ON p.id = r.reporter_person_id
+    LEFT JOIN LATERAL (
+      SELECT
+        cim.id AS mapping_id,
+        cim.intervention_id,
+        cim.link_status,
+        ir.intervention_code,
+        ir.intervention_title,
+        ir.status AS intervention_status,
+        ir.progress_percent,
+        COALESCE(ir.implementing_office, il.responsible_institution, ir.lead_officer_name) AS responsible_agency
+      FROM public.complaint_intervention_mapping cim
+      JOIN public.intervention_registry ir ON ir.id = cim.intervention_id
+      LEFT JOIN public.intervention_library il ON il.id = ir.library_id
+      WHERE cim.report_id = r.id
+        AND cim.link_status <> 'not_applicable'
+      ORDER BY
+        CASE cim.link_status WHEN 'active' THEN 0 WHEN 'under_review' THEN 1 WHEN 'resolved' THEN 2 ELSE 3 END,
+        cim.linked_at DESC
+      LIMIT 1
+    ) linked ON true
+    WHERE ($1::text IS NULL OR r.status = $1)
+    ORDER BY r.submitted_at DESC;
+  ` : `
+    SELECT
+      r.*,
+      c.category_name,
+      c.category_key,
+      si.issue_name,
+      s.solution_title,
+      s.responsible_party AS solution_responsible_party,
+      NULL::bigint AS linked_intervention_mapping_id,
+      NULL::bigint AS linked_intervention_id,
+      NULL::text AS linked_intervention_link_status,
+      NULL::text AS linked_intervention_code,
+      NULL::text AS linked_intervention_title,
+      NULL::text AS linked_intervention_status,
+      NULL::integer AS linked_intervention_progress_percent,
+      NULL::text AS linked_intervention_responsible_agency,
+      p.full_name AS reporter_person_full_name,
+      p.phone_number AS reporter_person_phone_number,
+      p.email AS reporter_person_email,
+      p.dsd AS reporter_person_dsd,
+      p.gnd AS reporter_person_gnd,
+      p.nic_number AS reporter_person_nic_number
+    FROM public.community_issue_reports r
+    LEFT JOIN public.issue_categories c ON c.id = r.category_id
+    LEFT JOIN public.specific_issues si ON si.id = r.issue_id
+    LEFT JOIN public.solution_library s ON s.id = r.assigned_solution_id
+    LEFT JOIN public.persons p ON p.id = r.reporter_person_id
     WHERE ($1::text IS NULL OR r.status = $1)
     ORDER BY r.submitted_at DESC;
   `, [status]);
   return result.rows;
 }
 
+async function hasComplaintInterventionMapping() {
+  const result = await pool.query("SELECT to_regclass('public.complaint_intervention_mapping') AS table_name;");
+  return Boolean(result.rows[0]?.table_name);
+}
+
 async function updateReport(id, body = {}, reviewedBy = 'admin') {
+  const shouldSetSolution = hasOwn(body, 'assigned_solution_id');
+  const assignedSolutionId = shouldSetSolution ? toNullableId(body.assigned_solution_id) : null;
   const result = await pool.query(`
     UPDATE public.community_issue_reports
-    SET status = COALESCE($2, status), severity_level = COALESCE($3, severity_level), admin_notes = COALESCE($4, admin_notes), assigned_solution_id = COALESCE($5, assigned_solution_id), reviewed_by = $6, reviewed_at = now(), updated_at = now()
+    SET status = COALESCE($2, status),
+        severity_level = COALESCE($3, severity_level),
+        admin_notes = COALESCE($4, admin_notes),
+        assigned_solution_id = CASE WHEN $5::boolean THEN $6::bigint ELSE assigned_solution_id END,
+        reviewed_by = $7,
+        reviewed_at = now(),
+        updated_at = now()
     WHERE id = $1
     RETURNING *;
-  `, [id, body.status || null, body.severity_level || null, body.admin_notes || null, body.assigned_solution_id || null, reviewedBy]);
+  `, [id, body.status || null, body.severity_level || null, body.admin_notes || null, shouldSetSolution, assignedSolutionId, reviewedBy]);
   return result.rows[0] || null;
 }
 
@@ -365,12 +527,15 @@ module.exports = {
   listCategories,
   createCategory,
   updateCategory,
+  deleteCategory,
   listSpecificIssues,
   createSpecificIssue,
   updateSpecificIssue,
+  deleteSpecificIssue,
   listSolutions,
   createSolution,
   updateSolution,
+  deleteSolution,
   createPublicReport,
   listReports,
   updateReport,

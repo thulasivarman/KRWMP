@@ -20,7 +20,22 @@ const ENFORCED_PRIVILEGE_KEYS = [
   { privilege_key: 'pollution_sources_management', privilege_name: 'Pollution Sources Management', group_name: 'Environmental Monitoring', description: 'Manage pollution source inventory, monitoring, enforcement and linkages.' },
   { privilege_key: 'volunteer_organisation_management', privilege_name: 'Volunteer Organisation Management', group_name: 'Environmental Monitoring', description: 'View and register volunteer organisations that support watershed activities.' },
   { privilege_key: 'water_quality_records', privilege_name: 'Water Quality Test Records', group_name: 'Environmental Monitoring', description: 'Create, update, delete and view water quality monitoring records.' },
+  { privilege_key: 'person_registry', privilege_name: 'Master Person Registry', group_name: 'Administration', description: 'View and manage centralized person records linked across KRWMP modules.' },
 ];
+
+function cleanText(value) {
+  const text = String(value ?? '').trim();
+  return text || null;
+}
+
+function normalizeEmail(value) {
+  const email = cleanText(value);
+  return email ? email.toLowerCase() : null;
+}
+
+function normalizePhoneNumber(value) {
+  return cleanText(value);
+}
 
 async function getUsers() {
   const usersQuery = `
@@ -30,6 +45,8 @@ async function getUsers() {
       u.designation,
       u.initials,
       u.identifier,
+      u.email,
+      u.phone_number,
       u.role_id,
       u.institution_id,
       i.institution_name,
@@ -59,9 +76,17 @@ async function getUsers() {
 async function registerUser(data) {
   const { name, designation, initials, identifier, role_id, role_ids, institution_id, password } = data;
   const selectedRoles = Array.isArray(role_ids) ? role_ids : (role_id ? [role_id] : []);
+  const email = normalizeEmail(data.email);
+  const phoneNumber = normalizePhoneNumber(data.phone_number);
 
   if (!name || !designation || !initials || !identifier || selectedRoles.length === 0 || !password) {
     return { success: false, statusCode: 400, message: 'All fields are required' };
+  }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { success: false, statusCode: 400, message: 'Email format is invalid' };
+  }
+  if (phoneNumber && !/^[0-9+()\-\s]{7,30}$/.test(phoneNumber)) {
+    return { success: false, statusCode: 400, message: 'Phone number format is invalid' };
   }
 
   const cleanIdentifier = identifier.trim().toLowerCase();
@@ -71,10 +96,10 @@ async function registerUser(data) {
   const passwordHash = await bcrypt.hash(password.trim(), 10);
   const primaryRoleId = parseInt(selectedRoles[0], 10);
   const result = await pool.query(`
-    INSERT INTO public.users (name, designation, initials, identifier, role_id, institution_id, password_hash)
-    VALUES ($1,$2,$3,$4,$5,$6,$7)
+    INSERT INTO public.users (name, designation, initials, identifier, email, phone_number, role_id, institution_id, password_hash)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
     RETURNING id;
-  `, [name.trim(), designation.trim(), initials.trim().toUpperCase(), cleanIdentifier, primaryRoleId, institution_id || null, passwordHash]);
+  `, [name.trim(), designation.trim(), initials.trim().toUpperCase(), cleanIdentifier, email, phoneNumber, primaryRoleId, institution_id || null, passwordHash]);
 
   await setUserRolesById(result.rows[0].id, selectedRoles);
   return { success: true, message: 'User registered successfully', userId: result.rows[0].id };
@@ -82,11 +107,25 @@ async function registerUser(data) {
 
 async function updateUser(data) {
   const { name, designation, initials, identifier, institution_id } = data;
+  const email = normalizeEmail(data.email);
+  const phoneNumber = normalizePhoneNumber(data.phone_number);
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { success: false, statusCode: 400, message: 'Email format is invalid' };
+  }
+  if (phoneNumber && !/^[0-9+()\-\s]{7,30}$/.test(phoneNumber)) {
+    return { success: false, statusCode: 400, message: 'Phone number format is invalid' };
+  }
   await pool.query(`
     UPDATE public.users
-    SET name = $1, designation = $2, initials = $3, institution_id = $4
-    WHERE identifier = $5;
-  `, [name.trim(), designation.trim(), initials.trim().toUpperCase(), institution_id || null, identifier.trim().toLowerCase()]);
+    SET name = $1,
+        designation = $2,
+        initials = $3,
+        institution_id = $4,
+        email = $5,
+        phone_number = $6
+    WHERE identifier = $7;
+  `, [name.trim(), designation.trim(), initials.trim().toUpperCase(), institution_id || null, email, phoneNumber, identifier.trim().toLowerCase()]);
+  return { success: true };
 }
 
 async function deleteUser(targetIdentifier) {

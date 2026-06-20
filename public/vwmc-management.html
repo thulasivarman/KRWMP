@@ -1,53 +1,178 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VWMC Management - KRWMP Portal</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
-  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
   <div class="flex min-h-screen">
     <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
     <main class="flex-1 krwmp-page krwmp-stack-lg">
-      <header class="krwmp-page-header">
-        <p class="krwmp-eyebrow">Village Level Watershed Management Committees</p>
-        <h1 class="krwmp-page-title">VWMC Management</h1>
-        <p class="krwmp-body-text">Add, edit, view and manage committee details, members, contacts and committee location.</p>
+      <header class="krwmp-page-header krwmp-cluster-between gap-4">
+        <div>
+          <p class="krwmp-eyebrow">Village Level Watershed Management Committees</p>
+          <h1 class="krwmp-page-title">VWMC Management</h1>
+          <p class="krwmp-body-text">Manage committee details, authorized GNDs, members, contacts and committee location.</p>
+        </div>
+        <button id="addVwmcBtn" type="button" class="krwmp-btn krwmp-btn-primary hidden">Add VWMC</button>
       </header>
+
       <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
-      <section id="writePanel" class="krwmp-panel krwmp-stack-md hidden">
-        <h2 class="krwmp-section-title">Add / Edit VWMC</h2>
-        <form id="committeeForm" class="grid grid-cols-1 md:grid-cols-3 gap-4" novalidate>
-          <input type="hidden" name="id">
-          <label  class="krwmp-field">VWMC Name<input name="committee_name" required minlength="5" maxlength="150" pattern="[A-Za-z0-9 .,&/()'-]+"  class="krwmp-input mt-1" placeholder="e.g., Lower Kelani VWMC"></label>
-          <label  class="krwmp-field">Village<input name="village_name" required minlength="3" maxlength="120"  class="krwmp-input mt-1"></label>
-          <label  class="krwmp-field">Status<select name="status" required  class="krwmp-select mt-1"><option value="active">Active</option><option value="inactive">Inactive</option><option value="under_formation">Under Formation</option><option value="dissolved">Dissolved</option></select></label>
-          <label  class="krwmp-field">DSD<select name="dsd_name" id="vwmcDsdSelect" required  class="krwmp-select mt-1"><option value="">Select DSD</option></select></label>
-          <label  class="krwmp-field">GND<select name="gnd_name" id="vwmcGndSelect" required  class="krwmp-select mt-1"><option value="">Select DSD first</option></select></label>
-          <label  class="krwmp-field">Address<input name="address" maxlength="250"  class="krwmp-input mt-1"></label>
-          <label  class="krwmp-field">Latitude<input name="latitude" id="latitudeInput" type="number" step="any" min="5" max="10" required readonly  class="krwmp-input mt-1 text-slate-300"></label>
-          <label  class="krwmp-field">Longitude<input name="longitude" id="longitudeInput" type="number" step="any" min="78" max="82" required readonly  class="krwmp-input mt-1 text-slate-300"></label>
-          <label  class="krwmp-field">Remarks<input name="remarks" maxlength="500"  class="krwmp-input mt-1"></label>
-          <div id="vwmcLocationPicker" class="md:col-span-3 krwmp-map-panel">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
-              <div><h3 class="krwmp-section-title">Committee Location</h3><p class="krwmp-help-text">Click on the map or drag the marker to select the VWMC location.</p></div>
-              <div class="flex gap-2"><button type="button" data-location-gps  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Use Browser Location</button><button type="button" data-location-clear  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Clear</button></div>
-            </div>
-            <div data-location-map class="krwmp-location-map h-72"></div>
-            <div data-location-status class="krwmp-status-label mt-2">No location selected.</div>
-          </div>
-          <div class="md:col-span-3 flex gap-2"><button  class="krwmp-btn krwmp-btn-primary">Save Committee</button><button type="button" id="resetCommitteeBtn"  class="krwmp-btn krwmp-btn-secondary">Reset</button></div>
-        </form>
-      </section>
+
       <section class="krwmp-panel">
-        <div class="flex justify-between items-center mb-4"><h2 class="krwmp-section-title">VWMC Records</h2><button id="refreshBtn"  class="krwmp-btn krwmp-btn-primary">Refresh</button></div>
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="form-section-heading">VWMC Records</h2>
+          <button id="refreshBtn" class="krwmp-btn krwmp-btn-primary">Refresh</button>
+        </div>
         <div id="committeeList" class="space-y-4"></div>
       </section>
     </main>
   </div>
-  <script src="/assets/js/krwmp-global.js"></script><script src="/assets/js/privilege-guard.js"></script><script src="/assets/js/location-picker.js"></script><script src="/vwmc-management.js"></script>
+
+  <dialog id="committeeModal" class="krwmp-modal krwmp-modal-xl">
+    <header class="krwmp-modal-header">
+      <h2 id="committeeModalTitle" class="krwmp-modal-title">Add VWMC</h2>
+      <button id="closeCommitteeModalBtn" type="button" class="krwmp-modal-close" aria-label="Close committee form">&times;</button>
+    </header>
+    <div class="krwmp-modal-body">
+      <form id="committeeForm" class="grid grid-cols-1 md:grid-cols-3 gap-4" novalidate>
+        <input type="hidden" name="id">
+        <input type="hidden" name="latitude" id="latitudeInput">
+        <input type="hidden" name="longitude" id="longitudeInput">
+        <input type="hidden" name="sub_watershed_id">
+        <input type="hidden" name="sub_watershed_name">
+        <label class="form-label">VWMC Name
+          <input name="committee_name" required minlength="5" maxlength="150" pattern="[A-Za-z0-9 .,&/()'-]+" class="form-input mt-1" placeholder="e.g., Lower Kelani VWMC">
+        </label>
+        <label class="form-label">Village
+          <input name="village_name" required minlength="3" maxlength="120" class="form-input mt-1">
+        </label>
+        <label class="form-label">Status
+          <select name="status" required class="form-select mt-1">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="under_formation">Under Formation</option>
+            <option value="dissolved">Dissolved</option>
+          </select>
+        </label>
+        <label class="form-label">DSD
+          <select name="dsd_name" id="vwmcDsdSelect" required class="form-select mt-1">
+            <option value="">Auto-detect from map</option>
+          </select>
+        </label>
+        <label class="form-label">GND
+          <select name="gnd_name" id="vwmcGndSelect" required class="form-select mt-1">
+            <option value="">Auto-detect from map</option>
+          </select>
+        </label>
+        <label class="form-label">Address
+          <input name="address" maxlength="250" class="form-input mt-1">
+        </label>
+        <label class="form-label md:col-span-2">Remarks
+          <input name="remarks" maxlength="500" class="form-input mt-1">
+        </label>
+        <section id="vwmcLocationPicker" class="md:col-span-3 krwmp-map-panel">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
+            <div>
+              <h3 class="form-section-heading">Committee Location</h3>
+              <p class="form-helper">Click the map or drag the marker to select the VWMC location.</p>
+            </div>
+            <div class="flex gap-2">
+              <button type="button" data-location-gps class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Use Browser Location</button>
+              <button type="button" data-location-clear class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Clear</button>
+            </div>
+          </div>
+          <div data-location-map class="krwmp-location-map h-72"></div>
+          <div data-location-status class="krwmp-status-label mt-2">No location selected.</div>
+          <div id="autoSpatialDisplay" class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3 border-t border-slate-800 pt-3">
+            <div class="krwmp-identify-panel"><div class="krwmp-stat-label">DS Division</div><div id="autoDsdText" class="text-slate-200 mt-1">Not detected</div></div>
+            <div class="krwmp-identify-panel"><div class="krwmp-stat-label">GN Division</div><div id="autoGndText" class="text-slate-200 mt-1">Not detected</div></div>
+            <div class="krwmp-identify-panel"><div class="krwmp-stat-label">Sub Watershed</div><div id="autoSubText" class="text-slate-200 mt-1">Pending upload</div></div>
+          </div>
+        </section>
+        <label id="authorizedGndsField" class="form-label md:col-span-3 hidden">Authorized GNDs
+          <select name="authorized_gnds" id="authorizedGndsSelect" required multiple size="8" class="form-select mt-1"></select>
+          <span class="form-helper">The detected GND is selected automatically. Select additional GNDs under the detected DSD as needed.</span>
+        </label>
+        <div class="md:col-span-3 flex gap-2">
+          <button class="krwmp-btn krwmp-btn-primary">Save Committee</button>
+          <button type="button" id="resetCommitteeBtn" class="krwmp-btn krwmp-btn-secondary">Reset</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog id="memberModal" class="krwmp-modal krwmp-modal-xl">
+    <header class="krwmp-modal-header">
+      <h2 id="memberModalTitle" class="krwmp-modal-title">Add Member</h2>
+      <button id="closeMemberModalBtn" type="button" class="krwmp-modal-close" aria-label="Close member form">&times;</button>
+    </header>
+    <form id="memberForm" class="krwmp-modal-body krwmp-stack-sm" novalidate>
+      <input type="hidden" name="committee_id">
+      <input type="hidden" name="member_id">
+      <input type="hidden" name="person_id" id="memberPersonId">
+      <section id="memberModalMessage" class="hidden rounded-lg p-3 text-sm" role="alert" aria-live="polite"></section>
+      <section class="krwmp-card-muted p-3">
+        <h3 class="form-label mb-2">Master Person Registry</h3>
+        <div id="memberPersonSelector"></div>
+      </section>
+      <section class="krwmp-card-muted p-3">
+        <div class="krwmp-cluster-between mb-2">
+          <h3 class="form-label">Existing Committee Members</h3>
+        </div>
+        <div id="memberModalList" class="space-y-2">
+          <div class="krwmp-empty-state">No members recorded.</div>
+        </div>
+      </section>
+      <label class="form-label">Member Name
+        <input name="member_name" required minlength="3" class="form-input mt-1">
+      </label>
+      <label class="form-label">Member Type
+        <select name="member_type" class="form-select mt-1">
+          <option value="government_representative">Government Representative</option>
+          <option value="village_representative">Village Representative</option>
+        </select>
+      </label>
+      <label class="form-label">Institute / Organization
+        <input name="organization" class="form-input mt-1">
+      </label>
+      <label class="form-label">Designation
+        <input name="designation" class="form-input mt-1">
+      </label>
+      <label class="form-label">Contact No
+        <input name="phone" class="form-input mt-1" placeholder="Optional, e.g., 07XXXXXXXX">
+        <span class="form-helper">Optional. Accepted formats: 07XXXXXXXX, +947XXXXXXXX, 0XX XXX XXXX, +94 XX XXX XXXX.</span>
+      </label>
+      <label class="form-label">Email
+        <input name="email" type="email" class="form-input mt-1">
+      </label>
+      <label class="form-label">Committee Role
+        <input name="role_in_committee" required class="form-input mt-1">
+      </label>
+      <footer class="krwmp-modal-actions">
+        <button class="krwmp-btn krwmp-btn-primary">Save Member</button>
+        <button id="cancelMemberBtn" type="button" class="krwmp-btn krwmp-btn-secondary">Cancel</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog id="committeeViewModal" class="krwmp-modal krwmp-modal-xl">
+    <header class="krwmp-modal-header">
+      <h2 class="krwmp-modal-title">VWMC Committee Details</h2>
+      <button id="closeViewModalBtn" type="button" class="krwmp-modal-close" aria-label="Close committee details">&times;</button>
+    </header>
+    <div id="committeeViewContent" class="krwmp-modal-body krwmp-stack-md"></div>
+  </dialog>
+
+  <script src="/assets/js/krwmp-global.js"></script>
+  <script src="/assets/js/privilege-guard.js"></script>
+  <script src="/assets/js/location-picker.js"></script>
+  <script src="/assets/js/person-selector.js"></script>
+  <script src="/vwmc-management.js"></script>
 </body>
 </html>

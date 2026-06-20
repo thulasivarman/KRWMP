@@ -26,7 +26,7 @@
 
             <section id="institution-form-section" class="krwmp-panel hidden">
                 <div class="flex items-center justify-between gap-4 mb-5">
-                    <h2 class="krwmp-section-title">Institution Record</h2>
+                    <h2 class="form-section-heading">Institution Record</h2>
                     <button type="button" id="btn-reset-institution-form" class="text-[11px] text-slate-400 hover:text-white">Clear Form</button>
                 </div>
 
@@ -35,61 +35,61 @@
 
                     <div class="space-y-4">
                         <div>
-                            <label  class="krwmp-field">Institution Name <span class="text-rose-400">*</span></label>
-                            <input type="text" id="institutionName" maxlength="200" required  class="krwmp-input" placeholder="e.g. Department of Irrigation">
+                            <label  class="form-label">Institution Name <span class="text-rose-400">*</span></label>
+                            <input type="text" id="institutionName" maxlength="200" required  class="form-input" placeholder="e.g. Department of Irrigation">
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label  class="krwmp-field">Institution Type</label>
-                                <input type="text" id="institutionType" maxlength="100"  class="krwmp-input" placeholder="Government / NGO / CBO">
+                                <label  class="form-label">Institution Type</label>
+                                <input type="text" id="institutionType" maxlength="100"  class="form-input" placeholder="Government / NGO / CBO">
                             </div>
                             <div>
-                                <label  class="krwmp-field">Active Status</label>
-                                <select id="institutionActive"  class="krwmp-select">
+                                <label  class="form-label">Active Status</label>
+                                <select id="institutionActive"  class="form-select">
                                     <option value="true">Active</option>
                                     <option value="false">Inactive</option>
                                 </select>
                             </div>
                         </div>
                         <div>
-                            <label  class="krwmp-field">Office / Address</label>
-                            <textarea id="institutionAddress" rows="3" maxlength="500"  class="krwmp-textarea" placeholder="Institution office address or description"></textarea>
+                            <label  class="form-label">Office / Address</label>
+                            <textarea id="institutionAddress" rows="3" maxlength="500"  class="form-textarea" placeholder="Institution office address or description"></textarea>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label  class="krwmp-field">Contact Person</label>
-                                <input type="text" id="contactPerson" maxlength="150"  class="krwmp-input">
+                                <label  class="form-label">Contact Person</label>
+                                <input type="text" id="contactPerson" maxlength="150"  class="form-input">
                             </div>
                             <div>
-                                <label  class="krwmp-field">Contact Phone</label>
-                                <input type="tel" id="contactPhone" maxlength="30"  class="krwmp-input" placeholder="+94...">
+                                <label  class="form-label">Contact Phone</label>
+                                <input type="tel" id="contactPhone" maxlength="30"  class="form-input" placeholder="+94...">
                             </div>
                         </div>
                         <div>
-                            <label  class="krwmp-field">Contact Email</label>
-                            <input type="email" id="contactEmail" maxlength="150"  class="krwmp-input" placeholder="name@example.lk">
+                            <label  class="form-label">Contact Email</label>
+                            <input type="email" id="contactEmail" maxlength="150"  class="form-input" placeholder="name@example.lk">
                         </div>
                     </div>
 
                     <div class="space-y-4">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label  class="krwmp-field">DSD</label>
-                                <input type="text" id="institutionDsd" readonly  class="krwmp-input bg-slate-950/70 text-slate-400" placeholder="Auto detected">
+                                <label  class="form-label">DSD</label>
+                                <input type="text" id="institutionDsd" readonly  class="form-input bg-slate-950/70 text-slate-400" placeholder="Auto detected">
                             </div>
                             <div>
-                                <label  class="krwmp-field">GND</label>
-                                <input type="text" id="institutionGnd" readonly  class="krwmp-input bg-slate-950/70 text-slate-400" placeholder="Auto detected">
+                                <label  class="form-label">GND</label>
+                                <input type="text" id="institutionGnd" readonly  class="form-input bg-slate-950/70 text-slate-400" placeholder="Auto detected">
                             </div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label  class="krwmp-field">Latitude</label>
-                                <input type="number" step="0.0000001" id="institutionLatitude" readonly  class="krwmp-input bg-slate-950/70 text-slate-400" placeholder="Select on map">
+                                <label  class="form-label">Latitude</label>
+                                <input type="number" step="0.0000001" id="institutionLatitude" readonly  class="form-input bg-slate-950/70 text-slate-400" placeholder="Select on map">
                             </div>
                             <div>
-                                <label  class="krwmp-field">Longitude</label>
-                                <input type="number" step="0.0000001" id="institutionLongitude" readonly  class="krwmp-input bg-slate-950/70 text-slate-400" placeholder="Select on map">
+                                <label  class="form-label">Longitude</label>
+                                <input type="number" step="0.0000001" id="institutionLongitude" readonly  class="form-input bg-slate-950/70 text-slate-400" placeholder="Select on map">
                             </div>
                         </div>
 
@@ -115,19 +115,19 @@
             <section class="krwmp-panel">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
                     <div>
-                        <h2 class="krwmp-section-title">Institution Directory</h2>
-                        <p class="krwmp-help-text">Active and inactive institution records used by user profiles and intervention registry modules.</p>
+                        <h2 class="form-section-heading">Institution Directory</h2>
+                        <p class="form-helper">Active and inactive institution records used by user profiles and intervention registry modules.</p>
                     </div>
                     <div class="flex gap-2">
-                        <label  class="krwmp-field flex items-center gap-2 text-[11px] bg-slate-950 border border-slate-800 rounded px-3 py-2">
-                            <input type="checkbox" id="showInactiveInstitutions"> Show inactive
+                        <label  class="form-label flex items-center gap-2 bg-slate-950 border border-slate-800 rounded px-3 py-2">
+                            <input type="checkbox" id="showInactiveInstitutions" class="form-checkbox"> Show inactive
                         </label>
                         <button type="button" id="btn-new-institution"  class="krwmp-btn krwmp-btn-primary krwmp-btn-sm hidden">New Institution</button>
                     </div>
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-xs">
+                    <table class="krwmp-table krwmp-table-compact">
                         <thead>
                             <tr class="border-b border-slate-800 text-[10px] uppercase text-slate-500 tracking-wider font-semibold">
                                 <th class="pb-3">Institution</th>

@@ -1,3 +1,239 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Intervention Registry - KRWMP Portal</title><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="/assets/css/style.css"></head>
-<body class="bg-slate-950 text-slate-100 min-h-screen"><div class="flex min-h-screen"><div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div><main class="flex-1 krwmp-page krwmp-stack-lg"><header class="krwmp-page-header"><p class="krwmp-eyebrow">Intervention Registry</p><h1 class="krwmp-page-title">Implementation Tracking</h1><p class="krwmp-body-text">Register intervention locations, update progress, track actions and assigned officers.</p></header><section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section><section id="writePanel" class="krwmp-panel krwmp-stack-md hidden"><h2 class="krwmp-section-title">Add / Edit Intervention</h2><form id="registryForm" class="grid grid-cols-1 md:grid-cols-4 gap-4"><input type="hidden" name="id"><label  class="krwmp-field">Library Type<select name="library_id" id="librarySelect"  class="krwmp-select mt-1"></select></label><label  class="krwmp-field md:col-span-2">Intervention Title<input name="intervention_title" required  class="krwmp-input mt-1"></label><label  class="krwmp-field">Status<select name="status"  class="krwmp-select mt-1"><option value="planned">Planned</option><option value="ongoing">Ongoing</option><option value="delayed">Delayed</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label><label  class="krwmp-field">Priority<select name="priority"  class="krwmp-select mt-1"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></label><label  class="krwmp-field">Progress %<input name="progress_percent" type="number" min="0" max="100" value="0"  class="krwmp-input mt-1"></label><label  class="krwmp-field">Location<input name="location_name"  class="krwmp-input mt-1"></label><label  class="krwmp-field">Village<input name="village_name"  class="krwmp-input mt-1"></label><label  class="krwmp-field">DSD<select name="dsd_name" id="dsdSelect"  class="krwmp-select mt-1"><option value="">Select DSD</option></select></label><label  class="krwmp-field">GND<select name="gnd_name" id="gndSelect"  class="krwmp-select mt-1"><option value="">Select DSD first</option></select></label><label  class="krwmp-field">Latitude<input name="latitude" id="latInput" type="number" step="any"  class="krwmp-input mt-1"></label><label  class="krwmp-field">Longitude<input name="longitude" id="lngInput" type="number" step="any"  class="krwmp-input mt-1"></label><label  class="krwmp-field">Planned Start<input name="planned_start_date" type="date"  class="krwmp-input mt-1"></label><label  class="krwmp-field">Planned End<input name="planned_end_date" type="date"  class="krwmp-input mt-1"></label><label  class="krwmp-field">Actual Start<input name="actual_start_date" type="date"  class="krwmp-input mt-1"></label><label  class="krwmp-field">Actual End<input name="actual_end_date" type="date"  class="krwmp-input mt-1"></label><label  class="krwmp-field">Lead Officer<input name="lead_officer_name"  class="krwmp-input mt-1"></label><label  class="krwmp-field">Lead Contact<input name="lead_officer_contact"  class="krwmp-input mt-1"></label><label  class="krwmp-field">Implementing Institution<select name="implementing_office" id="institutionSelect"  class="krwmp-select mt-1"><option value="">Select institution</option></select></label><label  class="krwmp-field">Remarks<input name="remarks"  class="krwmp-input mt-1"></label><div class="md:col-span-4 flex gap-2"><button type="button" id="useLocationBtn"  class="krwmp-btn krwmp-btn-secondary">Use Current Location</button><button  class="krwmp-btn krwmp-btn-primary">Save Intervention</button><button type="button" id="resetBtn"  class="krwmp-btn krwmp-btn-secondary">Reset</button></div></form></section><section class="krwmp-panel"><div class="flex justify-between mb-4"><h2 class="krwmp-section-title">Registered Interventions</h2><button id="refreshBtn"  class="krwmp-btn krwmp-btn-primary">Refresh</button></div><div id="registryList" class="space-y-4"></div></section></main></div><script src="/assets/js/krwmp-global.js"></script><script src="/assets/js/privilege-guard.js"></script><script src="/intervention-registry.js"></script><script src="/intervention-accordion-enhance.js"></script></body></html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intervention Registry - KRWMP Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div class="flex min-h-screen">
+    <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
+    <main class="flex-1 krwmp-page krwmp-stack-lg">
+      <header class="krwmp-page-header krwmp-cluster-between gap-4">
+        <div>
+          <p class="krwmp-eyebrow">Intervention Registry</p>
+          <h1 class="krwmp-page-title">Implementation Tracking</h1>
+          <p class="krwmp-body-text">Register intervention locations, update progress, track actions and assigned officers.</p>
+        </div>
+        <button id="addInterventionBtn" type="button" class="krwmp-btn krwmp-btn-primary hidden">Add Intervention</button>
+      </header>
+
+      <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
+
+      <dialog id="writePanel" class="krwmp-modal krwmp-modal-xl">
+        <header class="krwmp-modal-header">
+          <h2 id="formModalTitle" class="krwmp-modal-title">Add Intervention</h2>
+          <button id="closeFormModalBtn" type="button" class="krwmp-modal-close" aria-label="Close form">&times;</button>
+        </header>
+        <div class="krwmp-modal-body">
+        <form id="registryForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <input type="hidden" name="id">
+          <input type="hidden" name="latitude" id="latInput">
+          <input type="hidden" name="longitude" id="lngInput">
+
+          <label class="form-label">
+            Library Type
+            <select name="library_id" id="librarySelect" class="form-select mt-1"></select>
+          </label>
+          <label class="form-label md:col-span-2">
+            Intervention Title
+            <input name="intervention_title" required class="form-input mt-1">
+          </label>
+          <label class="form-label">
+            Status
+            <select name="status" class="form-select mt-1">
+              <option value="planned">Planned</option>
+              <option value="ongoing">Ongoing</option>
+              <option value="delayed">Delayed</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </label>
+          <label class="form-label">
+            Priority
+            <select name="priority" class="form-select mt-1">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+            </select>
+          </label>
+          <label class="form-label">
+            Location
+            <input name="location_name" class="form-input mt-1">
+          </label>
+          <label class="form-label">
+            Village
+            <input name="village_name" class="form-input mt-1">
+          </label>
+          <label class="form-label">
+            DSD
+            <select name="dsd_name" id="dsdSelect" class="form-select mt-1">
+              <option value="">Auto-detect from map</option>
+            </select>
+          </label>
+          <label class="form-label">
+            GND
+            <select name="gnd_name" id="gndSelect" class="form-select mt-1">
+              <option value="">Auto-detect from map</option>
+            </select>
+          </label>
+
+          <section id="interventionLocationPicker" class="md:col-span-4 krwmp-card-muted p-4 krwmp-stack-sm">
+            <div class="krwmp-cluster-between gap-3">
+              <div>
+                <h3 class="form-section-heading">Location</h3>
+                <p class="form-helper">Click the map to select the intervention point. DSD/GND and nearby unlinked complaints will update automatically.</p>
+              </div>
+              <div class="flex gap-2">
+                <button type="button" data-location-gps class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Use Current Location</button>
+                <button type="button" data-location-clear class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Clear Location</button>
+              </div>
+            </div>
+            <div data-location-map class="h-80 min-h-80 rounded border border-slate-700 overflow-hidden"></div>
+            <p data-location-status class="krwmp-status-label mt-2">Click the map to select a location in the Kelani River Basin.</p>
+            <p id="locationAdminStatus" class="form-helper"></p>
+          </section>
+
+          <section class="md:col-span-4 krwmp-card-muted p-4 krwmp-stack-sm">
+            <div class="krwmp-cluster-between gap-3">
+              <div>
+                <h3 class="form-section-heading">Nearby Unlinked Community Complaints</h3>
+                <p class="form-helper">Complaints within 1 km of the selected intervention point are shown nearest first.</p>
+              </div>
+              <span id="nearbyComplaintCount" class="krwmp-badge krwmp-badge-info">0 found</span>
+            </div>
+            <div id="nearbyComplaintList" class="krwmp-stack-sm">
+              <div class="krwmp-empty-state">Select a map location to search nearby unlinked complaints.</div>
+            </div>
+          </section>
+
+          <label class="form-label">
+            Planned Start
+            <input name="planned_start_date" type="date" class="form-input mt-1">
+          </label>
+          <label class="form-label">
+            Planned End
+            <input name="planned_end_date" type="date" class="form-input mt-1">
+          </label>
+          <label class="form-label">
+            Actual Start
+            <input name="actual_start_date" type="date" class="form-input mt-1">
+          </label>
+          <label class="form-label">
+            Actual End
+            <input name="actual_end_date" type="date" class="form-input mt-1">
+          </label>
+          <label class="form-label">
+            Lead Officer
+            <input name="lead_officer_name" class="form-input mt-1">
+          </label>
+          <label class="form-label">
+            Lead Contact
+            <input name="lead_officer_contact" class="form-input mt-1">
+          </label>
+          <label class="form-label">
+            Implementing Institution
+            <select name="implementing_office" id="institutionSelect" class="form-select mt-1">
+              <option value="">Select institution</option>
+            </select>
+          </label>
+          <label class="form-label">
+            Remarks
+            <input name="remarks" class="form-input mt-1">
+          </label>
+          <div class="md:col-span-4 flex gap-2">
+            <button class="krwmp-btn krwmp-btn-primary">Save Intervention</button>
+            <button type="button" id="resetBtn" class="krwmp-btn krwmp-btn-secondary">Reset</button>
+          </div>
+        </form>
+        </div>
+      </dialog>
+
+      <section class="krwmp-panel">
+        <div class="flex justify-between mb-4">
+          <h2 class="form-section-heading">Registered Interventions</h2>
+          <button id="refreshBtn" class="krwmp-btn krwmp-btn-primary">Refresh</button>
+        </div>
+        <div id="registryList" class="space-y-4"></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="viewInterventionModal" class="krwmp-modal krwmp-modal-xl">
+    <header class="krwmp-modal-header">
+      <h2 class="krwmp-modal-title">Intervention Details</h2>
+      <button id="closeViewModalBtn" type="button" class="krwmp-modal-close" aria-label="Close details">&times;</button>
+    </header>
+    <div id="viewInterventionContent" class="krwmp-modal-body krwmp-stack-md"></div>
+    <footer class="krwmp-modal-actions">
+      <button id="closeViewModalFooterBtn" type="button" class="krwmp-btn krwmp-btn-secondary">Close</button>
+    </footer>
+  </dialog>
+
+  <dialog id="actionModal" class="krwmp-modal krwmp-modal-xl">
+    <header class="krwmp-modal-header">
+      <h2 id="actionModalTitle" class="krwmp-modal-title">Action & Responsible Officer</h2>
+      <button id="closeActionModalBtn" type="button" class="krwmp-modal-close" aria-label="Close actions">&times;</button>
+    </header>
+    <div class="krwmp-modal-body krwmp-stack-md">
+      <section>
+        <h3 class="form-section-heading">Existing Actions</h3>
+        <div id="actionList" class="krwmp-stack-sm mt-3"></div>
+      </section>
+      <form id="actionForm" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <input type="hidden" name="action_id">
+        <input type="hidden" name="responsible_person_id" id="actionResponsiblePersonId">
+        <input type="hidden" name="officer_name">
+        <input type="hidden" name="officer_contact">
+        <label class="form-label">
+          Action Date
+          <input type="date" name="action_date" class="form-input mt-1">
+        </label>
+        <label class="form-label">
+          Action Progress (%)
+          <input name="progress_percent" type="number" min="0" max="100" value="0" required class="form-input mt-1">
+        </label>
+        <label class="form-label md:col-span-2">
+          Action Title
+          <input name="action_title" required class="form-input mt-1">
+        </label>
+        <label class="form-label md:col-span-2">
+          Action Details
+          <textarea name="action_description" class="form-textarea mt-1"></textarea>
+        </label>
+        <section class="md:col-span-2 krwmp-card-muted p-3">
+          <h3 class="form-label mb-2">Responsible Officer</h3>
+          <div id="actionPersonSelector"></div>
+        </section>
+        <label class="form-label">
+          Designation
+          <input name="designation" class="form-input mt-1">
+        </label>
+        <label class="form-label">
+          Institution
+          <select name="institution" id="actionInstitutionSelect" class="form-select mt-1"></select>
+        </label>
+        <label class="form-label md:col-span-2">
+          Responsibility
+          <input name="responsibility" class="form-input mt-1">
+        </label>
+        <div class="md:col-span-2 flex flex-wrap gap-2">
+          <button id="saveActionBtn" class="krwmp-btn krwmp-btn-primary">Save Action</button>
+          <button id="resetActionFormBtn" type="button" class="krwmp-btn krwmp-btn-secondary">Clear</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <script src="/assets/js/krwmp-global.js"></script>
+  <script src="/assets/js/privilege-guard.js"></script>
+  <script src="/assets/js/location-picker.js"></script>
+  <script src="/assets/js/person-selector.js"></script>
+  <script src="/intervention-registry.js"></script>
+  <script src="/intervention-accordion-enhance.js"></script>
+</body>
+</html>

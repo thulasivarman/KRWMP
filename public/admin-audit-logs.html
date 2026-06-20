@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Activity Logs - KRWMP Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-emerald-500/30">
+  <div class="flex min-h-screen">
+    <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
+    <main class="flex-1 krwmp-page krwmp-stack-lg">
+      <header class="krwmp-page-header krwmp-cluster-between">
+        <div>
+          <p class="krwmp-eyebrow">Administration</p>
+          <h1 class="krwmp-page-title">Activity Logs</h1>
+          <p class="krwmp-body-text">Search recent portal activity stored in PostgreSQL for the current retention window.</p>
+        </div>
+        <button id="refreshAuditLogsBtn" type="button" class="krwmp-btn krwmp-btn-secondary">Refresh</button>
+      </header>
+
+      <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
+
+      <section class="krwmp-panel krwmp-stack-md">
+        <div>
+          <h2 class="form-section-heading">Search Filters</h2>
+          <p class="form-helper">Audit records are searchable for the last 14 days before archive retention moves older records to R2.</p>
+        </div>
+        <form id="auditFilterForm" class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-3">
+          <label class="form-label">From
+            <input id="filterFrom" type="date" class="form-input mt-1">
+          </label>
+          <label class="form-label">To
+            <input id="filterTo" type="date" class="form-input mt-1">
+          </label>
+          <label class="form-label">User
+            <input id="filterUser" type="search" class="form-input mt-1" placeholder="username">
+          </label>
+          <label class="form-label">Action
+            <select id="filterAction" class="form-select mt-1">
+              <option value="">All actions</option>
+            </select>
+          </label>
+          <label class="form-label">Module
+            <input id="filterModule" type="search" class="form-input mt-1" placeholder="module_name">
+          </label>
+          <label class="form-label">Record ID
+            <input id="filterRecord" type="search" class="form-input mt-1" placeholder="UUID">
+          </label>
+          <label class="form-label md:col-span-2 xl:col-span-4">Keyword
+            <input id="filterQ" type="search" class="form-input mt-1" placeholder="Search user, URL, module, action, summary">
+          </label>
+          <div class="flex items-end gap-2 md:col-span-1 xl:col-span-2">
+            <button class="krwmp-btn krwmp-btn-primary" type="submit">Apply</button>
+            <button id="clearFiltersBtn" class="krwmp-btn krwmp-btn-secondary" type="button">Clear</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="krwmp-panel krwmp-stack-md">
+        <div class="krwmp-cluster-between">
+          <div>
+            <h2 class="form-section-heading">Recent Audit Records</h2>
+            <p id="auditResultMeta" class="form-helper">Loading audit records...</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button id="exportCsvBtn" type="button" class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Export CSV</button>
+            <button id="exportPdfBtn" type="button" class="krwmp-btn krwmp-btn-primary krwmp-btn-sm">Export PDF</button>
+          </div>
+        </div>
+        <div class="krwmp-table-wrap">
+          <table class="krwmp-table krwmp-table-compact">
+            <thead>
+              <tr>
+                <th>Date / Time</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Module</th>
+                <th>URL</th>
+                <th>Summary</th>
+                <th>Severity</th>
+                <th class="text-right">Details</th>
+              </tr>
+            </thead>
+            <tbody id="auditLogTableBody">
+              <tr><td colspan="8" class="krwmp-table-empty">Loading audit records...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="auditPagination"></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="auditDetailsModal" class="krwmp-modal krwmp-modal-xl">
+    <header class="krwmp-modal-header">
+      <h2 class="krwmp-modal-title">Audit Details</h2>
+      <button id="closeDetailsBtn" type="button" class="krwmp-modal-close" aria-label="Close dialog">&times;</button>
+    </header>
+    <div class="krwmp-modal-body">
+      <pre id="auditDetailsContent" class="max-h-[60vh] overflow-auto rounded border border-slate-800 bg-slate-950/70 p-4 text-xs text-slate-200"></pre>
+    </div>
+    <footer class="krwmp-modal-actions">
+      <button id="closeDetailsFooterBtn" type="button" class="krwmp-btn krwmp-btn-secondary">Close</button>
+    </footer>
+  </dialog>
+
+  <script src="/assets/js/krwmp-global.js"></script>
+  <script src="/assets/js/privilege-guard.js"></script>
+  <script src="/admin-audit-logs.js"></script>
+</body>
+</html>

@@ -196,6 +196,13 @@ async function interventionRoutes(fastify) {
     return { success: true, interventions };
   });
 
+  fastify.get('/interventions/registry/:id', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'intervention_registry_view', 'view')) return;
+    const intervention = await service.getRegistry(request.params.id);
+    if (!intervention) return reply.status(404).send({ success: false, message: 'Intervention not found' });
+    return { success: true, intervention };
+  });
+
   fastify.post('/interventions/registry', async (request, reply) => {
     if (!await requirePrivilegeInline(request, reply, 'intervention_registry_manage', 'create')) return;
     const intervention = await service.createRegistry(request.body || {}, getUser(request));
@@ -218,8 +225,36 @@ async function interventionRoutes(fastify) {
 
   fastify.post('/interventions/registry/:id/timeline', async (request, reply) => {
     if (!await requirePrivilegeInline(request, reply, 'intervention_progress_update', 'create')) return;
-    const action = await service.createTimeline(request.params.id, request.body || {}, getUser(request));
-    return reply.status(201).send({ success: true, action });
+    try {
+      const action = await service.createTimeline(request.params.id, request.body || {}, getUser(request));
+      return reply.status(201).send({ success: true, action });
+    } catch (error) {
+      return reply.status(error.statusCode || 400).send({ success: false, message: error.message });
+    }
+  });
+
+  fastify.get('/interventions/registry/:id/timeline', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'intervention_registry_view', 'view')) return;
+    const actions = await service.listTimeline(request.params.id);
+    return { success: true, actions };
+  });
+
+  fastify.put('/interventions/registry/:id/timeline/:actionId', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'intervention_progress_update', 'update')) return;
+    try {
+      const action = await service.updateTimeline(request.params.id, request.params.actionId, request.body || {}, getUser(request));
+      if (!action) return reply.status(404).send({ success: false, message: 'Action not found' });
+      return { success: true, action };
+    } catch (error) {
+      return reply.status(error.statusCode || 400).send({ success: false, message: error.message });
+    }
+  });
+
+  fastify.delete('/interventions/registry/:id/timeline/:actionId', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'intervention_progress_update', 'delete')) return;
+    const deleted = await service.deleteTimeline(request.params.id, request.params.actionId, getUser(request));
+    if (!deleted) return reply.status(404).send({ success: false, message: 'Action not found' });
+    return { success: true, deleted: request.params.actionId };
   });
 
   fastify.post('/interventions/registry/:id/officers', async (request, reply) => {

@@ -6,6 +6,23 @@ function cleanText(value) {
   return text || null;
 }
 
+function hasOwn(payload, key) {
+  return Object.prototype.hasOwnProperty.call(payload || {}, key);
+}
+
+function cleanOptionalUrl(value, label = 'URL') {
+  const text = cleanText(value);
+  if (!text) return null;
+  let parsed;
+  try {
+    parsed = new URL(text);
+  } catch (_) {
+    throw new Error(`${label} must be a valid URL.`);
+  }
+  if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error(`${label} must use http or https.`);
+  return text;
+}
+
 function toNumber(value) {
   if (value === undefined || value === null || String(value).trim() === '') return null;
   const n = Number(value);
@@ -203,6 +220,10 @@ async function createContent(body = {}, user = 'system') {
   const longitude = toNumber(body.longitude);
   validateCoordinates(latitude, longitude);
   const derived = await deriveLocation(latitude, longitude);
+  const externalUrl = cleanOptionalUrl(body.external_url, 'External URL');
+  const fileUrl = cleanOptionalUrl(body.file_url, 'File URL');
+  const thumbnailUrl = cleanOptionalUrl(body.thumbnail_url, 'Thumbnail URL');
+  const videoUrl = cleanOptionalUrl(body.video_url, 'Video URL');
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -212,7 +233,7 @@ async function createContent(body = {}, user = 'system') {
       VALUES
         ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,COALESCE($16,'draft'),COALESCE($17::boolean,false),CASE WHEN $18::double precision IS NULL OR $19::double precision IS NULL THEN NULL ELSE ST_SetSRID(ST_MakePoint($19::double precision,$18::double precision),4326) END,$20,$21,$22,$23,$24,$24,CASE WHEN COALESCE($16,'draft') = 'published' THEN now() ELSE NULL END,CASE WHEN COALESCE($16,'draft') = 'published' THEN $24 ELSE NULL END)
       RETURNING id;
-    `, [title, cleanText(body.summary), contentType, body.category_id || null, body.publisher_institution_id || null, body.author_institution_id || null, body.publication_year ? Number(body.publication_year) : null, cleanText(body.language) || 'English', cleanText(body.keywords), cleanText(body.abstract), cleanText(body.body_content), cleanText(body.external_url), cleanText(body.file_url), cleanText(body.thumbnail_url), cleanText(body.video_url), cleanText(body.status) || 'draft', body.is_featured, latitude, longitude, derived.dsd_name, derived.gnd_name, derived.sub_watershed_id, derived.sub_watershed_name, user]);
+    `, [title, cleanText(body.summary), contentType, body.category_id || null, body.publisher_institution_id || null, body.author_institution_id || null, body.publication_year ? Number(body.publication_year) : null, cleanText(body.language) || 'English', cleanText(body.keywords), cleanText(body.abstract), cleanText(body.body_content), externalUrl, fileUrl, thumbnailUrl, videoUrl, cleanText(body.status) || 'draft', body.is_featured, latitude, longitude, derived.dsd_name, derived.gnd_name, derived.sub_watershed_id, derived.sub_watershed_name, user]);
     await setContentTags(client, result.rows[0].id, body.tags || body.tag_names || [], user);
     await client.query('COMMIT');
     return getContent(result.rows[0].id);
@@ -231,6 +252,10 @@ async function updateContent(id, body = {}, user = 'system') {
   const longitude = toNumber(body.longitude ?? existing.longitude);
   validateCoordinates(latitude, longitude);
   const derived = await deriveLocation(latitude, longitude);
+  const externalUrl = hasOwn(body, 'external_url') ? cleanOptionalUrl(body.external_url, 'External URL') : existing.external_url;
+  const fileUrl = hasOwn(body, 'file_url') ? cleanOptionalUrl(body.file_url, 'File URL') : existing.file_url;
+  const thumbnailUrl = hasOwn(body, 'thumbnail_url') ? cleanOptionalUrl(body.thumbnail_url, 'Thumbnail URL') : existing.thumbnail_url;
+  const videoUrl = hasOwn(body, 'video_url') ? cleanOptionalUrl(body.video_url, 'Video URL') : existing.video_url;
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -238,7 +263,7 @@ async function updateContent(id, body = {}, user = 'system') {
       UPDATE public.knowledge_content
       SET title = COALESCE($2, title), summary = COALESCE($3, summary), content_type = COALESCE($4, content_type), category_id = COALESCE($5::uuid, category_id), publisher_institution_id = $6::uuid, author_institution_id = $7::uuid, publication_year = $8::integer, language = COALESCE($9, language), keywords = $10, abstract = $11, body_content = $12, external_url = $13, file_url = $14, thumbnail_url = $15, video_url = $16, status = COALESCE($17, status), is_featured = COALESCE($18::boolean, is_featured), geom = CASE WHEN $19::double precision IS NULL OR $20::double precision IS NULL THEN NULL ELSE ST_SetSRID(ST_MakePoint($20::double precision,$19::double precision),4326) END, dsd_name = $21, gnd_name = $22, sub_watershed_id = $23::uuid, sub_watershed_name = $24, updated_by = $25, updated_at = now(), published_at = CASE WHEN COALESCE($17, status) = 'published' AND published_at IS NULL THEN now() ELSE published_at END, published_by = CASE WHEN COALESCE($17, status) = 'published' AND published_by IS NULL THEN $25 ELSE published_by END
       WHERE id = $1;
-    `, [id, cleanText(body.title), cleanText(body.summary), cleanText(body.content_type), body.category_id || existing.category_id || null, body.publisher_institution_id || null, body.author_institution_id || null, body.publication_year ? Number(body.publication_year) : existing.publication_year || null, cleanText(body.language), cleanText(body.keywords), cleanText(body.abstract), cleanText(body.body_content), cleanText(body.external_url), cleanText(body.file_url), cleanText(body.thumbnail_url), cleanText(body.video_url), cleanText(body.status), body.is_featured, latitude, longitude, derived.dsd_name, derived.gnd_name, derived.sub_watershed_id, derived.sub_watershed_name, user]);
+    `, [id, cleanText(body.title), cleanText(body.summary), cleanText(body.content_type), body.category_id || existing.category_id || null, body.publisher_institution_id || null, body.author_institution_id || null, body.publication_year ? Number(body.publication_year) : existing.publication_year || null, cleanText(body.language), cleanText(body.keywords), cleanText(body.abstract), cleanText(body.body_content), externalUrl, fileUrl, thumbnailUrl, videoUrl, cleanText(body.status), body.is_featured, latitude, longitude, derived.dsd_name, derived.gnd_name, derived.sub_watershed_id, derived.sub_watershed_name, user]);
     if (body.tags !== undefined || body.tag_names !== undefined) await setContentTags(client, id, body.tags || body.tag_names || [], user);
     await client.query('COMMIT');
     return getContent(id);

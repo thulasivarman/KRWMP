@@ -1,4 +1,178 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>User Administration Hub - KRWMP Portal</title><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="/assets/css/style.css"></head>
-<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-emerald-500/30"><div class="flex min-h-screen"><div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div><main class="flex-1 p-8 space-y-8 max-w-6xl mx-auto"><header class="border-b border-slate-800 pb-4 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4"><div><h1 class="text-xl font-bold uppercase tracking-wider text-slate-200">User Administration Infrastructure</h1><p class="text-xs text-slate-500 mt-1">Configure workspace permissions, institutions, roles and privilege matrix.</p></div><a href="/privilege-group-management.html"  class="krwmp-btn krwmp-btn-secondary self-start lg:self-auto">Open Privilege Group Management</a></header><div class="grid grid-cols-1 lg:grid-cols-3 gap-8"><div class="space-y-8 lg:col-span-1"><section class="bg-slate-900 border border-slate-800/80 rounded-xl p-5 shadow-xl"><h2 class="text-xs font-bold uppercase tracking-widest text-emerald-400 mb-4 flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>Register System Identity</h2><form id="registrationForm" class="space-y-4 text-xs"><div><label  class="krwmp-field">Full Name</label><input type="text" id="regName"  class="krwmp-input" required></div><div class="grid grid-cols-2 gap-3"><div><label  class="krwmp-field">System Username</label><input type="text" id="regIdentifier"  class="krwmp-input lowercase" required></div><div><label  class="krwmp-field">Initials</label><input type="text" id="regInitials" maxlength="3"  class="krwmp-input uppercase" required></div></div><div><label  class="krwmp-field">Designation</label><input type="text" id="regDesignation"  class="krwmp-input" required></div><div><label  class="krwmp-field">Institution</label><select id="regInstitutionId"  class="krwmp-select"><option value="">Select institution</option></select></div><div><label  class="krwmp-field">User Roles <span class="text-slate-600">(Ctrl+Click for multiple)</span></label><select id="regRoleId" multiple size="5"  class="krwmp-select text-emerald-400 cursor-pointer"></select></div><div><label  class="krwmp-field">Temporary Passkey</label><input type="password" id="regPassword"  class="krwmp-input" required></div><button type="submit"  class="krwmp-btn krwmp-btn-primary krwmp-btn-full mt-2">Provision User Profile</button></form></section><section class="bg-slate-900 border border-slate-800/80 rounded-xl p-5 shadow-xl"><h2 class="text-xs font-bold uppercase tracking-widest text-amber-500 mb-4">Force Password Reset</h2><form id="resetForm" class="space-y-4 text-xs"><div><label  class="krwmp-field">Target Username</label><input type="text" id="resetIdentifier"  class="krwmp-input lowercase" required></div><div><label  class="krwmp-field">New Complex Password</label><input type="password" id="resetPassword"  class="krwmp-input" required></div><button type="submit"  class="krwmp-btn krwmp-btn-secondary krwmp-btn-full">Apply Cryptographic Reset</button></form></section><section class="bg-slate-900 border border-slate-800/80 rounded-xl p-5 shadow-xl"><h2 class="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-4">Roles & Privileges</h2><a href="/privilege-group-management.html"  class="krwmp-btn krwmp-btn-secondary krwmp-btn-full block text-center mb-4">Manage Privileges by User Group</a><form id="roleForm" class="space-y-3 text-xs"><input type="hidden" id="roleEditId"><input id="roleName" placeholder="Role name"  class="krwmp-input"><input id="roleDescription" placeholder="Description"  class="krwmp-input"><button  class="krwmp-btn krwmp-btn-secondary krwmp-btn-full">Save Role</button></form><form id="privilegeForm" class="space-y-3 text-xs mt-5 pt-5 border-t border-slate-800"><select id="privRoleId"  class="krwmp-select"></select><input id="privilegeKey" placeholder="Privilege key e.g. vwmc_management"  class="krwmp-input"><input id="privilegeName" placeholder="Privilege name"  class="krwmp-input"><div class="grid grid-cols-2 gap-2 text-slate-400"><label><input type="checkbox" id="canView" checked> View</label><label><input type="checkbox" id="canCreate"> Create</label><label><input type="checkbox" id="canUpdate"> Update</label><label><input type="checkbox" id="canDelete"> Delete</label></div><button  class="krwmp-btn krwmp-btn-secondary krwmp-btn-full">Save Privilege</button></form></section></div><div class="lg:col-span-2"><section class="bg-slate-900 border border-slate-800/80 rounded-xl p-6 shadow-xl h-full flex flex-col"><h2 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Active System Identity Directory</h2><div class="krwmp-table-wrap"><table class="krwmp-table krwmp-table-compact"><thead><tr ><th class="pb-3">User & Title Details</th><th class="pb-3">Identifier</th><th class="pb-3">Access / Institution</th><th class="pb-3 text-right">Actions Matrix</th></tr></thead><tbody id="userDirectoryTableBody" class="divide-y divide-slate-800/40"><tr><td colspan="4" class="krwmp-table-empty">Querying active Supabase pool connections...</td></tr></tbody></table></div><div id="roleList" class="mt-6 border-t border-slate-800 pt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs"></div></section></div></div></main></div><div id="inlineEditModal" class="hidden krwmp-modal-backdrop"><div class="krwmp-modal krwmp-modal-sm" role="dialog" aria-modal="true" aria-labelledby="inline-edit-title"><div class="krwmp-modal-header"><h3 id="inline-edit-title" class="krwmp-modal-title">Modify Staff Workspace Records</h3><button onclick="toggleEditModal(false)" class="krwmp-modal-close" aria-label="Close dialog">&times;</button></div><form id="inlineEditForm"><div class="krwmp-modal-body krwmp-stack-md"><input type="hidden" id="editIdentifier"><div><label  class="krwmp-field">Full Name</label><input type="text" id="editName"  class="krwmp-input focus:border-emerald-500" required></div><div><label  class="krwmp-field">Professional Designation</label><input type="text" id="editDesignation"  class="krwmp-input focus:border-emerald-500" required></div><div><label  class="krwmp-field">Avatar Initials</label><input type="text" id="editInitials" maxlength="3"  class="krwmp-input focus:border-emerald-500 uppercase" required></div><div><label  class="krwmp-field">Institution</label><select id="editInstitutionId"  class="krwmp-select"></select></div></div><div class="krwmp-modal-actions"><button type="button" onclick="toggleEditModal(false)"  class="krwmp-btn krwmp-btn-secondary">Cancel</button><button type="submit"  class="krwmp-btn krwmp-btn-primary">Save Record Adjustments</button></div></form></div></div><script src="/assets/js/krwmp-global.js"></script><script src="/assets/js/privilege-guard.js"></script><script src="/assets/js/admin-api.js"></script><script src="/assets/js/admin-ui.js"></script><script src="/assets/js/admin-users.js"></script><script src="/assets/js/admin-app.js"></script></body></html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Management - KRWMP Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-emerald-500/30">
+  <div class="flex min-h-screen">
+    <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
+    <main class="flex-1 krwmp-page krwmp-stack-lg">
+      <header class="krwmp-page-header krwmp-cluster-between">
+        <div>
+          <p class="krwmp-eyebrow">Administration</p>
+          <h1 class="krwmp-page-title">User Management</h1>
+          <p class="krwmp-body-text">Register users, assign access groups, and maintain account details.</p>
+        </div>
+        <a href="/privilege-group-management.html" class="krwmp-btn krwmp-btn-secondary">Privilege Groups</a>
+      </header>
+
+      <section class="grid grid-cols-1 xl:grid-cols-[minmax(22rem,28rem)_1fr] gap-6 items-start">
+        <div class="krwmp-stack-md">
+          <section class="krwmp-panel krwmp-stack-md">
+            <div>
+              <h2 class="form-section-heading">Register User</h2>
+              <p class="form-helper">Create a portal identity and assign one or more access groups.</p>
+            </div>
+
+            <form id="registrationForm" class="krwmp-stack-md">
+              <div class="krwmp-form-grid">
+                <label class="form-label">
+                  Full Name
+                  <input type="text" id="regName" class="form-input" autocomplete="name" required>
+                </label>
+                <label class="form-label">
+                  Username
+                  <input type="text" id="regIdentifier" class="form-input lowercase" autocomplete="username" required>
+                </label>
+                <label class="form-label">
+                  Initials
+                  <input type="text" id="regInitials" maxlength="3" class="form-input uppercase" required>
+                </label>
+                <label class="form-label">
+                  Designation
+                  <input type="text" id="regDesignation" class="form-input" required>
+                </label>
+                <label class="form-label">
+                  Phone Number
+                  <input type="tel" id="regPhoneNumber" class="form-input" autocomplete="tel" pattern="[0-9+()\-\s]{7,30}" placeholder="+94...">
+                  <span class="form-helper">Optional.</span>
+                </label>
+                <label class="form-label">
+                  Email Address
+                  <input type="email" id="regEmail" class="form-input" autocomplete="email" placeholder="name@example.lk">
+                  <span class="form-helper">Optional.</span>
+                </label>
+                <label class="form-label md:col-span-2">
+                  Institution
+                  <select id="regInstitutionId" class="form-select">
+                    <option value="">Select institution</option>
+                  </select>
+                </label>
+                <label class="form-label md:col-span-2">
+                  Access Groups
+                  <select id="regRoleId" multiple size="5" class="form-select text-emerald-300 cursor-pointer" required></select>
+                  <span class="form-helper">Use Ctrl or Cmd to select multiple groups.</span>
+                </label>
+                <label class="form-label md:col-span-2">
+                  Temporary Password
+                  <input type="password" id="regPassword" class="form-input" autocomplete="new-password" required>
+                </label>
+              </div>
+              <button type="submit" class="krwmp-btn krwmp-btn-primary krwmp-btn-full">Register User</button>
+            </form>
+          </section>
+
+          <section class="krwmp-panel krwmp-stack-md">
+            <div>
+              <h2 class="form-section-heading">Reset Password</h2>
+              <p class="form-helper">Issue a new temporary password for an existing user.</p>
+            </div>
+            <form id="resetForm" class="krwmp-stack-sm">
+              <label class="form-label">
+                Username
+                <input type="text" id="resetIdentifier" class="form-input lowercase" required>
+              </label>
+              <label class="form-label">
+                New Temporary Password
+                <input type="password" id="resetPassword" class="form-input" autocomplete="new-password" required>
+              </label>
+              <button type="submit" class="krwmp-btn krwmp-btn-secondary krwmp-btn-full">Reset Password</button>
+            </form>
+          </section>
+        </div>
+
+        <section class="krwmp-panel krwmp-stack-md min-w-0">
+          <div class="krwmp-cluster-between">
+            <div>
+              <h2 class="form-section-heading">User Directory</h2>
+              <p class="form-helper">Review users, assign access groups, or edit account details.</p>
+            </div>
+            <a href="/privilege-group-management.html" class="krwmp-btn krwmp-btn-ghost krwmp-btn-sm">Manage Privilege Groups</a>
+          </div>
+          <div class="krwmp-table-wrap">
+            <table class="krwmp-table krwmp-table-compact">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Username</th>
+                  <th>Contact</th>
+                  <th>Access</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="userDirectoryTableBody">
+                <tr><td colspan="5" class="krwmp-table-empty">Loading users...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div id="inlineEditModal" class="hidden krwmp-modal-backdrop">
+    <div class="krwmp-modal krwmp-modal-sm" role="dialog" aria-modal="true" aria-labelledby="inline-edit-title">
+      <div class="krwmp-modal-header">
+        <h3 id="inline-edit-title" class="krwmp-modal-title">Edit User</h3>
+        <button onclick="toggleEditModal(false)" class="krwmp-modal-close" aria-label="Close dialog">&times;</button>
+      </div>
+      <form id="inlineEditForm">
+        <div class="krwmp-modal-body krwmp-stack-md">
+          <input type="hidden" id="editIdentifier">
+          <label class="form-label">
+            Full Name
+            <input type="text" id="editName" class="form-input" required>
+          </label>
+          <label class="form-label">
+            Professional Designation
+            <input type="text" id="editDesignation" class="form-input" required>
+          </label>
+          <label class="form-label">
+            Avatar Initials
+            <input type="text" id="editInitials" maxlength="3" class="form-input uppercase" required>
+          </label>
+          <label class="form-label">
+            Phone Number
+            <input type="tel" id="editPhoneNumber" class="form-input" autocomplete="tel" pattern="[0-9+()\-\s]{7,30}" placeholder="+94...">
+            <span class="form-helper">Optional.</span>
+          </label>
+          <label class="form-label">
+            Email Address
+            <input type="email" id="editEmail" class="form-input" autocomplete="email" placeholder="name@example.lk">
+            <span class="form-helper">Optional.</span>
+          </label>
+          <label class="form-label">
+            Institution
+            <select id="editInstitutionId" class="form-select"></select>
+          </label>
+        </div>
+        <div class="krwmp-modal-actions">
+          <button type="button" onclick="toggleEditModal(false)" class="krwmp-btn krwmp-btn-secondary">Cancel</button>
+          <button type="submit" class="krwmp-btn krwmp-btn-primary">Save User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/assets/js/krwmp-global.js"></script>
+  <script src="/assets/js/privilege-guard.js"></script>
+  <script src="/assets/js/admin-api.js"></script>
+  <script src="/assets/js/admin-ui.js"></script>
+  <script src="/assets/js/admin-users.js"></script>
+  <script src="/assets/js/admin-app.js"></script>
+</body>
+</html>

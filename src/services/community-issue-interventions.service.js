@@ -11,6 +11,22 @@ function toLimit(value, fallback = 20) {
   return Math.max(1, Math.min(100, Math.floor(n)));
 }
 
+function toCoordinate(value, min, max, fieldName) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < min || n > max) {
+    const error = new Error(`${fieldName} must be a valid number between ${min} and ${max}.`);
+    error.statusCode = 400;
+    throw error;
+  }
+  return n;
+}
+
+function toRadius(value, fallback = 1000) {
+  const n = Number(value || fallback);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(1, Math.min(10000, Math.floor(n)));
+}
+
 async function listInterventionsForComplaint(reportId) {
   const result = await pool.query(`
     SELECT
@@ -95,6 +111,26 @@ async function createMapping(body = {}, user = 'system') {
     RETURNING *;
   `, [reportId, interventionId, body.link_status || null, cleanText(body.link_note), user]);
   return result.rows[0];
+}
+
+async function createMappingsForIntervention(interventionId, reportIds = [], user = 'system', note = null) {
+  const ids = Array.from(new Set((reportIds || []).map(id => Number(id)).filter(Number.isFinite)));
+  if (!interventionId) throw new Error('Intervention is required.');
+  if (!ids.length) return [];
+
+  const result = await pool.query(`
+    INSERT INTO public.complaint_intervention_mapping
+      (report_id, intervention_id, link_status, link_note, linked_by, updated_by)
+    SELECT report_id, $2::bigint, 'active', $3::text, $4::text, $4::text
+    FROM unnest($1::bigint[]) AS report_id
+    ON CONFLICT (report_id, intervention_id) DO UPDATE SET
+      link_status = 'active',
+      link_note = COALESCE(EXCLUDED.link_note, public.complaint_intervention_mapping.link_note),
+      updated_by = EXCLUDED.updated_by,
+      updated_at = now()
+    RETURNING *;
+  `, [ids, interventionId, cleanText(note), user]);
+  return result.rows;
 }
 
 async function updateMapping(mappingId, body = {}, user = 'system') {
@@ -183,12 +219,54 @@ async function searchReports({ q = null, status = null, limit = 20 } = {}) {
   return result.rows;
 }
 
+async function nearbyUnlinkedReports({ longitude, latitude, radius_meters = 1000, limit = 50 } = {}) {
+  const lng = toCoordinate(longitude, -180, 180, 'Longitude');
+  const lat = toCoordinate(latitude, -90, 90, 'Latitude');
+  const radius = toRadius(radius_meters, 1000);
+  const rowLimit = toLimit(limit, 50);
+  const result = await pool.query(`
+    WITH selected_point AS (
+      SELECT ST_SetSRID(ST_MakePoint($1::double precision, $2::double precision), 4326) AS geom
+    )
+    SELECT
+      r.id,
+      r.report_code,
+      r.issue_title,
+      r.description,
+      r.status,
+      r.severity_level,
+      r.latitude,
+      r.longitude,
+      r.location_description,
+      r.submitted_at,
+      c.category_name,
+      si.issue_name,
+      ROUND(ST_Distance(r.geom::geography, p.geom::geography)::numeric, 1) AS distance_meters
+    FROM public.community_issue_reports r
+    CROSS JOIN selected_point p
+    LEFT JOIN public.issue_categories c ON c.id = r.category_id
+    LEFT JOIN public.specific_issues si ON si.id = r.issue_id
+    WHERE r.geom IS NOT NULL
+      AND ST_DWithin(r.geom::geography, p.geom::geography, $3::double precision)
+      AND NOT EXISTS (
+        SELECT 1
+        FROM public.complaint_intervention_mapping cim
+        WHERE cim.report_id = r.id
+      )
+    ORDER BY ST_Distance(r.geom::geography, p.geom::geography) ASC, r.submitted_at DESC
+    LIMIT $4;
+  `, [lng, lat, radius, rowLimit]);
+  return result.rows;
+}
+
 module.exports = {
   listInterventionsForComplaint,
   listComplaintsForIntervention,
   createMapping,
+  createMappingsForIntervention,
   updateMapping,
   deleteMapping,
   searchInterventions,
   searchReports,
+  nearbyUnlinkedReports,
 };

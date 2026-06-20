@@ -1,0 +1,116 @@
+const service = require('../services/person.service');
+const { getRequestUser, hasPrivilege, requirePrivilegeInline } = require('../middleware/privilege.middleware');
+
+const PRIVILEGE_KEY = 'person_registry';
+
+function statusFromError(error) {
+  return Number(error?.statusCode || error?.status || 500);
+}
+
+async function requireAnyPrivilege(request, reply, allowed = []) {
+  const identifier = getRequestUser(request);
+  if (!identifier) {
+    reply.status(401).send({ success: false, message: request.authError ? 'Invalid or expired authentication token' : 'Authentication required' });
+    return false;
+  }
+  for (const [privilegeKey, action] of allowed) {
+    if (await hasPrivilege(identifier, privilegeKey, action)) return true;
+  }
+  const required = allowed.map(([key, action]) => `${key}:${action}`).join(' or ');
+  reply.status(403).send({ success: false, message: `Access denied. Required privilege: ${required}` });
+  return false;
+}
+
+async function personRoutes(fastify) {
+  fastify.get('/persons/search', async (request, reply) => {
+    if (!await requireAnyPrivilege(request, reply, [
+      [PRIVILEGE_KEY, 'view'],
+      ['vwmc_management', 'create'],
+      ['vwmc_management', 'update'],
+      ['intervention_progress_update', 'create'],
+      ['intervention_progress_update', 'update'],
+    ])) return;
+    const persons = await service.searchPersons({
+      q: request.query?.q || '',
+      limit: request.query?.limit || 20,
+    });
+    return { success: true, persons };
+  });
+
+  fastify.post('/persons/detect-duplicates', async (request, reply) => {
+    if (!await requireAnyPrivilege(request, reply, [
+      [PRIVILEGE_KEY, 'view'],
+      ['vwmc_management', 'create'],
+      ['vwmc_management', 'update'],
+      ['intervention_progress_update', 'create'],
+      ['intervention_progress_update', 'update'],
+    ])) return;
+    const matches = await service.detectPossibleDuplicates(request.body || {});
+    return { success: true, matches };
+  });
+
+  fastify.get('/persons/:id/profile', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, PRIVILEGE_KEY, 'view')) return;
+    const profile = await service.getPersonProfile(request.params.id);
+    if (!profile) return reply.status(404).send({ success: false, message: 'Person not found' });
+    return { success: true, profile };
+  });
+
+  fastify.get('/persons/:id', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, PRIVILEGE_KEY, 'view')) return;
+    const person = await service.getPerson(request.params.id);
+    if (!person) return reply.status(404).send({ success: false, message: 'Person not found' });
+    return { success: true, person };
+  });
+
+  fastify.post('/persons', async (request, reply) => {
+    if (!await requireAnyPrivilege(request, reply, [
+      [PRIVILEGE_KEY, 'create'],
+      ['vwmc_management', 'create'],
+      ['vwmc_management', 'update'],
+      ['intervention_progress_update', 'create'],
+      ['intervention_progress_update', 'update'],
+    ])) return;
+    try {
+      const person = await service.createPerson(request.body || {});
+      return reply.status(201).send({ success: true, person });
+    } catch (error) {
+      return reply.status(statusFromError(error)).send({ success: false, message: error.message || 'Unable to create person' });
+    }
+  });
+
+  fastify.put('/persons/:id', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, PRIVILEGE_KEY, 'update')) return;
+    try {
+      const person = await service.updatePerson(request.params.id, request.body || {});
+      if (!person) return reply.status(404).send({ success: false, message: 'Person not found' });
+      return { success: true, person };
+    } catch (error) {
+      return reply.status(statusFromError(error)).send({ success: false, message: error.message || 'Unable to update person' });
+    }
+  });
+
+  fastify.post('/persons/:id/link-user', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, PRIVILEGE_KEY, 'update')) return;
+    try {
+      const person = await service.linkPersonToUser(request.params.id, request.body?.linked_user_id);
+      if (!person) return reply.status(404).send({ success: false, message: 'Person not found' });
+      return { success: true, person };
+    } catch (error) {
+      return reply.status(statusFromError(error)).send({ success: false, message: error.message || 'Unable to link person to user' });
+    }
+  });
+
+  fastify.post('/persons/:id/promote-user', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, PRIVILEGE_KEY, 'update')) return;
+    if (!await requirePrivilegeInline(request, reply, 'user_management_settings', 'create')) return;
+    try {
+      const result = await service.promotePersonToUser(request.params.id, request.body || {});
+      return reply.status(201).send({ success: true, message: 'System user created and linked.', ...result });
+    } catch (error) {
+      return reply.status(statusFromError(error)).send({ success: false, message: error.message || 'Unable to promote person to user' });
+    }
+  });
+}
+
+module.exports = personRoutes;

@@ -137,11 +137,11 @@ function renderSymbologyEditor(symbology) {
       <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
         <label class="md:col-span-2 space-y-1">
           <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-bold">Min Value</span>
-          <input type="number" step="any"  class="krwmp-input class-min" placeholder="0" value="${escapeAttr(cls.min ?? '')}">
+          <input type="number" step="any"  class="form-input class-min" placeholder="0" value="${escapeAttr(cls.min ?? '')}">
         </label>
         <label class="md:col-span-2 space-y-1">
           <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-bold">Max Value</span>
-          <input type="number" step="any"  class="krwmp-input class-max" placeholder="10" value="${escapeAttr(cls.max ?? '')}">
+          <input type="number" step="any"  class="form-input class-max" placeholder="10" value="${escapeAttr(cls.max ?? '')}">
         </label>
         <label class="md:col-span-2 space-y-1">
           <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-bold">Color</span>
@@ -152,7 +152,7 @@ function renderSymbologyEditor(symbology) {
         </label>
         <label class="md:col-span-6 space-y-1">
           <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-bold">Legend Label</span>
-          <input type="text"  class="krwmp-input class-label" placeholder="Very Low / Low / Moderate / High" value="${escapeAttr(cls.label || '')}">
+          <input type="text"  class="form-input class-label" placeholder="Very Low / Low / Moderate / High" value="${escapeAttr(cls.label || '')}">
         </label>
       </div>
     </article>`;
@@ -166,7 +166,7 @@ function renderSymbologyEditor(symbology) {
       </div>
       <label class="space-y-1 min-w-[220px]">
         <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-bold">Render Mode</span>
-        <select name="symbologyMode"  class="krwmp-select">
+        <select name="symbologyMode"  class="form-select">
           <option value="stretch" ${symbology.mode === 'stretch' ? 'selected' : ''}>Stretch / Original</option>
           <option value="classified" ${symbology.mode === 'classified' ? 'selected' : ''}>Classified Heat Map</option>
         </select>

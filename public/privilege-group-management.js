@@ -122,7 +122,7 @@ function renderPrivileges() {
 
 function checkboxHtml(name, label, checked) {
   return `
-    <label  class="krwmp-field flex lg:justify-center items-center gap-2 bg-slate-950/50 lg:bg-transparent border border-slate-800 lg:border-0 rounded-lg px-3 py-2 lg:p-0">
+    <label  class="form-label flex lg:justify-center items-center gap-2 bg-slate-950/50 lg:bg-transparent border border-slate-800 lg:border-0 rounded-lg px-3 py-2 lg:p-0">
       <span class="lg:hidden w-14">${label}</span>
       <input type="checkbox" name="${name}"  class="h-5 w-5 accent-emerald-500" ${checked ? 'checked' : ''}>
     </label>

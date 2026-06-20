@@ -48,7 +48,7 @@ async function vwmcRoutes(fastify) {
     if (!await requirePrivilegeInline(request, reply, 'vwmc_view', 'view')) return;
     const dsdName = request.query?.dsd_name || null;
     const result = await pool.query(`
-      SELECT DISTINCT g.gnd_name
+      SELECT DISTINCT g.gnd_name, g.idgnd AS gnd_code
       FROM public.gnd_boundary AS g
       LEFT JOIN public.dsd_boundary AS d ON d.dsd_n = $1::text AND g.geom IS NOT NULL AND d.geom IS NOT NULL AND ST_Intersects(g.geom, d.geom)
       WHERE g.gnd_name IS NOT NULL AND trim(g.gnd_name) <> '' AND ($1::text IS NULL OR d.id IS NOT NULL)
@@ -75,6 +75,13 @@ async function vwmcRoutes(fastify) {
     return { success: true, committee };
   });
 
+  fastify.get('/vwmc/committees/:id/details', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'vwmc_view', 'view')) return;
+    const committee = await service.getCommitteeDetails(request.params.id);
+    if (!committee) return reply.status(404).send({ success: false, message: 'VWMC not found' });
+    return { success: true, committee };
+  });
+
   fastify.post('/vwmc/committees', async (request, reply) => {
     if (!await requirePrivilegeInline(request, reply, 'vwmc_management', 'create')) return;
     const committee = await service.createCommittee(request.body || {}, getUser(request));
@@ -97,15 +104,23 @@ async function vwmcRoutes(fastify) {
 
   fastify.post('/vwmc/committees/:id/members', async (request, reply) => {
     if (!await requirePrivilegeInline(request, reply, 'vwmc_management', 'create')) return;
-    const member = await service.createMember(request.params.id, request.body || {}, getUser(request));
-    return reply.status(201).send({ success: true, member });
+    try {
+      const member = await service.createMember(request.params.id, request.body || {}, getUser(request));
+      return reply.status(201).send({ success: true, member });
+    } catch (error) {
+      return reply.status(error.statusCode || 400).send({ success: false, message: error.message || 'Unable to create member' });
+    }
   });
 
   fastify.put('/vwmc/members/:id', async (request, reply) => {
     if (!await requirePrivilegeInline(request, reply, 'vwmc_management', 'update')) return;
-    const member = await service.updateMember(request.params.id, request.body || {}, getUser(request));
-    if (!member) return reply.status(404).send({ success: false, message: 'Member not found' });
-    return { success: true, member };
+    try {
+      const member = await service.updateMember(request.params.id, request.body || {}, getUser(request));
+      if (!member) return reply.status(404).send({ success: false, message: 'Member not found' });
+      return { success: true, member };
+    } catch (error) {
+      return reply.status(error.statusCode || 400).send({ success: false, message: error.message || 'Unable to update member' });
+    }
   });
 
   fastify.delete('/vwmc/members/:id', async (request, reply) => {

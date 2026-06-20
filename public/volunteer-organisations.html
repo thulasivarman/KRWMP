@@ -34,27 +34,27 @@
 
       <section class="krwmp-panel krwmp-stack-md">
         <div>
-          <h2 class="krwmp-section-title">Add Volunteer Organisation</h2>
-          <p class="krwmp-help-text">Mark the organisation location on the map. DSD, GND and sub-watershed are auto-captured from the selected point.</p>
+          <h2 class="form-section-heading">Add Volunteer Organisation</h2>
+          <p class="form-helper">Mark the organisation location on the map. DSD, GND and sub-watershed are auto-captured from the selected point.</p>
         </div>
 
         <form id="volunteerForm" class="grid grid-cols-1 xl:grid-cols-3 gap-5" enctype="multipart/form-data">
           <section class="xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label  class="krwmp-field">Organisation Name <span class="text-rose-400">*</span><input name="institution_name" required  class="krwmp-input mt-1" placeholder="e.g. Kelani Youth Volunteers"></label>
-            <label  class="krwmp-field">Registration / Code<input name="institution_code"  class="krwmp-input mt-1" placeholder="e.g. VO-001"></label>
-            <label  class="krwmp-field">Organisation Type<select name="institution_type"  class="krwmp-select mt-1"><option value="Volunteer Organisation">Volunteer Organisation</option><option value="Community Based Organisation">Community Based Organisation</option><option value="Youth Group">Youth Group</option><option value="Environmental NGO">Environmental NGO</option><option value="Civil Society Organisation">Civil Society Organisation</option></select></label>
-            <label  class="krwmp-field">Contact Person<input name="contact_person"  class="krwmp-input mt-1"></label>
-            <label  class="krwmp-field">Contact Phone<input name="contact_phone"  class="krwmp-input mt-1"></label>
-            <label  class="krwmp-field">Contact Email<input name="contact_email" type="email"  class="krwmp-input mt-1"></label>
-            <label  class="krwmp-field md:col-span-2">Address <span class="text-rose-400">*</span><input name="address" required  class="krwmp-input mt-1"></label>
-            <label  class="krwmp-field">Website<input name="website"  class="krwmp-input mt-1" placeholder="https://example.org"></label>
-            <label  class="krwmp-field">Status<select name="active"  class="krwmp-select mt-1"><option value="true">Active</option><option value="false">Inactive</option></select></label>
-            <label  class="krwmp-field md:col-span-2">Supportive Document<input name="supporting_document" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,application/pdf,image/jpeg,image/png,image/webp"  class="krwmp-input mt-1"><span class="block mt-1 text-xs text-slate-500">Allowed: PDF, image, DOC/DOCX, XLS/XLSX.</span></label>
-            <label  class="krwmp-field md:col-span-2">Description / Mandate<textarea name="description" rows="3"  class="krwmp-textarea mt-1"></textarea></label>
+            <label  class="form-label">Organisation Name <span class="text-rose-400">*</span><input name="institution_name" required  class="form-input mt-1" placeholder="e.g. Kelani Youth Volunteers"></label>
+            <label  class="form-label">Registration / Code<input name="institution_code"  class="form-input mt-1" placeholder="e.g. VO-001"></label>
+            <label  class="form-label">Organisation Type<select name="institution_type"  class="form-select mt-1"><option value="Volunteer Organisation">Volunteer Organisation</option><option value="Community Based Organisation">Community Based Organisation</option><option value="Youth Group">Youth Group</option><option value="Environmental NGO">Environmental NGO</option><option value="Civil Society Organisation">Civil Society Organisation</option></select></label>
+            <label  class="form-label">Contact Person<input name="contact_person"  class="form-input mt-1"></label>
+            <label  class="form-label">Contact Phone<input name="contact_phone"  class="form-input mt-1"></label>
+            <label  class="form-label">Contact Email<input name="contact_email" type="email"  class="form-input mt-1"></label>
+            <label  class="form-label md:col-span-2">Address <span class="text-rose-400">*</span><input name="address" required  class="form-input mt-1"></label>
+            <label  class="form-label">Website<input name="website"  class="form-input mt-1" placeholder="https://example.org"></label>
+            <label  class="form-label">Status<select name="active"  class="form-select mt-1"><option value="true">Active</option><option value="false">Inactive</option></select></label>
+            <label  class="form-label md:col-span-2">Supportive Document<input name="supporting_document" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,application/pdf,image/jpeg,image/png,image/webp"  class="form-input mt-1"><span class="block mt-1 text-xs text-slate-500">Allowed: PDF, image, DOC/DOCX, XLS/XLSX.</span></label>
+            <label  class="form-label md:col-span-2">Description / Mandate<textarea name="description" rows="3"  class="form-textarea mt-1"></textarea></label>
           </section>
 
           <section class="krwmp-map-panel space-y-3">
-            <h3 class="krwmp-section-title">Organisation Location</h3>
+            <h3 class="form-section-heading">Organisation Location</h3>
             <div id="volunteerLocationPicker" class="space-y-2">
               <div data-location-map class="krwmp-location-map h-80"></div>
               <div class="flex gap-2">
@@ -82,8 +82,8 @@
 
       <section class="krwmp-panel krwmp-stack-md">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <div><h2 class="krwmp-section-title">Organisation Directory</h2><p class="krwmp-help-text">Admin users can delete volunteer organisation records.</p></div>
-          <input id="searchInput" type="search" placeholder="Search name, type, DSD, GND or contact"  class="krwmp-input lg:w-96 focus:ring-2 focus:ring-emerald-400">
+          <div><h2 class="form-section-heading">Organisation Directory</h2><p class="form-helper">Admin users can delete volunteer organisation records.</p></div>
+          <input id="searchInput" type="search" placeholder="Search name, type, DSD, GND or contact"  class="form-input lg:w-96 focus:ring-2 focus:ring-emerald-400">
         </div>
         <div class="krwmp-table-wrap">
           <table class="krwmp-table krwmp-table-compact">

@@ -11,84 +11,142 @@
   <div class="flex min-h-screen">
     <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
     <main class="flex-1 krwmp-page krwmp-stack-lg">
-      <header class="krwmp-page-header">
-        <p class="krwmp-eyebrow">Community Participation Master Data</p>
-        <h1 class="krwmp-page-title">Issue & Solution Library</h1>
-        <p class="krwmp-body-text">Manage issue categories, specific reportable issues, and recommended solutions linked to one or more issues.</p>
+      <header class="krwmp-page-header krwmp-cluster-between gap-4">
+        <div>
+          <p class="krwmp-eyebrow">Community Participation Master Data</p>
+          <h1 class="krwmp-page-title">Issue & Solution Library</h1>
+          <p class="krwmp-body-text">Manage issue categories, specific reportable issues, and recommended solutions linked to one or more issues.</p>
+        </div>
+        <div id="libraryActionButtons" class="flex flex-wrap justify-end gap-2 hidden">
+          <button id="addCategoryBtn" type="button" class="krwmp-btn krwmp-btn-secondary">Add Issue Category</button>
+          <button id="addIssueBtn" type="button" class="krwmp-btn krwmp-btn-secondary">Add Specific Issue</button>
+          <button id="addSolutionBtn" type="button" class="krwmp-btn krwmp-btn-primary">Add Solution</button>
+        </div>
       </header>
 
       <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
-
-      <section class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <form id="categoryForm" class="krwmp-panel krwmp-stack-sm" novalidate>
-          <h2 class="krwmp-section-title">1. Issue Category</h2>
-          <p class="krwmp-help-text">Examples: Drainage, Deforestation, Solid Waste, Water Pollution.</p>
-          <input name="category_name" required minlength="3" maxlength="150" placeholder="Category name"  class="krwmp-input">
-          <textarea name="description" maxlength="500" placeholder="Category description"  class="krwmp-textarea"></textarea>
-          <select name="severity_level"  class="krwmp-select">
-            <option value="low">Low</option>
-            <option value="medium" selected>Medium</option>
-            <option value="high">High</option>
-          </select>
-          <button  class="krwmp-btn krwmp-btn-primary">Save Category</button>
-        </form>
-
-        <form id="issueForm" class="krwmp-panel krwmp-stack-sm" novalidate>
-          <h2 class="krwmp-section-title">2. Specific Issue</h2>
-          <p class="krwmp-help-text">Examples: Solid Waste - Open Dumping, Solid Waste - Garbage thrown into canals.</p>
-          <select name="category_id" id="issueCategory" required  class="krwmp-select"></select>
-          <input name="issue_name" required minlength="3" maxlength="200" placeholder="Specific issue name"  class="krwmp-input">
-          <textarea name="description" maxlength="700" placeholder="Issue description"  class="krwmp-textarea"></textarea>
-          <select name="severity_level"  class="krwmp-select">
-            <option value="low">Low</option>
-            <option value="medium" selected>Medium</option>
-            <option value="high">High</option>
-          </select>
-          <button  class="krwmp-btn krwmp-btn-primary">Save Specific Issue</button>
-        </form>
-
-        <form id="solutionForm" class="krwmp-panel krwmp-stack-sm" novalidate>
-          <h2 class="krwmp-section-title">3. Recommended Solution</h2>
-          <p class="krwmp-help-text">Solutions are linked to specific issues, not directly to categories. Hold Ctrl to select multiple issues.</p>
-          <input name="solution_title" required minlength="3" maxlength="200" placeholder="Solution title"  class="krwmp-input">
-          <textarea name="solution_description" required minlength="10" maxlength="1500" placeholder="Solution description"  class="krwmp-textarea"></textarea>
-          <select name="issue_ids" id="solutionIssues" required multiple size="8"  class="krwmp-select"></select>
-          <textarea name="recommended_actions" maxlength="1500" placeholder="Recommended actions / implementation steps"  class="krwmp-textarea"></textarea>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input name="responsible_party" maxlength="200" placeholder="Responsible party"  class="krwmp-input">
-            <input name="estimated_timeframe" maxlength="100" placeholder="Estimated timeframe"  class="krwmp-input">
-          </div>
-          <select name="priority_level"  class="krwmp-select">
-            <option value="low">Low Priority</option>
-            <option value="medium" selected>Medium Priority</option>
-            <option value="high">High Priority</option>
-          </select>
-          <button  class="krwmp-btn krwmp-btn-primary">Save Solution</button>
-        </form>
-      </section>
 
       <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <section class="krwmp-panel">
           <div class="flex items-center justify-between gap-3 mb-4">
             <div>
-              <h2 class="krwmp-section-title">Issue Structure</h2>
-              <p class="krwmp-help-text">Categories with specific issues grouped below. Click a category to expand.</p>
+              <h2 class="form-section-heading">Issue Structure</h2>
+              <p class="form-helper">Categories with specific issues grouped below. Click a category to expand.</p>
             </div>
-            <button id="refreshBtn"  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Refresh</button>
+            <button id="refreshBtn" class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Refresh</button>
           </div>
           <div id="categoryIssueList" class="space-y-3"></div>
           <div id="issuePagination" class="mt-4"></div>
         </section>
 
         <section class="krwmp-panel">
-          <h2 class="krwmp-section-title mb-1">Solution Records</h2>
-          <p class="krwmp-help-text mb-4">Click a solution title to view details and linked issues.</p>
+          <h2 class="form-section-heading mb-1">Solution Records</h2>
+          <p class="form-helper mb-4">Click a solution title to view details and linked issues.</p>
           <div id="solutionList" class="space-y-3"></div>
           <div id="solutionPagination" class="mt-4"></div>
         </section>
       </section>
     </main>
   </div>
+
+  <dialog id="categoryModal" class="krwmp-modal">
+    <header class="krwmp-modal-header">
+      <h2 id="categoryModalTitle" class="krwmp-modal-title">Add Issue Category</h2>
+      <button type="button" class="krwmp-modal-close" data-close-modal="categoryModal" aria-label="Close">&times;</button>
+    </header>
+    <form id="categoryForm" class="krwmp-modal-body krwmp-stack-sm" novalidate>
+      <input type="hidden" name="id">
+      <label class="form-label">Category Name
+        <input name="category_name" required minlength="3" maxlength="150" class="form-input mt-1">
+      </label>
+      <label class="form-label">Description
+        <textarea name="description" maxlength="500" class="form-textarea mt-1"></textarea>
+      </label>
+      <label class="form-label">Severity
+        <select name="severity_level" class="form-select mt-1">
+          <option value="low">Low</option>
+          <option value="medium" selected>Medium</option>
+          <option value="high">High</option>
+        </select>
+      </label>
+      <footer class="krwmp-modal-actions">
+        <button class="krwmp-btn krwmp-btn-primary">Save Category</button>
+        <button type="button" class="krwmp-btn krwmp-btn-secondary" data-close-modal="categoryModal">Cancel</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog id="issueModal" class="krwmp-modal">
+    <header class="krwmp-modal-header">
+      <h2 id="issueModalTitle" class="krwmp-modal-title">Add Specific Issue</h2>
+      <button type="button" class="krwmp-modal-close" data-close-modal="issueModal" aria-label="Close">&times;</button>
+    </header>
+    <form id="issueForm" class="krwmp-modal-body krwmp-stack-sm" novalidate>
+      <input type="hidden" name="id">
+      <label class="form-label">Issue Category
+        <select name="category_id" id="issueCategory" required class="form-select mt-1"></select>
+      </label>
+      <label class="form-label">Specific Issue Name
+        <input name="issue_name" required minlength="3" maxlength="200" class="form-input mt-1">
+      </label>
+      <label class="form-label">Description
+        <textarea name="description" maxlength="700" class="form-textarea mt-1"></textarea>
+      </label>
+      <label class="form-label">Severity
+        <select name="severity_level" class="form-select mt-1">
+          <option value="low">Low</option>
+          <option value="medium" selected>Medium</option>
+          <option value="high">High</option>
+        </select>
+      </label>
+      <footer class="krwmp-modal-actions">
+        <button class="krwmp-btn krwmp-btn-primary">Save Specific Issue</button>
+        <button type="button" class="krwmp-btn krwmp-btn-secondary" data-close-modal="issueModal">Cancel</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog id="solutionModal" class="krwmp-modal krwmp-modal-xl">
+    <header class="krwmp-modal-header">
+      <h2 id="solutionModalTitle" class="krwmp-modal-title">Add Solution</h2>
+      <button type="button" class="krwmp-modal-close" data-close-modal="solutionModal" aria-label="Close">&times;</button>
+    </header>
+    <form id="solutionForm" class="krwmp-modal-body krwmp-stack-sm" novalidate>
+      <input type="hidden" name="id">
+      <label class="form-label">Solution Title
+        <input name="solution_title" required minlength="3" maxlength="200" class="form-input mt-1">
+      </label>
+      <label class="form-label">Solution Description
+        <textarea name="solution_description" required minlength="10" maxlength="1500" class="form-textarea mt-1"></textarea>
+      </label>
+      <label class="form-label">Linked Specific Issues
+        <select name="issue_ids" id="solutionIssues" required multiple size="8" class="form-select mt-1"></select>
+      </label>
+      <label class="form-label">Recommended Actions
+        <textarea name="recommended_actions" maxlength="1500" class="form-textarea mt-1"></textarea>
+      </label>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <label class="form-label">Responsible Party
+          <input name="responsible_party" maxlength="200" class="form-input mt-1">
+        </label>
+        <label class="form-label">Estimated Timeframe
+          <input name="estimated_timeframe" maxlength="100" class="form-input mt-1">
+        </label>
+      </div>
+      <label class="form-label">Priority
+        <select name="priority_level" class="form-select mt-1">
+          <option value="low">Low Priority</option>
+          <option value="medium" selected>Medium Priority</option>
+          <option value="high">High Priority</option>
+        </select>
+      </label>
+      <footer class="krwmp-modal-actions">
+        <button class="krwmp-btn krwmp-btn-primary">Save Solution</button>
+        <button type="button" class="krwmp-btn krwmp-btn-secondary" data-close-modal="solutionModal">Cancel</button>
+      </footer>
+    </form>
+  </dialog>
+
   <script src="/assets/js/krwmp-global.js"></script>
   <script src="/assets/js/privilege-guard.js"></script>
   <script src="/admin-solution-library.js"></script>

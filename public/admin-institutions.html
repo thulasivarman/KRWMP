@@ -24,24 +24,24 @@
       <section id="writePanel" class="krwmp-panel krwmp-stack-md hidden">
         <div class="flex items-center justify-between gap-4">
           <div>
-            <h2 class="krwmp-section-title">Add / Edit Institution</h2>
-            <p class="krwmp-help-text">Users with institution management create or update access can maintain institution records.</p>
+            <h2 class="form-section-heading">Add / Edit Institution</h2>
+            <p class="form-helper">Users with institution management create or update access can maintain institution records.</p>
           </div>
           <button type="button" id="resetInstitutionBtn"  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">New Record</button>
         </div>
 
         <form id="institutionForm" class="grid grid-cols-1 md:grid-cols-3 gap-4" novalidate>
           <input type="hidden" name="id">
-          <label  class="krwmp-field">Institution Name <span class="text-rose-400">*</span><input name="institution_name" required minlength="3" maxlength="255"  class="krwmp-input mt-1" placeholder="e.g., Department of Irrigation"></label>
-          <label  class="krwmp-field">Institution Code <input name="institution_code" maxlength="50" pattern="[A-Za-z0-9_-]{2,50}"  class="krwmp-input mt-1 uppercase" placeholder="e.g., DOI"></label>
-          <label  class="krwmp-field">Institution Type <span class="text-rose-400">*</span><select name="institution_type" id="institutionTypeSelect" required  class="krwmp-select mt-1"><option value="">Select type</option></select></label>
+          <label  class="form-label">Institution Name <span class="text-rose-400">*</span><input name="institution_name" required minlength="3" maxlength="255"  class="form-input mt-1" placeholder="e.g., Department of Irrigation"></label>
+          <label  class="form-label">Institution Code <input name="institution_code" maxlength="50" pattern="[A-Za-z0-9_-]{2,50}"  class="form-input mt-1 uppercase" placeholder="e.g., DOI"></label>
+          <label  class="form-label">Institution Type <span class="text-rose-400">*</span><select name="institution_type" id="institutionTypeSelect" required  class="form-select mt-1"><option value="">Select type</option></select></label>
 
-          <label  class="krwmp-field">Contact Person<input name="contact_person" maxlength="150"  class="krwmp-input mt-1"></label>
-          <label  class="krwmp-field">Contact Phone<input name="contact_phone" maxlength="30" pattern="[0-9+()\-\s]{7,30}"  class="krwmp-input mt-1" placeholder="+94..."></label>
-          <label  class="krwmp-field">Contact Email<input name="contact_email" type="email" maxlength="150"  class="krwmp-input mt-1"></label>
+          <label  class="form-label">Contact Person<input name="contact_person" maxlength="150"  class="form-input mt-1"></label>
+          <label  class="form-label">Contact Phone<input name="contact_phone" maxlength="30" pattern="[0-9+()\-\s]{7,30}"  class="form-input mt-1" placeholder="+94..."></label>
+          <label  class="form-label">Contact Email<input name="contact_email" type="email" maxlength="150"  class="form-input mt-1"></label>
 
-          <label  class="krwmp-field md:col-span-2">Address <span class="text-rose-400">*</span><input name="address" required maxlength="300"  class="krwmp-input mt-1"></label>
-          <label  class="krwmp-field">Website<input name="website" type="url" maxlength="250"  class="krwmp-input mt-1" placeholder="https://..."></label>
+          <label  class="form-label md:col-span-2">Address <span class="text-rose-400">*</span><input name="address" required maxlength="300"  class="form-input mt-1"></label>
+          <label  class="form-label">Website<input name="website" type="url" maxlength="250"  class="form-input mt-1" placeholder="https://..."></label>
 
           <input type="hidden" name="district">
           <input type="hidden" name="dsd_name">
@@ -49,9 +49,9 @@
           <input type="hidden" name="latitude">
           <input type="hidden" name="longitude">
 
-          <label  class="krwmp-field md:col-span-3">Description<textarea name="description" maxlength="1000" rows="3"  class="krwmp-textarea mt-1" placeholder="Brief note on mandate, project relevance or responsibilities"></textarea></label>
+          <label  class="form-label md:col-span-3">Description<textarea name="description" maxlength="1000" rows="3"  class="form-textarea mt-1" placeholder="Brief note on mandate, project relevance or responsibilities"></textarea></label>
 
-          <label  class="krwmp-field flex items-center gap-2 md:col-span-3"><input name="active" type="checkbox" checked  class="krwmp-input"> Active institution</label>
+          <label  class="form-label flex items-center gap-2 md:col-span-3"><input name="active" type="checkbox" checked class="form-checkbox"> Active institution</label>
 
           <div id="institutionLocationPicker" class="md:col-span-3 krwmp-map-panel">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
@@ -84,13 +84,13 @@
       <section class="krwmp-panel">
         <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-4">
           <div>
-            <h2 class="krwmp-section-title">Institution Directory</h2>
-            <p class="krwmp-help-text">All authenticated project users with view access can browse institutions.</p>
+            <h2 class="form-section-heading">Institution Directory</h2>
+            <p class="form-helper">All authenticated project users with view access can browse institutions.</p>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-2 text-xs w-full lg:w-auto">
-            <input id="searchInput" placeholder="Search name/code/contact"  class="krwmp-input">
-            <select id="typeFilter"  class="krwmp-select"><option value="">All types</option></select>
-            <select id="activeFilter"  class="krwmp-select"><option value="">All status</option><option value="true">Active</option><option value="false">Inactive</option></select>
+            <input id="searchInput" placeholder="Search name/code/contact"  class="form-input">
+            <select id="typeFilter"  class="form-select"><option value="">All types</option></select>
+            <select id="activeFilter"  class="form-select"><option value="">All status</option><option value="true">Active</option><option value="false">Inactive</option></select>
             <button id="refreshBtn"  class="krwmp-btn krwmp-btn-primary">Refresh</button>
           </div>
         </div>

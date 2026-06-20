@@ -27,6 +27,8 @@ fastify.register(require('./routes/pollution-source.routes'), { prefix: '/api' }
 fastify.register(require('./routes/volunteer-organisation.routes'), { prefix: '/api' });
 fastify.register(require('./routes/knowledge.routes'), { prefix: '/api' });
 fastify.register(require('./routes/file-attachment.routes'), { prefix: '/api' });
+fastify.register(require('./routes/person.routes'), { prefix: '/api' });
+require('./middleware/audit.middleware')(fastify);
 
 fastify.setErrorHandler((error, request, reply) => { fastify.log.error(error); reply.status(error.statusCode || 500).send({ success: false, message: error.message || 'Server error' }); });
 fastify.setNotFoundHandler((request, reply) => {

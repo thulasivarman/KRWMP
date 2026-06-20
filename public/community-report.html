@@ -22,51 +22,51 @@
       <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
 
       <form id="communityReportForm" class="krwmp-panel grid grid-cols-1 md:grid-cols-2 gap-4">
-        <label  class="krwmp-field">Issue Category
-          <select name="category_id" id="categorySelect"  class="krwmp-select mt-1" required></select>
+        <label  class="form-label">Issue Category
+          <select name="category_id" id="categorySelect"  class="form-select mt-1" required></select>
         </label>
 
-        <label  class="krwmp-field">Specific Issue
-          <select name="issue_id" id="specificIssueSelect"  class="krwmp-select mt-1" required disabled>
+        <label  class="form-label">Specific Issue
+          <select name="issue_id" id="specificIssueSelect"  class="form-select mt-1" required disabled>
             <option value="">Select category first</option>
           </select>
         </label>
 
-        <label id="otherCategoryLabel"  class="krwmp-field hidden">Other Category
-          <input name="other_category_name" id="otherCategoryInput"  class="krwmp-input mt-1" placeholder="Enter issue category">
+        <label id="otherCategoryLabel"  class="form-label hidden">Other Category
+          <input name="other_category_name" id="otherCategoryInput"  class="form-input mt-1" placeholder="Enter issue category">
         </label>
 
-        <label id="otherIssueLabel"  class="krwmp-field hidden">Other Specific Issue
-          <input name="other_issue_name" id="otherIssueInput"  class="krwmp-input mt-1" placeholder="Enter specific issue">
+        <label id="otherIssueLabel"  class="form-label hidden">Other Specific Issue
+          <input name="other_issue_name" id="otherIssueInput"  class="form-input mt-1" placeholder="Enter specific issue">
         </label>
 
-        <label  class="krwmp-field">Applicable Solution <span class="text-slate-500 font-normal">(Optional)</span>
-          <select name="assigned_solution_id" id="solutionSelect"  class="krwmp-select mt-1" disabled>
+        <label  class="form-label">Applicable Solution <span class="text-slate-500 font-normal">(Optional)</span>
+          <select name="assigned_solution_id" id="solutionSelect"  class="form-select mt-1" disabled>
             <option value="">No applicable solution selected</option>
           </select>
         </label>
 
-        <label  class="krwmp-field">Severity
-          <select name="severity_level"  class="krwmp-select mt-1">
+        <label  class="form-label">Severity
+          <select name="severity_level"  class="form-select mt-1">
             <option value="low">Low</option>
             <option value="medium" selected>Medium</option>
             <option value="high">High</option>
           </select>
         </label>
 
-        <label  class="krwmp-field md:col-span-2">Issue Title
-          <input name="issue_title" id="issueTitleInput"  class="krwmp-input mt-1" required placeholder="Auto-filled from selected issue; edit if required">
+        <label  class="form-label md:col-span-2">Issue Title
+          <input name="issue_title" id="issueTitleInput"  class="form-input mt-1" required placeholder="Auto-filled from selected issue; edit if required">
         </label>
 
-        <label  class="krwmp-field md:col-span-2">Description
-          <textarea name="description" rows="4"  class="krwmp-textarea mt-1" placeholder="Describe the issue, visible impacts, urgency, source, and community concerns"></textarea>
+        <label  class="form-label md:col-span-2">Description
+          <textarea name="description" rows="4"  class="form-textarea mt-1" placeholder="Describe the issue, visible impacts, urgency, source, and community concerns"></textarea>
         </label>
 
         <section class="md:col-span-2 krwmp-map-panel space-y-3">
           <div class="flex items-start justify-between gap-3">
             <div>
-              <h2 class="krwmp-section-title">Location Selection</h2>
-              <p class="krwmp-help-text">Click the map or use browser GPS. DSD, GND and Sub-watershed are detected automatically.</p>
+              <h2 class="form-section-heading">Location Selection</h2>
+              <p class="form-helper">Click the map or use browser GPS. DSD, GND and Sub-watershed are detected automatically.</p>
             </div>
             <div class="flex gap-2 text-xs">
               <button type="button" data-location-gps  class="krwmp-btn krwmp-btn-secondary">Use My Location</button>
@@ -91,28 +91,32 @@
           </div>
         </section>
 
-        <label  class="krwmp-field md:col-span-2">Location Description
-          <input name="location_description"  class="krwmp-input mt-1" placeholder="Village, road, landmark, stream name">
+        <label  class="form-label md:col-span-2">Location Description
+          <input name="location_description"  class="form-input mt-1" placeholder="Village, road, landmark, stream name">
         </label>
 
-        <label  class="krwmp-field">Reporter Name
-          <input name="reporter_name" id="reporterNameInput"  class="krwmp-input mt-1">
+        <label  class="form-label">Reporter Name
+          <input name="reporter_name" id="reporterNameInput"  class="form-input mt-1">
         </label>
 
-        <label  class="krwmp-field">Contact Number
-          <input name="reporter_contact" id="reporterContactInput" type="tel" pattern="^[+0-9][0-9 ()-]{6,19}$"  class="krwmp-input mt-1" placeholder="Example: +94771234567 or 0771234567">
+        <label  class="form-label">Contact Number
+          <input name="reporter_contact" id="reporterContactInput" type="tel" pattern="^[+0-9][0-9 ()-]{6,19}$"  class="form-input mt-1" placeholder="Example: +94771234567 or 0771234567">
           <span class="text-xs text-slate-500 mt-1 block">Use digits, spaces, hyphens or +. Minimum 7 digits.</span>
         </label>
 
-        <section class="krwmp-field md:col-span-2 space-y-3">
+        <label  class="form-label">Email <span class="text-slate-500 font-normal">(Optional)</span>
+          <input name="reporter_email" id="reporterEmailInput" type="email"  class="form-input mt-1" placeholder="name@example.com">
+        </label>
+
+        <section class="form-label md:col-span-2 space-y-3">
           <div class="flex items-center justify-between gap-3">
             <div>
               <div>Photo Evidence</div>
-              <p class="mt-1 text-xs font-normal text-slate-500">JPG, PNG or WEBP. Up to 5 private images.</p>
+              <p class="form-helper mt-1">JPG, PNG or WEBP. Up to 5 private images.</p>
             </div>
-            <span id="photoCountLabel" class="text-xs font-normal text-slate-500">0 / 5</span>
+            <span id="photoCountLabel" class="form-helper">0 / 5</span>
           </div>
-          <input id="photoEvidenceInput" type="file" accept="image/jpeg,image/png,image/webp" multiple  class="krwmp-input">
+          <input id="photoEvidenceInput" type="file" accept="image/jpeg,image/png,image/webp" multiple  class="form-input">
           <div id="photoPreviewGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
         </section>
 

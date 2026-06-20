@@ -12,26 +12,26 @@
     <main class="flex-1 krwmp-page krwmp-stack-lg">
       <header class="krwmp-page-header">
         <h1 class="krwmp-page-title">Community Issue Review</h1>
-        <p class="krwmp-body-text">Review public reports, assign solutions, and update response status.</p>
+        <p class="krwmp-body-text">Review public reports, assign solutions and interventions, and update response status.</p>
       </header>
       <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
       <section class="krwmp-panel krwmp-stack-md">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <h2 class="krwmp-section-title">Submitted Reports</h2>
+          <h2 class="form-section-heading">Submitted Reports</h2>
           <button id="refreshBtn"  class="krwmp-btn krwmp-btn-primary">Refresh</button>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3 bg-slate-950/60 border border-slate-800 rounded-lg p-4">
-          <label  class="krwmp-field">Search Issue
-            <input id="searchInput" type="search"  class="krwmp-input mt-1" placeholder="Search code, title, description, location">
+          <label  class="form-label">Search Issue
+            <input id="searchInput" type="search"  class="form-input mt-1" placeholder="Search code, title, description, location">
           </label>
-          <label  class="krwmp-field">Status
-            <select id="statusFilter"  class="krwmp-select mt-1"><option value="">All Statuses</option></select>
+          <label  class="form-label">Status
+            <select id="statusFilter"  class="form-select mt-1"><option value="">All Statuses</option></select>
           </label>
-          <label  class="krwmp-field">Issue Category
-            <select id="categoryFilter"  class="krwmp-select mt-1"><option value="">All Categories</option></select>
+          <label  class="form-label">Issue Category
+            <select id="categoryFilter"  class="form-select mt-1"><option value="">All Categories</option></select>
           </label>
-          <label  class="krwmp-field">Severity
-            <select id="severityFilter"  class="krwmp-select mt-1"><option value="">All Severities</option></select>
+          <label  class="form-label">Severity
+            <select id="severityFilter"  class="form-select mt-1"><option value="">All Severities</option></select>
           </label>
           <div class="flex items-end gap-2">
             <button id="clearFiltersBtn" type="button"  class="krwmp-btn krwmp-btn-secondary krwmp-btn-full">Clear Filters</button>

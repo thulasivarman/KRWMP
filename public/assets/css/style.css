@@ -297,7 +297,7 @@ body.krwmp-sidebar-collapsed .krwmp-sidebar-toggle {
     border: 1px solid rgba(51, 65, 85, 0.9);
     background: rgba(15, 23, 42, 0.92);
     color: #e2e8f0;
-    font-weight: 800;
+    font-weight: 600;
     box-shadow: 0 12px 28px rgba(2, 6, 23, 0.35);
     backdrop-filter: blur(12px);
     transition: all 0.18s ease;
@@ -618,20 +618,21 @@ body {
 
 .krwmp-page-title {
     margin: 0.3rem 0 0;
-    color: #e2e8f0;
-    font-size: clamp(1.25rem, 2vw, 1.75rem);
-    font-weight: 800;
+    color: #f9fafb;
+    font-size: 1.875rem;
+    font-weight: 700;
     line-height: 1.2;
 }
 
-.krwmp-section-title {
+.krwmp-section-title,
+.form-section-heading {
     margin: 0;
-    color: #34d399;
-    font-size: 0.75rem;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    line-height: 1.35;
-    text-transform: uppercase;
+    color: #f9fafb;
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    line-height: 1.3;
+    text-transform: none;
 }
 
 .krwmp-body-text {
@@ -641,10 +642,12 @@ body {
 }
 
 .krwmp-help-text,
-.krwmp-meta-text {
-    color: var(--krwmp-color-text-subtle);
+.krwmp-meta-text,
+.form-helper {
+    color: #9ca3af;
     font-size: 0.75rem;
-    line-height: 1.5;
+    font-weight: 400;
+    line-height: 1.45;
 }
 
 .krwmp-panel,
@@ -683,43 +686,69 @@ body {
     gap: 1rem;
 }
 
-.krwmp-field {
+.krwmp-field,
+.form-label {
     display: grid;
-    gap: 0.35rem;
-    color: #cbd5e1;
+    gap: 0.4rem;
+    color: #e5e7eb;
     font-size: 0.875rem;
-    font-weight: 650;
+    font-weight: 500;
+    line-height: 1.35;
+}
+
+.form-label.flex {
+    display: flex;
 }
 
 .krwmp-label {
-    color: #cbd5e1;
+    color: #e5e7eb;
     font-size: 0.875rem;
-    font-weight: 650;
+    font-weight: 500;
+    line-height: 1.35;
 }
 
 .krwmp-input,
 .krwmp-select,
-.krwmp-textarea {
+.krwmp-textarea,
+.form-input,
+.form-select,
+.form-textarea {
     width: 100%;
     border: 1px solid #334155;
     border-radius: var(--krwmp-radius-md);
     background: #020617;
-    color: var(--krwmp-color-text);
+    color: #f3f4f6;
     font: inherit;
-    font-size: 0.875rem;
+    font-size: 1rem;
+    font-weight: 400;
     line-height: 1.45;
-    padding: 0.6rem 0.75rem;
+    min-height: 2.75rem;
+    padding: 0.625rem 0.75rem;
     transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
 }
 
-.krwmp-textarea {
+.krwmp-input::placeholder,
+.krwmp-textarea::placeholder,
+.form-input::placeholder,
+.form-textarea::placeholder {
+    color: #6b7280;
+    font-size: 1rem;
+    font-weight: 400;
+    opacity: 1;
+}
+
+.krwmp-textarea,
+.form-textarea {
     min-height: 6rem;
     resize: vertical;
 }
 
 .krwmp-input:focus,
 .krwmp-select:focus,
-.krwmp-textarea:focus {
+.krwmp-textarea:focus,
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
     outline: none;
     border-color: rgba(52, 211, 153, 0.75);
     box-shadow: var(--krwmp-focus-ring);
@@ -727,7 +756,10 @@ body {
 
 .krwmp-input:disabled,
 .krwmp-select:disabled,
-.krwmp-textarea:disabled {
+.krwmp-textarea:disabled,
+.form-input:disabled,
+.form-select:disabled,
+.form-textarea:disabled {
     cursor: not-allowed;
     opacity: 0.6;
 }
@@ -735,22 +767,31 @@ body {
 .krwmp-input[aria-invalid="true"],
 .krwmp-select[aria-invalid="true"],
 .krwmp-textarea[aria-invalid="true"],
+.form-input[aria-invalid="true"],
+.form-select[aria-invalid="true"],
+.form-textarea[aria-invalid="true"],
 .krwmp-field-error .krwmp-input,
 .krwmp-field-error .krwmp-select,
-.krwmp-field-error .krwmp-textarea {
+.krwmp-field-error .krwmp-textarea,
+.krwmp-field-error .form-input,
+.krwmp-field-error .form-select,
+.krwmp-field-error .form-textarea {
     border-color: rgba(244, 63, 94, 0.8);
     box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.16);
 }
 
-.krwmp-validation-message {
-    color: #fda4af;
+.krwmp-validation-message,
+.form-error {
+    color: #fca5a5;
     font-size: 0.75rem;
-    font-weight: 650;
+    font-weight: 500;
     line-height: 1.45;
 }
 
 .krwmp-checkbox,
-.krwmp-radio {
+.krwmp-radio,
+.form-checkbox,
+.form-radio {
     width: 1rem;
     height: 1rem;
     accent-color: var(--krwmp-color-primary);
@@ -855,6 +896,7 @@ body {
     border-collapse: collapse;
     color: #cbd5e1;
     font-size: 0.875rem;
+    line-height: 1.5;
 }
 
 .krwmp-table th {
@@ -1071,9 +1113,10 @@ body {
 
 .krwmp-modal-title {
     margin: 0;
-    color: #e2e8f0;
-    font-size: 1rem;
-    font-weight: 800;
+    color: #f9fafb;
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.3;
 }
 
 .krwmp-modal-actions {

@@ -45,9 +45,9 @@ Recommended hierarchy:
 
 - Page eyebrow: `krwmp-eyebrow`
 - Page title: `krwmp-page-title`
-- Section title: `krwmp-section-title`
+- Section title: `form-section-heading`
 - Body copy: `krwmp-body-text`
-- Secondary helper text: `krwmp-help-text` or `krwmp-meta-text`
+- Secondary helper text: `form-helper` or `krwmp-meta-text`
 
 ## Layout And Spacing
 
@@ -74,8 +74,8 @@ Available helpers:
 <section class="krwmp-panel">
   <div class="krwmp-panel-header">
     <div>
-      <h2 class="krwmp-section-title">Saved Records</h2>
-      <p class="krwmp-help-text">Most recent records appear first.</p>
+      <h2 class="form-section-heading">Saved Records</h2>
+      <p class="form-helper">Most recent records appear first.</p>
     </div>
     <button class="krwmp-btn krwmp-btn-secondary">Refresh</button>
   </div>
@@ -106,38 +106,39 @@ Use primary buttons for one main action per panel. Use success for positive stat
 
 ```html
 <form class="krwmp-form-grid">
-  <label class="krwmp-field">
+  <label class="form-label">
     Institution Name
-    <input class="krwmp-input" name="institution_name" required>
-    <span class="krwmp-help-text">Use the official registered name.</span>
-    <span class="krwmp-validation-message">Institution name is required.</span>
+    <input class="form-input" name="institution_name" required>
+    <span class="form-helper">Use the official registered name.</span>
+    <span class="form-error">Institution name is required.</span>
   </label>
 
-  <label class="krwmp-field">
+  <label class="form-label">
     Status
-    <select class="krwmp-select" name="status">
+    <select class="form-select" name="status">
       <option value="active">Active</option>
       <option value="inactive">Inactive</option>
     </select>
   </label>
 
-  <label class="krwmp-field">
+  <label class="form-label">
     Notes
-    <textarea class="krwmp-textarea" name="notes"></textarea>
+    <textarea class="form-textarea" name="notes"></textarea>
   </label>
 </form>
 ```
 
 Use:
 
-- `krwmp-field`
-- `krwmp-input`
-- `krwmp-select`
-- `krwmp-textarea`
+- `form-label`
+- `form-input`
+- `form-select`
+- `form-textarea`
 - `krwmp-checkbox`
 - `krwmp-radio`
 - `krwmp-label`
-- `krwmp-validation-message`
+- `form-helper`
+- `form-error`
 
 Use native validation attributes and existing JavaScript validation rules. Add `aria-invalid="true"` or wrap the field in `krwmp-field-error` only when the current validation flow already marks a field invalid.
 

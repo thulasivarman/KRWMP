@@ -16,7 +16,7 @@
 
     function enhanceForms() {
         document.querySelectorAll('input, select, textarea').forEach((field) => {
-            if (!field.id) field.id = `krwmp-field-${Math.random().toString(36).slice(2, 9)}`;
+            if (!field.id) field.id = `form-label-${Math.random().toString(36).slice(2, 9)}`;
             field.classList.add('krwmp-form-control');
             if (field.hasAttribute('required')) {
                 const label = document.querySelector(`label[for="${field.id}"]`);
