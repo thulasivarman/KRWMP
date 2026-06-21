@@ -81,8 +81,8 @@ async function pollutionSourceRoutes(fastify) {
 
   fastify.post('/pollution-sources/:id/monitoring', async (request, reply) => {
     if (!await requirePrivilegeInline(request, reply, PRIVILEGE_KEY, 'create')) return;
-    const source = await service.createMonitoring(request.params.id, request.body || {}, currentUser(request));
-    return reply.status(201).send({ success: true, message: 'Monitoring record created successfully.', source });
+    const result = await service.createMonitoring(request.params.id, request.body || {}, currentUser(request));
+    return reply.status(201).send({ success: true, message: 'Monitoring record created successfully.', source: result.source, monitoring: result.monitoring });
   });
 
   fastify.get('/pollution-sources/:id/enforcement', async (request, reply) => {
