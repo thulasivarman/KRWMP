@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report Pollution Source - KRWMP Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div class="flex min-h-screen">
+    <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
+    <main class="flex-1 krwmp-page krwmp-stack-lg">
+      <header class="krwmp-page-header flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+        <div>
+          <p class="krwmp-eyebrow">Environmental Monitoring</p>
+          <h1 class="krwmp-page-title">Report Pollution Source</h1>
+          <p class="krwmp-body-text">Register a new pollution source with overseeing institution, source contact person, map location and evidence files.</p>
+        </div>
+        <a href="/pollution-sources.html" class="krwmp-btn krwmp-btn-secondary">Back to Pollution Sources</a>
+      </header>
+
+      <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
+
+      <form id="pollutionSourceForm" class="krwmp-panel grid grid-cols-1 md:grid-cols-2 gap-4">
+        <input type="hidden" name="source_contact_person_id" id="sourceContactPersonId">
+        <label class="form-label">Source Name
+          <input name="source_name" required class="form-input mt-1" placeholder="Example: Industrial discharge point">
+        </label>
+        <label class="form-label">Source Type
+          <select name="source_type_id" id="sourceTypeSelect" required class="form-select mt-1"></select>
+        </label>
+        <label class="form-label">Status
+          <select name="status" class="form-select mt-1">
+            <option value="active">Active</option>
+            <option value="under_investigation">Under Investigation</option>
+            <option value="controlled">Controlled</option>
+            <option value="closed">Closed</option>
+          </select>
+        </label>
+        <label class="form-label">Reported Date
+          <input name="reported_date" type="date" class="form-input mt-1">
+        </label>
+        <label class="form-label md:col-span-2">Overseeing Institution
+          <input name="overseeing_institution" class="form-input mt-1" placeholder="Authorized institution responsible for regular monitoring">
+        </label>
+        <label class="form-label md:col-span-2">Description
+          <textarea name="description" rows="3" class="form-textarea mt-1" placeholder="Describe observed pollution source, suspected activity, discharge, odour, colour, etc."></textarea>
+        </label>
+
+        <section class="md:col-span-2 krwmp-card-muted p-4 krwmp-stack-sm">
+          <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 class="form-section-heading">Pollution Source Contact Person</h2>
+              <p class="form-helper">Search existing master person data or enter a new contact. New details will be saved in the master person table.</p>
+            </div>
+            <button type="button" id="searchContactBtn" class="krwmp-btn krwmp-btn-secondary">Search Existing Contact</button>
+          </div>
+          <div id="contactSearchResults" class="space-y-2"></div>
+          <div id="selectedContactSummary" class="krwmp-empty-state py-3">No source contact linked yet. Enter details below if the person is not available.</div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <label class="form-label">Contact Person Name
+              <input name="contact_person_name" id="contactPersonName" class="form-input mt-1">
+            </label>
+            <label class="form-label">Contact Phone
+              <input name="contact_person_phone" id="contactPersonPhone" class="form-input mt-1">
+            </label>
+            <label class="form-label">Contact Email
+              <input name="contact_person_email" id="contactPersonEmail" type="email" class="form-input mt-1">
+            </label>
+          </div>
+        </section>
+
+        <section class="md:col-span-2 krwmp-map-panel space-y-3">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h2 class="form-section-heading">Location</h2>
+              <p class="form-helper">Click map or use GPS. DSD/GND will be detected if available.</p>
+            </div>
+            <div class="flex gap-2 text-xs">
+              <button type="button" data-location-gps class="krwmp-btn krwmp-btn-secondary">Use GPS</button>
+              <button type="button" data-location-clear class="krwmp-btn krwmp-btn-secondary">Clear</button>
+            </div>
+          </div>
+          <div id="pollutionLocationPicker" class="space-y-2">
+            <div data-location-map class="krwmp-location-map h-80"></div>
+            <p data-location-status class="krwmp-status-label">Click the map to select source location.</p>
+          </div>
+          <input type="hidden" name="latitude" id="latitudeInput" required>
+          <input type="hidden" name="longitude" id="longitudeInput" required>
+          <div id="locationInfo" class="krwmp-identify-panel">No location selected.</div>
+        </section>
+
+        <label class="form-label md:col-span-2">Location Description
+          <input name="location_description" class="form-input mt-1" placeholder="Village, road, stream, landmark">
+        </label>
+        <label class="form-label md:col-span-2">Evidence File Upload
+          <input id="sourceEvidenceInput" type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" multiple class="form-input mt-1">
+          <span id="sourceEvidenceStatus" class="form-helper mt-1 block">Optional. Attach photo evidence, PDF, document or spreadsheet.</span>
+        </label>
+        <div class="md:col-span-2 flex flex-wrap gap-2">
+          <button id="saveBtn" type="submit" class="krwmp-btn krwmp-btn-primary">Save Pollution Source</button>
+          <a href="/pollution-sources.html" class="krwmp-btn krwmp-btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </main>
+  </div>
+  <script src="/assets/js/krwmp-global.js"></script>
+  <script src="/assets/js/privilege-guard.js"></script>
+  <script src="/assets/js/location-picker.js"></script>
+  <script src="/assets/js/krwmp-file-attachments.js"></script>
+  <script src="/pollution-source-report.js"></script>
+</body>
+</html>
