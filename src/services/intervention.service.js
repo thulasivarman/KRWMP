@@ -50,11 +50,16 @@ async function listLibrary() {
   return result.rows;
 }
 
+async function getLibrary(id) {
+  const result = await pool.query('SELECT * FROM public.intervention_library WHERE id = $1;', [id]);
+  return result.rows[0] || null;
+}
+
 async function createLibrary(body = {}, user = 'system') {
   const result = await pool.query(`
     INSERT INTO public.intervention_library (intervention_key, intervention_name, intervention_category, description, standard_actions, expected_outputs, responsible_institution, default_priority, active, created_by, updated_by)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,true,$9,$9) RETURNING *;
-  `, [safeKey(body.intervention_key || body.intervention_name), body.intervention_name, body.intervention_category || null, body.description || null, body.standard_actions || null, body.expected_outputs || null, body.responsible_institution || null, body.default_priority || 'medium', user]);
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,COALESCE($9,true),$10,$10) RETURNING *;
+  `, [safeKey(body.intervention_key || body.intervention_name), body.intervention_name, body.intervention_category || null, body.description || null, body.standard_actions || null, body.expected_outputs || null, body.responsible_institution || null, body.default_priority || 'medium', body.active === undefined ? true : Boolean(body.active), user]);
   return result.rows[0];
 }
 
@@ -63,6 +68,16 @@ async function updateLibrary(id, body = {}, user = 'system') {
     UPDATE public.intervention_library SET intervention_name=COALESCE($2,intervention_name), intervention_category=COALESCE($3,intervention_category), description=COALESCE($4,description), standard_actions=COALESCE($5,standard_actions), expected_outputs=COALESCE($6,expected_outputs), responsible_institution=COALESCE($7,responsible_institution), default_priority=COALESCE($8,default_priority), active=COALESCE($9,active), updated_by=$10, updated_at=now() WHERE id=$1 RETURNING *;
   `, [id, body.intervention_name || null, body.intervention_category || null, body.description || null, body.standard_actions || null, body.expected_outputs || null, body.responsible_institution || null, body.default_priority || null, body.active === undefined ? null : Boolean(body.active), user]);
   return result.rows[0] || null;
+}
+
+async function deleteLibrary(id, user = 'system') {
+  const result = await pool.query(`
+    UPDATE public.intervention_library
+    SET active = false, updated_by = $2, updated_at = now()
+    WHERE id = $1
+    RETURNING id;
+  `, [id, user]);
+  return result.rowCount > 0;
 }
 
 async function listRegistry() {
@@ -181,56 +196,17 @@ async function listTimeline(interventionId) {
   return result.rows;
 }
 
-async function updateTimeline(interventionId, actionId, body = {}, user = 'system') {
-  const progress = progressValue(body.progress_percent, true);
-  const result = await pool.query(`
-    UPDATE public.intervention_action_timeline
-    SET action_date = COALESCE($3, action_date),
-        action_title = COALESCE($4, action_title),
-        action_description = $5,
-        action_status = COALESCE($6, action_status),
-        progress_percent = $7,
-        officer_name = COALESCE($8, officer_name),
-        officer_contact = COALESCE($9, officer_contact),
-        responsible_person_id = COALESCE($10, responsible_person_id),
-        updated_by = $11,
-        updated_at = now()
-    WHERE intervention_id = $1
-      AND id = $2
-    RETURNING *;
-  `, [interventionId, actionId, body.action_date || null, body.action_title || null, body.action_description || null, body.action_status || 'completed', progress, body.officer_name || null, body.officer_contact || null, body.responsible_person_id === undefined ? null : uuidOrNull(body.responsible_person_id), user]);
-  if (result.rows[0]) await recalculateRegistryProgress(interventionId, user);
-  return result.rows[0] || null;
-}
-
-async function deleteTimeline(interventionId, actionId, user = 'system') {
-  const result = await pool.query(`
-    DELETE FROM public.intervention_action_timeline
-    WHERE intervention_id = $1
-      AND id = $2
-    RETURNING id;
-  `, [interventionId, actionId]);
-  if (result.rowCount > 0) await recalculateRegistryProgress(interventionId, user);
-  return result.rowCount > 0;
-}
-
-async function createOfficer(interventionId, body = {}, user = 'system') {
-  const result = await pool.query(`
-    INSERT INTO public.intervention_officers (intervention_id, officer_name, designation, institution, phone, email, responsibility, active, created_by, updated_by)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,true,$8,$8) RETURNING *;
-  `, [interventionId, body.officer_name, body.designation || null, body.institution || null, body.phone || null, body.email || null, body.responsibility || null, user]);
-  return result.rows[0];
-}
-
-async function getGeoJson() {
-  const result = await pool.query(`
-    SELECT jsonb_build_object('type','FeatureCollection','features',COALESCE(jsonb_agg(feature),'[]'::jsonb)) AS geojson
-    FROM (
-      SELECT jsonb_build_object('type','Feature','id',r.id,'geometry',ST_AsGeoJSON(r.geom)::jsonb,'properties',jsonb_build_object('id',r.id,'intervention_code',r.intervention_code,'intervention_title',r.intervention_title,'status',r.status,'priority',r.priority,'progress_percent',r.progress_percent,'location_name',r.location_name,'village_name',r.village_name,'gnd_name',r.gnd_name,'dsd_name',r.dsd_name,'lead_officer_name',r.lead_officer_name,'implementing_office',r.implementing_office,'updated_by',r.updated_by,'updated_at',r.updated_at,'library_name',l.intervention_name)) AS feature
-      FROM public.intervention_registry r LEFT JOIN public.intervention_library l ON l.id=r.library_id WHERE r.geom IS NOT NULL
-    ) x;
-  `);
-  return result.rows[0].geojson;
-}
-
-module.exports = { listLibrary, createLibrary, updateLibrary, listRegistry, getRegistry, createRegistry, updateRegistry, deleteRegistry, createTimeline, listTimeline, updateTimeline, deleteTimeline, createOfficer, getGeoJson };
+module.exports = {
+  listLibrary,
+  getLibrary,
+  createLibrary,
+  updateLibrary,
+  deleteLibrary,
+  listRegistry,
+  getRegistry,
+  createRegistry,
+  updateRegistry,
+  deleteRegistry,
+  createTimeline,
+  listTimeline,
+};
