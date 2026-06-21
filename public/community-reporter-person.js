@@ -4,6 +4,7 @@
   const esc = utils.escapeHtml || (value => String(value ?? ''));
   const escAttr = utils.escapeAttribute || esc;
 
+  const form = document.getElementById('communityReportForm');
   const section = document.getElementById('reporterPersonSection');
   const container = document.getElementById('reporterPersonSelector');
   const helper = document.getElementById('reporterPersonHelper');
@@ -15,7 +16,7 @@
   const gndInput = document.getElementById('gndNameInput');
   const locationInput = document.querySelector('[name="location_description"]');
 
-  if (!api || !container || !personIdInput || !nameInput || !contactInput) return;
+  if (!api || !form || !container || !personIdInput || !nameInput || !contactInput) return;
 
   const state = {
     results: [],
@@ -224,6 +225,14 @@
     }
   }
 
+  function validateReporterBeforeSubmit(event) {
+    if (personIdInput.value && nameInput.value && contactInput.value) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    setStatus('Please select an existing person or register reporter details before submitting the report.', true);
+    section?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
   function bind() {
     const debouncedSearch = debounce(event => {
       searchPersons(event.target.value).catch(error => setStatus(error.message || 'Unable to search persons.', true));
@@ -257,6 +266,8 @@
         createPerson().catch(error => setStatus(error.message || 'Unable to register reporter details.', true));
       }
     });
+
+    form.addEventListener('submit', validateReporterBeforeSubmit, true);
   }
 
   render();
