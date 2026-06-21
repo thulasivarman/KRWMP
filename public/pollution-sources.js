@@ -1,49 +1,45 @@
 const { apiRequest: api, escapeHtml: esc } = window.KRWMP_UTILS;
 const statusBox = document.getElementById('statusBox');
-const form = document.getElementById('pollutionSourceForm');
 const dashboardCards = document.getElementById('dashboardCards');
-const sourceTypeSelect = document.getElementById('sourceTypeSelect');
 const sourcesList = document.getElementById('sourcesList');
 const searchInput = document.getElementById('searchInput');
 const riskFilter = document.getElementById('riskFilter');
 const statusFilter = document.getElementById('statusFilter');
-const locationInfo = document.getElementById('locationInfo');
-const saveBtn = document.getElementById('saveBtn');
-let picker = null;
-let sourceTypes = [];
+const sourceDetailModal = document.getElementById('sourceDetailModal');
+const sourceDetailContent = document.getElementById('sourceDetailContent');
+const monitoringModal = document.getElementById('monitoringModal');
+const monitoringForm = document.getElementById('monitoringForm');
+const monitoringSourceId = document.getElementById('monitoringSourceId');
+const monitoringModalTitle = document.getElementById('monitoringModalTitle');
+const recommendationSelect = document.getElementById('recommendationSelect');
+const otherRecommendationLabel = document.getElementById('otherRecommendationLabel');
+const monitoringEvidenceInput = document.getElementById('monitoringEvidenceInput');
+const monitoringEvidenceStatus = document.getElementById('monitoringEvidenceStatus');
 let sourceRecords = [];
+let treatmentMethods = [];
 let canCreate = false;
-let canUpdate = false;
 let canDelete = false;
 
-function show(message, error = false) {
-  window.KRWMP_UTILS.showStatus(statusBox, message, error);
-}
+function show(message, error = false) { window.KRWMP_UTILS.showStatus(statusBox, message, error); }
+function fmtDate(value) { if (!value) return '-'; const d = new Date(value); return Number.isNaN(d.getTime()) ? String(value).slice(0, 10) : d.toLocaleString(); }
+function compactNumber(value) { const n = Number(value || 0); return Number.isFinite(n) ? n.toLocaleString() : '0'; }
+function riskBadge(value) { const risk = value || 'Unclassified'; const badge = risk === 'Critical' || risk === 'High' ? 'krwmp-badge-danger' : risk === 'Moderate' ? 'krwmp-badge-warning' : 'krwmp-badge-info'; return `<span class="krwmp-badge ${badge}">${esc(risk)}</span>`; }
+function openModal(dialog) { if (dialog) (typeof dialog.showModal === 'function' ? dialog.showModal() : dialog.setAttribute('open', 'open')); }
+function closeModal(dialog) { if (dialog) (typeof dialog.close === 'function' ? dialog.close() : dialog.removeAttribute('open')); }
 
 async function initSidebar() {
   if (window.KRWMP_ENGINE) await window.KRWMP_ENGINE.assembleInterfaceContext('/sidebar.html', 'sidebar');
   await window.KRWMP_PRIVILEGES.protectPage('pollution_sources_management', 'view');
   canCreate = window.KRWMP_PRIVILEGES.can('pollution_sources_management', 'create');
-  canUpdate = window.KRWMP_PRIVILEGES.can('pollution_sources_management', 'update');
   canDelete = window.KRWMP_PRIVILEGES.can('pollution_sources_management', 'delete');
-  form.classList.toggle('hidden', !canCreate && !canUpdate);
 }
 
-function riskBadge(value) {
-  const risk = value || 'Unclassified';
-  const badge = risk === 'Critical' || risk === 'High' ? 'krwmp-badge-danger' : risk === 'Moderate' ? 'krwmp-badge-warning' : 'krwmp-badge-info';
-  return `<span class="krwmp-badge ${badge}">${esc(risk)}</span>`;
-}
-
-function fmtDate(value) {
-  if (!value) return '-';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? String(value).slice(0, 10) : date.toLocaleDateString();
-}
-
-function compactNumber(value) {
-  const n = Number(value || 0);
-  return Number.isFinite(n) ? n.toLocaleString() : '0';
+async function loadLookups() {
+  const data = await api('/api/pollution-sources/lookups/treatment-methods');
+  treatmentMethods = data.treatment_methods || [];
+  recommendationSelect.innerHTML = '<option value="">Select recommendation from library</option>' +
+    treatmentMethods.map(row => `<option value="${esc(row.id)}">${esc(row.method_name || row.name || 'Recommendation')}</option>`).join('') +
+    '<option value="__other__">Other - Enter own recommendation</option>';
 }
 
 async function loadDashboard() {
@@ -57,15 +53,7 @@ async function loadDashboard() {
       ['Active Sources', summary.active_sources || 0],
       ['Action Required', actionCount],
     ].map(([label, value]) => `<article class="krwmp-card"><div class="krwmp-stat-label">${esc(label)}</div><div class="krwmp-stat-value mt-1">${compactNumber(value)}</div></article>`).join('');
-  } catch (_) {
-    dashboardCards.innerHTML = '';
-  }
-}
-
-async function loadSourceTypes() {
-  const data = await api('/api/pollution-sources/lookups/source-types');
-  sourceTypes = data.source_types || [];
-  sourceTypeSelect.innerHTML = '<option value="">Select source type</option>' + sourceTypes.map(row => `<option value="${esc(row.id)}">${esc(row.type_name || row.source_type_name || row.name || 'Unnamed Type')}</option>`).join('');
+  } catch (_) { dashboardCards.innerHTML = ''; }
 }
 
 function queryString() {
@@ -100,87 +88,98 @@ function renderSources() {
             <span class="krwmp-badge krwmp-badge-info">${esc(row.status || '-')}</span>
           </div>
           <p class="text-xs text-slate-500 mt-1">${esc(row.source_code || '-')} · ${esc(row.type_name || '-')} · ${esc(row.dsd_name || '-')} / ${esc(row.gnd_name || '-')}</p>
-          <p class="text-xs text-slate-400 mt-1">Risk Score: ${esc(row.risk_score ?? '-')} · Last Inspection: ${esc(fmtDate(row.last_inspection_date))} · River Distance: ${esc(row.nearest_river_distance_m ?? '-')} m</p>
+          <p class="text-xs text-slate-400 mt-1">Overseeing Institution: ${esc(row.overseeing_institution || '-')} · Contact: ${esc(row.source_contact_person_name || '-')}</p>
+          <p class="text-xs text-slate-400 mt-1">Risk Score: ${esc(row.risk_score ?? '-')} · Last Monitoring: ${esc(fmtDate(row.last_inspection_date))} · River Distance: ${esc(row.nearest_river_distance_m ?? '-')} m</p>
           <p class="text-sm text-slate-300 mt-2">${esc(row.description || row.location_description || 'No description recorded.')}</p>
         </div>
         <div class="krwmp-table-actions">
           <button type="button" data-view="${esc(row.id)}" class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">View</button>
-          <button type="button" data-edit="${esc(row.id)}" class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm ${canUpdate ? '' : 'hidden'}">Edit</button>
+          <button type="button" data-monitor="${esc(row.id)}" class="krwmp-btn krwmp-btn-primary krwmp-btn-sm ${canCreate ? '' : 'hidden'}">Add Monitoring</button>
           <button type="button" data-delete="${esc(row.id)}" class="krwmp-btn krwmp-btn-danger krwmp-btn-sm ${canDelete ? '' : 'hidden'}">Close</button>
         </div>
       </div>
-    </article>
-  `).join('');
+    </article>`).join('');
 }
 
-async function identifyLocation({ latitude, longitude, cleared = false } = {}) {
-  if (cleared) {
-    locationInfo.textContent = 'No location selected.';
-    return;
-  }
-  if (!Number.isFinite(Number(latitude)) || !Number.isFinite(Number(longitude))) return;
-  locationInfo.textContent = `${Number(latitude).toFixed(6)}, ${Number(longitude).toFixed(6)}`;
-  try {
-    const data = await api(`/api/spatial/identify?lat=${encodeURIComponent(latitude)}&lng=${encodeURIComponent(longitude)}`);
-    locationInfo.textContent = `${Number(latitude).toFixed(6)}, ${Number(longitude).toFixed(6)} | ${data.dsd?.dsd_name || '-'} / ${data.gnd?.gnd_name || '-'} | ${data.sub_watershed?.watershed_name || '-'}`;
-  } catch (error) {
-    show(`Location selected, but spatial identify failed: ${error.message}`, true);
-  }
-}
-
-function initLocationPicker() {
-  if (!window.KRWMPLocationPicker) return;
-  picker = new window.KRWMPLocationPicker({
-    containerId: 'pollutionLocationPicker',
-    latitudeInput: '#latitudeInput',
-    longitudeInput: '#longitudeInput',
-    initialCenter: [80.3919668, 7.0020943],
-    initialZoom: 10,
-    onChange: identifyLocation,
-  });
-}
-
-function fillForm(row = {}) {
-  if (!canUpdate) return show('You do not have update access for pollution sources.', true);
-  form.elements.id.value = row.id || '';
-  form.elements.source_name.value = row.source_name || '';
-  form.elements.source_type_id.value = row.source_type_id || '';
-  form.elements.status.value = row.status || 'active';
-  form.elements.reported_date.value = row.reported_date ? String(row.reported_date).slice(0, 10) : '';
-  form.elements.description.value = row.description || '';
-  form.elements.location_description.value = row.location_description || '';
-  form.elements.latitude.value = row.latitude || '';
-  form.elements.longitude.value = row.longitude || '';
-  saveBtn.textContent = 'Update Source';
-  if (row.latitude && row.longitude) picker?.setLocation(Number(row.latitude), Number(row.longitude), true);
-  form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function resetForm() {
-  form.reset();
-  form.elements.id.value = '';
-  saveBtn.textContent = 'Save Source';
-  picker?.clear();
-  locationInfo.textContent = 'No location selected.';
+function monitoringHtml(records = []) {
+  if (!records.length) return '<div class="krwmp-empty-state">No monitoring records available.</div>';
+  return records.map(row => `
+    <div class="rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+      <div class="flex flex-wrap gap-2 items-center">
+        <strong class="text-sm text-slate-100">${esc(row.current_status || row.follow_up_status || 'Monitoring')}</strong>
+        <span class="krwmp-badge krwmp-badge-info">${esc(fmtDate(row.reported_at || row.inspection_date || row.created_at))}</span>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">Reported by: ${esc(row.reporting_userid || row.created_by || '-')}</p>
+      <p class="text-sm text-slate-300 mt-2">${esc(row.observation_summary || '-')}</p>
+      <p class="text-sm text-slate-400 mt-2">Recommendation: ${esc(row.action_recommendation || row.action_recommendation_other || row.recommendation || '-')}</p>
+    </div>`).join('');
 }
 
 async function viewSource(id) {
   try {
     const data = await api(`/api/pollution-sources/${id}`);
-    const source = data.source;
-    alert([
-      `${source.source_name || '-'}`,
-      `Code: ${source.source_code || '-'}`,
-      `Type: ${source.type_name || '-'}`,
-      `Status: ${source.status || '-'}`,
-      `Risk: ${source.risk_class || '-'} (${source.risk_score ?? '-'})`,
-      `Location: ${source.location_description || '-'}`,
-      `Monitoring records: ${(source.monitoring || []).length}`,
-      `Enforcement notices: ${(source.enforcement || []).length}`,
-    ].join('\n'));
-  } catch (error) {
-    show(error.message, true);
+    const s = data.source;
+    sourceDetailContent.innerHTML = `
+      <section class="krwmp-card-muted p-4">
+        <h3 class="font-semibold text-slate-100">${esc(s.source_name || '-')}</h3>
+        <p class="form-helper mt-1">${esc(s.source_code || '-')} · ${esc(s.type_name || '-')}</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 text-sm">
+          <div><span class="text-slate-500">Status:</span> ${esc(s.status || '-')}</div>
+          <div><span class="text-slate-500">Risk:</span> ${esc(s.risk_class || '-')} (${esc(s.risk_score ?? '-')})</div>
+          <div><span class="text-slate-500">Overseeing Institution:</span> ${esc(s.overseeing_institution || '-')}</div>
+          <div><span class="text-slate-500">Contact Person:</span> ${esc(s.source_contact_person_name || '-')} ${s.source_contact_person_phone ? '(' + esc(s.source_contact_person_phone) + ')' : ''}</div>
+          <div><span class="text-slate-500">Location:</span> ${esc(s.location_description || '-')}</div>
+          <div><span class="text-slate-500">Reported:</span> ${esc(fmtDate(s.reported_date))}</div>
+        </div>
+        <p class="text-sm text-slate-300 mt-4">${esc(s.description || 'No description recorded.')}</p>
+      </section>
+      <section>
+        <h3 class="form-section-heading mb-3">Monitoring Records</h3>
+        <div class="space-y-2">${monitoringHtml(s.monitoring || [])}</div>
+      </section>`;
+    openModal(sourceDetailModal);
+  } catch (error) { show(error.message, true); }
+}
+
+function openMonitoring(id) {
+  const source = sourceRecords.find(row => String(row.id) === String(id));
+  monitoringForm.reset();
+  monitoringSourceId.value = id;
+  monitoringModalTitle.textContent = `Add Monitoring - ${source?.source_name || 'Pollution Source'}`;
+  monitoringEvidenceStatus.textContent = 'Optional. Files will be attached to this monitoring record.';
+  otherRecommendationLabel.classList.add('hidden');
+  openModal(monitoringModal);
+}
+
+async function uploadMonitoringFiles(monitoringId, sourceId) {
+  const files = Array.from(monitoringEvidenceInput.files || []);
+  if (!files.length || !window.KRWMP_FILE_ATTACHMENTS?.uploadAttachment) return;
+  for (let i = 0; i < files.length; i += 1) {
+    monitoringEvidenceStatus.textContent = `Uploading file ${i + 1} of ${files.length}...`;
+    await window.KRWMP_FILE_ATTACHMENTS.uploadAttachment(files[i], {
+      moduleKey: 'pollution_sources',
+      recordId: monitoringId,
+      recordKind: 'pollution_source_monitoring',
+      attachmentRole: 'monitoring_evidence',
+      visibility: 'private',
+      metadata: { pollution_source_id: sourceId },
+    });
   }
+  monitoringEvidenceStatus.textContent = 'Monitoring evidence uploaded.';
+}
+
+async function saveMonitoring(event) {
+  event.preventDefault();
+  const sourceId = monitoringSourceId.value;
+  const body = Object.fromEntries(new FormData(monitoringForm));
+  if (body.treatment_method_ids === '__other__') body.treatment_method_ids = '';
+  try {
+    const response = await api(`/api/pollution-sources/${sourceId}/monitoring`, { method: 'POST', body });
+    if (response.monitoring?.id) await uploadMonitoringFiles(response.monitoring.id, sourceId);
+    closeModal(monitoringModal);
+    show('Monitoring record saved.');
+    await loadSources();
+  } catch (error) { show(error.message, true); }
 }
 
 async function closeSource(id) {
@@ -191,47 +190,29 @@ async function closeSource(id) {
   await loadSources();
 }
 
-async function saveSource(event) {
-  event.preventDefault();
-  const body = Object.fromEntries(new FormData(form));
-  const id = body.id;
-  delete body.id;
-  if (!body.latitude || !body.longitude) return show('Please select the pollution source location.', true);
-  if (id && !canUpdate) return show('You do not have update access for pollution sources.', true);
-  if (!id && !canCreate) return show('You do not have create access for pollution sources.', true);
-  try {
-    const response = id
-      ? await api(`/api/pollution-sources/${id}`, { method: 'PUT', body })
-      : await api('/api/pollution-sources', { method: 'POST', body });
-    resetForm();
-    show(response.message || 'Pollution source saved.');
-    await loadSources();
-  } catch (error) {
-    show(error.message, true);
-  }
-}
-
 function bindEvents() {
-  form.addEventListener('submit', saveSource);
-  document.getElementById('resetBtn')?.addEventListener('click', resetForm);
   document.getElementById('reloadBtn')?.addEventListener('click', loadSources);
   searchInput.addEventListener('input', loadSources);
   riskFilter.addEventListener('change', loadSources);
   statusFilter.addEventListener('change', loadSources);
+  recommendationSelect.addEventListener('change', () => {
+    otherRecommendationLabel.classList.toggle('hidden', recommendationSelect.value !== '__other__');
+  });
+  monitoringForm.addEventListener('submit', saveMonitoring);
+  document.querySelectorAll('[data-close-modal]').forEach(button => button.addEventListener('click', () => closeModal(document.getElementById(button.dataset.closeModal))));
   sourcesList.addEventListener('click', event => {
     const view = event.target.closest('[data-view]');
-    const edit = event.target.closest('[data-edit]');
+    const monitor = event.target.closest('[data-monitor]');
     const del = event.target.closest('[data-delete]');
     if (view) return viewSource(view.dataset.view);
-    if (edit) return fillForm(sourceRecords.find(row => String(row.id) === String(edit.dataset.edit)) || {});
+    if (monitor) return openMonitoring(monitor.dataset.monitor);
     if (del) return closeSource(del.dataset.delete);
   });
 }
 
 (async () => {
   await initSidebar();
-  await loadSourceTypes();
-  initLocationPicker();
+  await loadLookups();
   bindEvents();
   await loadSources();
 })().catch(error => show(error.message, true));
