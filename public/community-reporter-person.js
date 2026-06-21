@@ -27,11 +27,7 @@
 
   if (!api || !form || !personIdInput || !nameInput || !contactInput) return;
 
-  const state = {
-    results: [],
-    selectedPerson: null,
-    loggedInAutoLinked: false,
-  };
+  const state = { results: [], selectedPerson: null, loggedInAutoLinked: false, isAuthenticated: false };
 
   function clean(value) { return String(value ?? '').trim(); }
   function phone(person = {}) { return clean(person.phone_number || person.phone || person.mobile || ''); }
@@ -43,32 +39,42 @@
     try { return JSON.parse(localStorage.getItem('krwmp_user') || 'null') || {}; }
     catch (_) { return {}; }
   }
+  function sessionAuthenticated() {
+    return Boolean(window.KRWMP_ENGINE?.Session?.isAuthenticated || currentUser()?.id || currentUser()?.identifier || localStorage.getItem('krwmp_token'));
+  }
 
   function statusHtml(target, message, error = false) {
     if (!target) return;
     target.innerHTML = message ? `<div class="rounded-lg border p-3 text-sm ${error ? 'border-rose-500/30 bg-rose-500/10 text-rose-300' : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'}">${esc(message)}</div>` : '';
   }
 
+  function setActionAvailability(disabled = false) {
+    [searchBtn, addBtn].forEach(button => {
+      if (!button) return;
+      button.disabled = disabled;
+      button.classList.toggle('hidden', disabled);
+    });
+  }
+
   function renderSummary() {
     if (!summary) return;
     if (!state.selectedPerson) {
       summary.className = 'krwmp-empty-state py-3';
-      summary.innerHTML = 'No reporter contact linked yet.';
+      summary.innerHTML = state.isAuthenticated
+        ? 'Logged-in user detected. Your profile contact is being linked automatically.'
+        : 'No reporter contact linked yet.';
       return;
     }
     summary.className = 'rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3';
     summary.innerHTML = `
-      <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <div class="text-sm font-semibold text-emerald-200">${esc(name(state.selectedPerson))}</div>
-          <div class="form-helper mt-1">${esc(meta(state.selectedPerson))}</div>
-        </div>
-        ${state.loggedInAutoLinked ? '' : '<button type="button" id="clearReporterBtn" class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Change Contact</button>'}
+      <div class="flex flex-col gap-2">
+        <div class="text-sm font-semibold text-emerald-200">${esc(name(state.selectedPerson))}</div>
+        <div class="form-helper">${esc(meta(state.selectedPerson))}</div>
+        ${state.isAuthenticated ? '<div class="text-xs text-emerald-300">Logged-in user contact is locked for this report.</div>' : '<button type="button" id="clearReporterBtn" class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm w-fit">Change Contact</button>'}
       </div>`;
-    document.getElementById('clearReporterBtn')?.addEventListener('click', () => {
-      state.loggedInAutoLinked = false;
-      setReporter(null);
-    });
+    if (!state.isAuthenticated) {
+      document.getElementById('clearReporterBtn')?.addEventListener('click', () => setReporter(null));
+    }
   }
 
   function setReporter(person = null, options = {}) {
@@ -78,9 +84,13 @@
     contactInput.value = person ? phone(person) : '';
     emailInput.value = person?.email || '';
     if (person && helper) {
-      helper.textContent = options.autoLinked ? 'Reporter contact linked automatically from your login profile.' : 'Reporter contact linked to the selected person record.';
+      helper.textContent = options.autoLinked || state.isAuthenticated
+        ? 'Reporter contact is linked from your logged-in user profile and cannot be changed here.'
+        : 'Reporter contact linked to the selected person record.';
     } else if (helper) {
-      helper.textContent = 'Link your contact details before submitting the report.';
+      helper.textContent = state.isAuthenticated
+        ? 'Reporter contact will be linked from your logged-in user profile.'
+        : 'Link your contact details before submitting the report.';
     }
     renderSummary();
   }
@@ -120,17 +130,8 @@
     return persons;
   }
 
-  function openModal(dialog) {
-    if (!dialog) return;
-    if (typeof dialog.showModal === 'function') dialog.showModal();
-    else dialog.setAttribute('open', 'open');
-  }
-
-  function closeModal(dialog) {
-    if (!dialog) return;
-    if (typeof dialog.close === 'function') dialog.close();
-    else dialog.removeAttribute('open');
-  }
+  function openModal(dialog) { if (dialog) (typeof dialog.showModal === 'function' ? dialog.showModal() : dialog.setAttribute('open', 'open')); }
+  function closeModal(dialog) { if (dialog) (typeof dialog.close === 'function' ? dialog.close() : dialog.removeAttribute('open')); }
 
   function collectCreatePayload() {
     return {
@@ -145,6 +146,7 @@
   }
 
   async function createPerson() {
+    if (state.isAuthenticated) return;
     const payload = collectCreatePayload();
     if (!payload.full_name || payload.full_name.length < 2) return statusHtml(createStatus, 'Full name is required.', true);
     if (!payload.phone_number || payload.phone_number.length < 7) return statusHtml(createStatus, 'Contact number is required.', true);
@@ -155,24 +157,55 @@
     closeModal(createModal);
   }
 
+  function personFromUserFallback(user = {}) {
+    const fullName = clean(user.full_name || user.name || user.username || user.identifier || 'Logged-in User');
+    const phoneNumber = clean(user.phone_number || user.phone || user.contact_number || user.mobile || '');
+    const email = clean(user.email || '');
+    if (!fullName && !phoneNumber && !email) return null;
+    return { id: '', full_name: fullName, phone_number: phoneNumber, email };
+  }
+
   async function autoLinkLoggedInUser() {
-    if (!window.KRWMP_ENGINE?.Session?.isAuthenticated) return;
+    state.isAuthenticated = sessionAuthenticated();
+    if (!state.isAuthenticated) {
+      setActionAvailability(false);
+      setReporter(state.selectedPerson);
+      return;
+    }
+    setActionAvailability(true);
+    closeModal(searchModal);
+    closeModal(createModal);
+    section?.classList.add('border', 'border-emerald-500/30', 'opacity-90');
+
     const user = currentUser();
     const q = clean(user.email || user.username || user.name || user.full_name || user.identifier);
-    if (q.length < 3) return;
     try {
-      const data = await api(`/api/public/persons/search?q=${encodeURIComponent(q)}&limit=10`);
-      const persons = data.persons || [];
-      const match = persons.find(p => clean(p.email).toLowerCase() === clean(user.email).toLowerCase()) || persons[0];
-      if (match) {
-        state.loggedInAutoLinked = true;
-        setReporter(match, { autoLinked: true });
-        section?.classList.add('border', 'border-emerald-500/30');
+      if (q.length >= 3) {
+        const data = await api(`/api/public/persons/search?q=${encodeURIComponent(q)}&limit=10`);
+        const persons = data.persons || [];
+        const match = persons.find(p => clean(p.email).toLowerCase() === clean(user.email).toLowerCase()) || persons[0];
+        if (match) {
+          state.loggedInAutoLinked = true;
+          setReporter(match, { autoLinked: true });
+          return;
+        }
       }
-    } catch (_) {}
+      const fallback = personFromUserFallback(user);
+      if (fallback) {
+        state.loggedInAutoLinked = true;
+        setReporter(fallback, { autoLinked: true });
+      }
+    } catch (_) {
+      const fallback = personFromUserFallback(user);
+      if (fallback) {
+        state.loggedInAutoLinked = true;
+        setReporter(fallback, { autoLinked: true });
+      }
+    }
   }
 
   function validateReporterBeforeSubmit(event) {
+    if (state.isAuthenticated && (nameInput.value || emailInput.value || contactInput.value)) return;
     if (personIdInput.value && nameInput.value && contactInput.value) return;
     event.preventDefault();
     event.stopImmediatePropagation();
@@ -182,6 +215,7 @@
 
   function bind() {
     searchBtn?.addEventListener('click', () => {
+      if (state.isAuthenticated) return;
       if (searchInput) searchInput.value = '';
       if (searchResults) searchResults.innerHTML = '<div class="krwmp-empty-state">Type at least 3 characters to search.</div>';
       statusHtml(searchStatus, '');
@@ -189,19 +223,17 @@
       setTimeout(() => searchInput?.focus(), 100);
     });
     addBtn?.addEventListener('click', () => {
+      if (state.isAuthenticated) return;
       statusHtml(createStatus, '');
       document.getElementById('reporterCreateDsd').value = clean(dsdInput?.value);
       document.getElementById('reporterCreateGnd').value = clean(gndInput?.value);
       openModal(createModal);
       setTimeout(() => document.getElementById('reporterCreateName')?.focus(), 100);
     });
-    document.querySelectorAll('[data-reporter-modal-close]').forEach(button => {
-      button.addEventListener('click', () => closeModal(document.getElementById(button.dataset.reporterModalClose)));
-    });
-    searchInput?.addEventListener('input', debounce(event => {
-      searchPersons(event.target.value).catch(error => statusHtml(searchStatus, error.message || 'Unable to search contacts.', true));
-    }, 300));
+    document.querySelectorAll('[data-reporter-modal-close]').forEach(button => button.addEventListener('click', () => closeModal(document.getElementById(button.dataset.reporterModalClose))));
+    searchInput?.addEventListener('input', debounce(event => searchPersons(event.target.value).catch(error => statusHtml(searchStatus, error.message || 'Unable to search contacts.', true)), 300));
     searchResults?.addEventListener('click', event => {
+      if (state.isAuthenticated) return;
       const button = event.target.closest('[data-reporter-select]');
       if (!button) return;
       const person = state.results.find(row => String(row.id) === String(button.dataset.reporterSelect));
@@ -216,7 +248,7 @@
 
   setReporter(null);
   bind();
-  window.KRWMP_REPORTER_PERSON = { setReporter, searchPersons };
+  window.KRWMP_REPORTER_PERSON = { setReporter, searchPersons, autoLinkLoggedInUser };
   window.addEventListener('krwmp:session-ready', autoLinkLoggedInUser);
   setTimeout(autoLinkLoggedInUser, 500);
 })();
