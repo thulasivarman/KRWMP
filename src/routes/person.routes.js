@@ -7,6 +7,19 @@ function statusFromError(error) {
   return Number(error?.statusCode || error?.status || 500);
 }
 
+function publicPerson(person = {}) {
+  return {
+    id: person.id,
+    full_name: person.full_name,
+    preferred_name: person.preferred_name,
+    phone_number: person.phone_number,
+    email: person.email,
+    dsd: person.dsd,
+    gnd: person.gnd,
+    address: person.address,
+  };
+}
+
 async function requireAnyPrivilege(request, reply, allowed = []) {
   const identifier = getRequestUser(request);
   if (!identifier) {
@@ -22,6 +35,34 @@ async function requireAnyPrivilege(request, reply, allowed = []) {
 }
 
 async function personRoutes(fastify) {
+  fastify.get('/public/persons/search', async (request) => {
+    const q = String(request.query?.q || '').trim();
+    if (q.length < 3) return { success: true, persons: [] };
+    const persons = await service.searchPersons({
+      q,
+      limit: Math.min(Number(request.query?.limit || 10), 10),
+    });
+    return { success: true, persons: persons.map(publicPerson) };
+  });
+
+  fastify.post('/public/persons', async (request, reply) => {
+    try {
+      const body = request.body || {};
+      const person = await service.createPerson({
+        full_name: body.full_name,
+        preferred_name: body.preferred_name,
+        phone_number: body.phone_number || body.phone,
+        email: body.email,
+        dsd: body.dsd,
+        gnd: body.gnd,
+        address: body.address,
+      });
+      return reply.status(201).send({ success: true, person: publicPerson(person) });
+    } catch (error) {
+      return reply.status(statusFromError(error)).send({ success: false, message: error.message || 'Unable to create person' });
+    }
+  });
+
   fastify.get('/persons/search', async (request, reply) => {
     if (!await requireAnyPrivilege(request, reply, [
       [PRIVILEGE_KEY, 'view'],
