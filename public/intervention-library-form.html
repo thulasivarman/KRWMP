@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intervention Library Form - KRWMP Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div class="flex min-h-screen">
+    <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
+    <main class="flex-1 krwmp-page krwmp-stack-lg">
+      <header class="krwmp-page-header flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+        <div>
+          <p class="krwmp-eyebrow">Intervention Library</p>
+          <h1 id="pageTitle" class="krwmp-page-title">Add Library Item</h1>
+          <p class="krwmp-body-text">Create or update a standard watershed intervention library record.</p>
+        </div>
+        <a href="/intervention-library.html" class="krwmp-btn krwmp-btn-secondary">Back to Library</a>
+      </header>
+      <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
+      <section class="krwmp-panel krwmp-stack-md">
+        <h2 class="form-section-heading">Library Item Details</h2>
+        <form id="libraryForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <input type="hidden" name="id">
+          <label class="form-label">Intervention Name<input name="intervention_name" required class="form-input mt-1"></label>
+          <label class="form-label">Category<input name="intervention_category" class="form-input mt-1"></label>
+          <label class="form-label">Priority<select name="default_priority" class="form-select mt-1"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></label>
+          <label class="form-label md:col-span-3">Description<textarea name="description" rows="4" class="form-textarea mt-1"></textarea></label>
+          <label class="form-label md:col-span-3">Standard Actions<textarea name="standard_actions" rows="4" class="form-textarea mt-1"></textarea></label>
+          <label class="form-label md:col-span-2">Expected Outputs<input name="expected_outputs" class="form-input mt-1"></label>
+          <label class="form-label">Responsible Institution<input name="responsible_institution" class="form-input mt-1"></label>
+          <label class="form-label flex items-center gap-2 md:col-span-3"><input type="checkbox" name="active" checked class="form-checkbox"> Active</label>
+          <div class="md:col-span-3 flex flex-wrap gap-2"><button id="saveBtn" class="krwmp-btn krwmp-btn-primary">Save Library Item</button><button type="button" id="resetBtn" class="krwmp-btn krwmp-btn-secondary">Reset</button><a href="/intervention-library.html" class="krwmp-btn krwmp-btn-secondary">Cancel</a></div>
+        </form>
+      </section>
+    </main>
+  </div>
+  <script src="/assets/js/krwmp-global.js"></script>
+  <script src="/assets/js/privilege-guard.js"></script>
+  <script src="/intervention-library-form.js"></script>
+</body>
+</html>
