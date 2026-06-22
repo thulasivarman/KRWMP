@@ -10,7 +10,7 @@
             try {
                 localStorage.removeItem('krwmp_token');
                 const response = await fetch('/api/auth/profile', { cache: 'no-store' });
-                if (response.ok) window.location.replace('/map.html');
+                if (response.ok) window.location.replace('/home.html');
             } catch (error) {}
         })();
     </script>
@@ -56,7 +56,7 @@
                 if (response.ok && result && result.success && result.user) {
                     localStorage.setItem('krwmp_user', JSON.stringify(result.user));
                     localStorage.removeItem('krwmp_token');
-                    window.location.href = '/map.html';
+                    window.location.href = '/home.html';
                 } else {
                     throw new Error(result.message || 'Authentication rejected.');
                 }
