@@ -16,8 +16,14 @@ async function tableExists(tableName) {
   return Boolean(result.rows[0]?.table_name);
 }
 
+async function ensureInstitutionSoftDeleteColumn() {
+  if (!await tableExists('intervention_institutions')) return;
+  await pool.query('ALTER TABLE public.intervention_institutions ADD COLUMN IF NOT EXISTS is_deleted boolean NOT NULL DEFAULT false;');
+}
+
 async function countInstitutions() {
   if (!await tableExists('intervention_institutions')) return 0;
+  await ensureInstitutionSoftDeleteColumn();
   const result = await pool.query(`
     SELECT COUNT(*)::integer AS count
     FROM public.intervention_institutions
@@ -39,6 +45,7 @@ async function countActiveVwmcs() {
 
 async function countActiveVolunteerOrganisations() {
   if (!await tableExists('intervention_institutions')) return 0;
+  await ensureInstitutionSoftDeleteColumn();
   const result = await pool.query(`
     SELECT COUNT(*)::integer AS count
     FROM public.intervention_institutions
@@ -79,7 +86,8 @@ async function governanceStrength() {
 
 async function complaintsByCategory() {
   if (!await tableExists('community_issue_reports')) return [];
-  const result = await pool.query(`
+  const hasCategoryTable = await tableExists('issue_categories');
+  const sql = hasCategoryTable ? `
     SELECT COALESCE(c.category_name, r.other_category_name, 'Unclassified') AS label,
            COUNT(*)::integer AS count
     FROM public.community_issue_reports r
@@ -87,13 +95,22 @@ async function complaintsByCategory() {
     GROUP BY COALESCE(c.category_name, r.other_category_name, 'Unclassified')
     ORDER BY count DESC, label
     LIMIT 8;
-  `);
+  ` : `
+    SELECT COALESCE(other_category_name, 'Unclassified') AS label,
+           COUNT(*)::integer AS count
+    FROM public.community_issue_reports
+    GROUP BY COALESCE(other_category_name, 'Unclassified')
+    ORDER BY count DESC, label
+    LIMIT 8;
+  `;
+  const result = await pool.query(sql);
   return result.rows;
 }
 
 async function pollutionSourcesByType() {
   if (!await tableExists('pollution_sources')) return [];
-  const result = await pool.query(`
+  const hasTypeTable = await tableExists('pollution_source_types');
+  const sql = hasTypeTable ? `
     SELECT COALESCE(t.type_name, 'Unclassified') AS label,
            COUNT(*)::integer AS count
     FROM public.pollution_sources s
@@ -102,13 +119,20 @@ async function pollutionSourcesByType() {
     GROUP BY COALESCE(t.type_name, 'Unclassified')
     ORDER BY count DESC, label
     LIMIT 8;
-  `);
+  ` : `
+    SELECT 'Unclassified' AS label,
+           COUNT(*)::integer AS count
+    FROM public.pollution_sources
+    WHERE COALESCE(status, 'active') <> 'closed';
+  `;
+  const result = await pool.query(sql);
   return result.rows;
 }
 
 async function interventionsByType() {
   if (!await tableExists('intervention_registry')) return [];
-  const result = await pool.query(`
+  const hasLibraryTable = await tableExists('intervention_library');
+  const sql = hasLibraryTable ? `
     SELECT COALESCE(l.intervention_category, l.intervention_name, 'Unclassified') AS label,
            COUNT(*)::integer AS count
     FROM public.intervention_registry r
@@ -116,13 +140,19 @@ async function interventionsByType() {
     GROUP BY COALESCE(l.intervention_category, l.intervention_name, 'Unclassified')
     ORDER BY count DESC, label
     LIMIT 8;
-  `);
+  ` : `
+    SELECT 'Unclassified' AS label,
+           COUNT(*)::integer AS count
+    FROM public.intervention_registry;
+  `;
+  const result = await pool.query(sql);
   return result.rows;
 }
 
 async function programmesByActivityType() {
   if (!await tableExists('volunteer_catchment_programme_activities')) return [];
-  const result = await pool.query(`
+  const hasActivityTable = await tableExists('catchment_programme_activity_types');
+  const sql = hasActivityTable ? `
     SELECT COALESCE(t.activity_type_name, a.other_activity_type, 'Unclassified') AS label,
            COUNT(*)::integer AS count
     FROM public.volunteer_catchment_programme_activities a
@@ -131,7 +161,16 @@ async function programmesByActivityType() {
     GROUP BY COALESCE(t.activity_type_name, a.other_activity_type, 'Unclassified')
     ORDER BY count DESC, label
     LIMIT 8;
-  `);
+  ` : `
+    SELECT COALESCE(other_activity_type, 'Unclassified') AS label,
+           COUNT(*)::integer AS count
+    FROM public.volunteer_catchment_programme_activities
+    WHERE COALESCE(active, true) = true
+    GROUP BY COALESCE(other_activity_type, 'Unclassified')
+    ORDER BY count DESC, label
+    LIMIT 8;
+  `;
+  const result = await pool.query(sql);
   return result.rows;
 }
 
@@ -219,7 +258,7 @@ async function pollutionMonitoringPerformance() {
   const active = intValue(activeResult.rows[0]?.active_sources);
   if (!await tableExists('pollution_source_monitoring')) return { active_sources: active, monitored_sources_30_days: 0, monitoring_coverage_percent: 0 };
 
-  await pool.query(`ALTER TABLE public.pollution_source_monitoring ADD COLUMN IF NOT EXISTS reported_at timestamptz DEFAULT now();`);
+  await pool.query('ALTER TABLE public.pollution_source_monitoring ADD COLUMN IF NOT EXISTS reported_at timestamptz DEFAULT now();');
   const result = await pool.query(`
     SELECT COUNT(DISTINCT pollution_source_id)::integer AS monitored_sources_30_days
     FROM public.pollution_source_monitoring
