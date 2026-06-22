@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catchment Home - KRWMP Portal</title>
+    <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <style>
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-up { animation: fadeUp .55s ease both; }
+        .glass-card { background: rgba(255,255,255,.88); backdrop-filter: blur(18px); }
+        .risk-dot { width: .7rem; height: .7rem; border-radius: 999px; display: inline-block; }
+    </style>
+</head>
+<body class="bg-[#f5f8f4] text-slate-900 min-h-screen antialiased">
+    <a href="#main-content" class="krwmp-skip-link">Skip to main content</a>
+    <aside id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col z-30 krwmp-sidebar" aria-label="System navigation"></aside>
+
+    <main id="main-content" class="min-h-screen">
+        <section class="relative overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-900 to-slate-950 text-white">
+            <div class="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top_left,_#34d399,_transparent_35%),radial-gradient(circle_at_bottom_right,_#38bdf8,_transparent_32%)]"></div>
+            <div class="relative px-6 lg:px-10 py-8 lg:py-10">
+                <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-8 fade-up">
+                    <div class="max-w-4xl">
+                        <p class="text-xs uppercase tracking-[0.35em] text-emerald-200 font-semibold">Catchment Situation Room</p>
+                        <h1 class="mt-4 text-4xl md:text-6xl font-semibold tracking-tight leading-tight">Kelani River Catchment Status</h1>
+                        <p class="mt-5 text-emerald-50/80 text-lg leading-8 max-w-3xl">A decision-first homepage showing basin condition, risk hotspots, community observations, interventions and quick access to the spatial workspace.</p>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 min-w-full xl:min-w-[560px]">
+                        <a href="/map.html" class="rounded-2xl bg-white text-emerald-950 px-5 py-4 font-semibold shadow-xl hover:-translate-y-0.5 transition">Open Map</a>
+                        <a href="/reports.html" class="rounded-2xl bg-white/10 border border-white/15 px-5 py-4 font-semibold hover:bg-white/15 transition">Reports</a>
+                        <a href="/community-report.html" class="rounded-2xl bg-white/10 border border-white/15 px-5 py-4 font-semibold hover:bg-white/15 transition">Report Issue</a>
+                        <a href="/intervention-registry.html" class="rounded-2xl bg-white/10 border border-white/15 px-5 py-4 font-semibold hover:bg-white/15 transition">Interventions</a>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-4 mt-9">
+                    <article class="glass-card rounded-[1.5rem] p-5 text-slate-900 border border-white/40">
+                        <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Catchment Condition</p>
+                        <div class="mt-3 flex items-end justify-between"><strong class="text-3xl text-emerald-800">Moderate</strong><span class="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-bold">Watch</span></div>
+                        <p class="mt-3 text-sm text-slate-600">Composite view of water quality, land pressure, flood exposure and pollution observations.</p>
+                    </article>
+                    <article class="glass-card rounded-[1.5rem] p-5 text-slate-900 border border-white/40">
+                        <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Priority Risks</p>
+                        <div class="mt-3 flex items-end justify-between"><strong class="text-3xl text-rose-700">5</strong><span class="text-xs px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 font-bold">High Attention</span></div>
+                        <p class="mt-3 text-sm text-slate-600">Flooding, pollution, erosion, deforestation and settlement pressure require regular review.</p>
+                    </article>
+                    <article class="glass-card rounded-[1.5rem] p-5 text-slate-900 border border-white/40">
+                        <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Community Signal</p>
+                        <div class="mt-3 flex items-end justify-between"><strong class="text-3xl text-sky-700">Active</strong><span class="text-xs px-2.5 py-1 rounded-full bg-sky-100 text-sky-700 font-bold">Field Input</span></div>
+                        <p class="mt-3 text-sm text-slate-600">Citizen reports and VWMC observations support field verification and action planning.</p>
+                    </article>
+                    <article class="glass-card rounded-[1.5rem] p-5 text-slate-900 border border-white/40">
+                        <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Action Status</p>
+                        <div class="mt-3 flex items-end justify-between"><strong class="text-3xl text-emerald-800">Tracked</strong><span class="text-xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold">Registry</span></div>
+                        <p class="mt-3 text-sm text-slate-600">Intervention registry connects catchment issues with responsible officers and progress.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="px-6 lg:px-10 py-8 grid xl:grid-cols-3 gap-6">
+            <div class="xl:col-span-2 space-y-6">
+                <section class="bg-white border border-emerald-100 rounded-[2rem] p-6 shadow-sm fade-up">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                        <div>
+                            <p class="text-xs uppercase tracking-[0.25em] text-emerald-700 font-bold">Basin Health Indicators</p>
+                            <h2 class="text-2xl font-semibold mt-2">Current situation summary</h2>
+                        </div>
+                        <a href="/reports.html" class="text-sm font-semibold text-emerald-800 hover:text-emerald-600">View full dashboard →</a>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <article class="rounded-2xl bg-slate-50 border border-slate-100 p-5"><div class="flex justify-between"><span class="font-semibold">Water Quality</span><span class="text-amber-700 font-bold">Moderate</span></div><div class="mt-4 h-2 rounded-full bg-slate-200"><div class="h-2 rounded-full bg-amber-500 w-[58%]"></div></div><p class="mt-3 text-sm text-slate-600">Use WQI records to identify polluted river segments and monitoring gaps.</p></article>
+                        <article class="rounded-2xl bg-slate-50 border border-slate-100 p-5"><div class="flex justify-between"><span class="font-semibold">Flood Exposure</span><span class="text-rose-700 font-bold">High</span></div><div class="mt-4 h-2 rounded-full bg-slate-200"><div class="h-2 rounded-full bg-rose-500 w-[78%]"></div></div><p class="mt-3 text-sm text-slate-600">Prioritize low-lying settlements and river-adjacent GN divisions.</p></article>
+                        <article class="rounded-2xl bg-slate-50 border border-slate-100 p-5"><div class="flex justify-between"><span class="font-semibold">Riverbank Degradation</span><span class="text-amber-700 font-bold">Watch</span></div><div class="mt-4 h-2 rounded-full bg-slate-200"><div class="h-2 rounded-full bg-amber-500 w-[64%]"></div></div><p class="mt-3 text-sm text-slate-600">Monitor vulnerable bank sections and affected communities.</p></article>
+                        <article class="rounded-2xl bg-slate-50 border border-slate-100 p-5"><div class="flex justify-between"><span class="font-semibold">Settlement Pressure</span><span class="text-rose-700 font-bold">Increasing</span></div><div class="mt-4 h-2 rounded-full bg-slate-200"><div class="h-2 rounded-full bg-rose-500 w-[72%]"></div></div><p class="mt-3 text-sm text-slate-600">Combine building density, road proximity and land-use change layers.</p></article>
+                    </div>
+                </section>
+
+                <section class="bg-white border border-emerald-100 rounded-[2rem] p-6 shadow-sm fade-up">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                        <div>
+                            <p class="text-xs uppercase tracking-[0.25em] text-emerald-700 font-bold">Risk Hotspot Snapshot</p>
+                            <h2 class="text-2xl font-semibold mt-2">Where attention is required first</h2>
+                        </div>
+                        <a href="/map.html" class="text-sm font-semibold text-emerald-800 hover:text-emerald-600">Investigate in map →</a>
+                    </div>
+                    <div class="overflow-hidden rounded-2xl border border-slate-100">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-50 text-slate-500 uppercase text-xs tracking-wider"><tr><th class="text-left p-4">Risk Theme</th><th class="text-left p-4">Situation</th><th class="text-left p-4">Recommended Action</th></tr></thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr><td class="p-4 font-semibold"><span class="risk-dot bg-rose-500 mr-2"></span>Flood Risk</td><td class="p-4 text-slate-600">High exposure in downstream and low-lying settlements.</td><td class="p-4 text-slate-600">Open flood layer and review priority GN divisions.</td></tr>
+                                <tr><td class="p-4 font-semibold"><span class="risk-dot bg-amber-500 mr-2"></span>Pollution Sources</td><td class="p-4 text-slate-600">Clustered observations near urban and industrial areas.</td><td class="p-4 text-slate-600">Verify sources and assign responsible institution.</td></tr>
+                                <tr><td class="p-4 font-semibold"><span class="risk-dot bg-orange-500 mr-2"></span>Riverbank Erosion</td><td class="p-4 text-slate-600">Sensitive river segments require field validation.</td><td class="p-4 text-slate-600">Register bank protection or restoration intervention.</td></tr>
+                                <tr><td class="p-4 font-semibold"><span class="risk-dot bg-emerald-500 mr-2"></span>Forest Cover Change</td><td class="p-4 text-slate-600">Headwater land-cover change affects runoff and sediment.</td><td class="p-4 text-slate-600">Review deforestation heat map and restoration options.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            <aside class="space-y-6">
+                <section class="bg-white border border-emerald-100 rounded-[2rem] p-6 shadow-sm fade-up">
+                    <p class="text-xs uppercase tracking-[0.25em] text-emerald-700 font-bold">Today in Kelani</p>
+                    <h2 class="text-2xl font-semibold mt-2">Operational signals</h2>
+                    <div class="mt-5 space-y-3">
+                        <a href="/admin-community-issues.html" class="block rounded-2xl bg-slate-50 border border-slate-100 p-4 hover:border-emerald-200"><strong>Community issues</strong><p class="text-sm text-slate-600 mt-1">Review new public reports and verification status.</p></a>
+                        <a href="/water-quality-records.html" class="block rounded-2xl bg-slate-50 border border-slate-100 p-4 hover:border-emerald-200"><strong>Water quality records</strong><p class="text-sm text-slate-600 mt-1">Check latest sampling results and station coverage.</p></a>
+                        <a href="/pollution-sources.html" class="block rounded-2xl bg-slate-50 border border-slate-100 p-4 hover:border-emerald-200"><strong>Pollution sources</strong><p class="text-sm text-slate-600 mt-1">Update source inventory and responsible party details.</p></a>
+                        <a href="/vwmc-management.html" class="block rounded-2xl bg-slate-50 border border-slate-100 p-4 hover:border-emerald-200"><strong>VWMC coordination</strong><p class="text-sm text-slate-600 mt-1">Track committee structure, membership and local contacts.</p></a>
+                    </div>
+                </section>
+
+                <section class="bg-emerald-950 text-white rounded-[2rem] p-6 shadow-sm fade-up">
+                    <p class="text-xs uppercase tracking-[0.25em] text-emerald-200 font-bold">Decision Workflow</p>
+                    <h2 class="text-2xl font-semibold mt-2">From signal to action</h2>
+                    <ol class="mt-5 space-y-4 text-sm text-emerald-50/85">
+                        <li><strong class="text-white">1. Detect:</strong> Identify catchment issue through map, monitoring or public report.</li>
+                        <li><strong class="text-white">2. Verify:</strong> Confirm location, severity and responsible institution.</li>
+                        <li><strong class="text-white">3. Assign:</strong> Register intervention and lead officer.</li>
+                        <li><strong class="text-white">4. Monitor:</strong> Track progress and generate management reports.</li>
+                    </ol>
+                </section>
+            </aside>
+        </section>
+    </main>
+
+    <script src="/assets/js/krwmp-global.js"></script>
+    <script src="/assets/js/krwmp-ui-enhancements.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.KRWMP_ENGINE) window.KRWMP_ENGINE.assembleInterfaceContext();
+        });
+    </script>
+</body>
+</html>
