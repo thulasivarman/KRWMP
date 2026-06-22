@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Volunteer Organisation Form - KRWMP Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div class="flex min-h-screen">
+    <aside id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></aside>
+    <main class="flex-1 krwmp-page krwmp-stack-lg">
+      <header class="krwmp-page-header flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+        <div><p class="krwmp-eyebrow">Environmental Monitoring</p><h1 id="pageTitle" class="krwmp-page-title">Add Volunteer Organisation</h1><p class="krwmp-body-text">Register or update a volunteer organisation and its mapped location.</p></div>
+        <a href="/volunteer-organisations.html" class="krwmp-btn krwmp-btn-secondary">Back to Directory</a>
+      </header>
+      <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
+      <section class="krwmp-panel krwmp-stack-md">
+        <form id="volunteerForm" class="grid grid-cols-1 xl:grid-cols-3 gap-5" enctype="multipart/form-data">
+          <section class="xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label class="form-label">Organisation Name <span class="text-rose-400">*</span><input name="institution_name" required class="form-input mt-1"></label>
+            <label class="form-label">Registration / Code<input name="institution_code" class="form-input mt-1"></label>
+            <label class="form-label">Organisation Type<select name="institution_type" class="form-select mt-1"><option value="Volunteer Organisation">Volunteer Organisation</option><option value="Community Based Organisation">Community Based Organisation</option><option value="Youth Group">Youth Group</option><option value="Environmental NGO">Environmental NGO</option><option value="Civil Society Organisation">Civil Society Organisation</option></select></label>
+            <label class="form-label">Status<select name="active" class="form-select mt-1"><option value="true">Active</option><option value="false">Inactive</option></select></label>
+            <label class="form-label">Contact Person<input name="contact_person" class="form-input mt-1"></label>
+            <label class="form-label">Contact Phone<input name="contact_phone" class="form-input mt-1"></label>
+            <label class="form-label">Contact Email<input name="contact_email" type="email" class="form-input mt-1"></label>
+            <label class="form-label">Website<input name="website" class="form-input mt-1" placeholder="https://example.org"></label>
+            <label class="form-label md:col-span-2">Address <span class="text-rose-400">*</span><input name="address" required class="form-input mt-1"></label>
+            <label class="form-label md:col-span-2">Supportive Document<input name="supporting_document" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,application/pdf,image/jpeg,image/png,image/webp" class="form-input mt-1"><span class="block mt-1 text-xs text-slate-500">Allowed: PDF, image, DOC/DOCX, XLS/XLSX.</span></label>
+            <label class="form-label md:col-span-2">Description / Mandate<textarea name="description" rows="3" class="form-textarea mt-1"></textarea></label>
+          </section>
+          <section class="krwmp-map-panel space-y-3">
+            <h3 class="form-section-heading">Organisation Location</h3>
+            <div id="volunteerLocationPicker" class="space-y-2"><div data-location-map class="krwmp-location-map h-80"></div><div class="flex gap-2"><button type="button" data-location-gps class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Use GPS</button><button type="button" data-location-clear class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Clear</button></div><p data-location-status class="krwmp-status-label">Click the map to mark the organisation location.</p></div>
+            <input type="hidden" name="latitude" id="latitudeInput" required><input type="hidden" name="longitude" id="longitudeInput" required><input type="hidden" name="district" id="districtInput"><input type="hidden" name="dsd_name" id="dsdNameInput" required><input type="hidden" name="gnd_name" id="gndNameInput" required><input type="hidden" name="sub_watershed_id" id="subWatershedIdInput"><input type="hidden" name="sub_watershed_name" id="subWatershedNameInput">
+            <div id="locationInfo" class="krwmp-identify-panel">No location selected.</div>
+          </section>
+          <div class="xl:col-span-3 flex flex-wrap gap-3"><button id="saveBtn" type="submit" class="krwmp-btn krwmp-btn-primary">Save Organisation</button><button type="reset" class="krwmp-btn krwmp-btn-secondary">Clear</button><a href="/volunteer-organisations.html" class="krwmp-btn krwmp-btn-secondary">Cancel</a></div>
+        </form>
+      </section>
+    </main>
+  </div>
+  <script src="/assets/js/krwmp-global.js"></script><script src="/assets/js/privilege-guard.js"></script><script src="/assets/js/location-picker.js"></script><script src="/volunteer-organisation-form.js"></script>
+</body>
+</html>
