@@ -72,9 +72,18 @@ async function interventionSummary() {
   return { ongoing_interventions: toInteger(result.rows[0]?.ongoing_interventions) };
 }
 
+async function ensurePollutionMonitoringColumns() {
+  await pool.query(`
+    ALTER TABLE public.pollution_source_monitoring
+      ADD COLUMN IF NOT EXISTS reported_at timestamptz DEFAULT now();
+  `);
+}
+
 async function pollutionMonitoringSummary() {
   const monitoringExists = await tableExists('pollution_source_monitoring');
   if (!monitoringExists) return { monitored_sources_30_days: 0 };
+
+  await ensurePollutionMonitoringColumns();
 
   const result = await pool.query(`
     SELECT COUNT(DISTINCT pollution_source_id)::integer AS monitored_sources_30_days
