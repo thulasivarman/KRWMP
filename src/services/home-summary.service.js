@@ -16,6 +16,19 @@ async function tableExists(tableName) {
   return Boolean(result.rows[0]?.table_name);
 }
 
+async function columnExists(tableName, columnName) {
+  const result = await pool.query(`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = $1
+        AND column_name = $2
+    ) AS exists;
+  `, [tableName, columnName]);
+  return Boolean(result.rows[0]?.exists);
+}
+
 async function ensureInstitutionSoftDeleteColumn() {
   if (!await tableExists('intervention_institutions')) return;
   await pool.query('ALTER TABLE public.intervention_institutions ADD COLUMN IF NOT EXISTS is_deleted boolean NOT NULL DEFAULT false;');
@@ -24,21 +37,26 @@ async function ensureInstitutionSoftDeleteColumn() {
 async function countInstitutions() {
   if (!await tableExists('intervention_institutions')) return 0;
   await ensureInstitutionSoftDeleteColumn();
+  const hasActive = await columnExists('intervention_institutions', 'active');
+  const activeClause = hasActive ? 'COALESCE(active, true) = true AND' : '';
   const result = await pool.query(`
     SELECT COUNT(*)::integer AS count
     FROM public.intervention_institutions
-    WHERE COALESCE(active, true) = true
-      AND COALESCE(is_deleted, false) = false;
+    WHERE ${activeClause} COALESCE(is_deleted, false) = false;
   `);
   return intValue(result.rows[0]?.count);
 }
 
 async function countActiveVwmcs() {
   if (!await tableExists('vwmc_committees')) return 0;
-  const result = await pool.query(`
+  const hasActive = await columnExists('vwmc_committees', 'active');
+  const result = await pool.query(hasActive ? `
     SELECT COUNT(*)::integer AS count
     FROM public.vwmc_committees
     WHERE COALESCE(active, true) = true;
+  ` : `
+    SELECT COUNT(*)::integer AS count
+    FROM public.vwmc_committees;
   `);
   return intValue(result.rows[0]?.count);
 }
@@ -46,11 +64,12 @@ async function countActiveVwmcs() {
 async function countActiveVolunteerOrganisations() {
   if (!await tableExists('intervention_institutions')) return 0;
   await ensureInstitutionSoftDeleteColumn();
+  const hasActive = await columnExists('intervention_institutions', 'active');
+  const activeClause = hasActive ? 'COALESCE(active, true) = true AND' : '';
   const result = await pool.query(`
     SELECT COUNT(*)::integer AS count
     FROM public.intervention_institutions
-    WHERE COALESCE(active, true) = true
-      AND COALESCE(is_deleted, false) = false
+    WHERE ${activeClause} COALESCE(is_deleted, false) = false
       AND (
         LOWER(COALESCE(institution_type, '')) LIKE '%volunteer%'
         OR LOWER(COALESCE(institution_type, '')) LIKE '%community based%'
@@ -110,12 +129,15 @@ async function complaintsByCategory() {
 async function pollutionSourcesByType() {
   if (!await tableExists('pollution_sources')) return [];
   const hasTypeTable = await tableExists('pollution_source_types');
+  const hasStatus = await columnExists('pollution_sources', 'status');
+  const statusClause = hasStatus ? "WHERE COALESCE(s.status, 'active') <> 'closed'" : '';
+  const fallbackStatusClause = hasStatus ? "WHERE COALESCE(status, 'active') <> 'closed'" : '';
   const sql = hasTypeTable ? `
     SELECT COALESCE(t.type_name, 'Unclassified') AS label,
            COUNT(*)::integer AS count
     FROM public.pollution_sources s
     LEFT JOIN public.pollution_source_types t ON t.id = s.source_type_id
-    WHERE COALESCE(s.status, 'active') <> 'closed'
+    ${statusClause}
     GROUP BY COALESCE(t.type_name, 'Unclassified')
     ORDER BY count DESC, label
     LIMIT 8;
@@ -123,7 +145,7 @@ async function pollutionSourcesByType() {
     SELECT 'Unclassified' AS label,
            COUNT(*)::integer AS count
     FROM public.pollution_sources
-    WHERE COALESCE(status, 'active') <> 'closed';
+    ${fallbackStatusClause};
   `;
   const result = await pool.query(sql);
   return result.rows;
@@ -152,12 +174,15 @@ async function interventionsByType() {
 async function programmesByActivityType() {
   if (!await tableExists('volunteer_catchment_programme_activities')) return [];
   const hasActivityTable = await tableExists('catchment_programme_activity_types');
+  const hasActive = await columnExists('volunteer_catchment_programme_activities', 'active');
+  const activeClause = hasActive ? 'WHERE COALESCE(a.active, true) = true' : '';
+  const fallbackActiveClause = hasActive ? 'WHERE COALESCE(active, true) = true' : '';
   const sql = hasActivityTable ? `
     SELECT COALESCE(t.activity_type_name, a.other_activity_type, 'Unclassified') AS label,
            COUNT(*)::integer AS count
     FROM public.volunteer_catchment_programme_activities a
     LEFT JOIN public.catchment_programme_activity_types t ON t.id = a.activity_type_id
-    WHERE COALESCE(a.active, true) = true
+    ${activeClause}
     GROUP BY COALESCE(t.activity_type_name, a.other_activity_type, 'Unclassified')
     ORDER BY count DESC, label
     LIMIT 8;
@@ -165,7 +190,7 @@ async function programmesByActivityType() {
     SELECT COALESCE(other_activity_type, 'Unclassified') AS label,
            COUNT(*)::integer AS count
     FROM public.volunteer_catchment_programme_activities
-    WHERE COALESCE(active, true) = true
+    ${fallbackActiveClause}
     GROUP BY COALESCE(other_activity_type, 'Unclassified')
     ORDER BY count DESC, label
     LIMIT 8;
@@ -250,10 +275,14 @@ async function interventionPerformance() {
 
 async function pollutionMonitoringPerformance() {
   if (!await tableExists('pollution_sources')) return { active_sources: 0, monitored_sources_30_days: 0, monitoring_coverage_percent: 0 };
-  const activeResult = await pool.query(`
+  const hasStatus = await columnExists('pollution_sources', 'status');
+  const activeResult = await pool.query(hasStatus ? `
     SELECT COUNT(*)::integer AS active_sources
     FROM public.pollution_sources
     WHERE COALESCE(status, 'active') <> 'closed';
+  ` : `
+    SELECT COUNT(*)::integer AS active_sources
+    FROM public.pollution_sources;
   `);
   const active = intValue(activeResult.rows[0]?.active_sources);
   if (!await tableExists('pollution_source_monitoring')) return { active_sources: active, monitored_sources_30_days: 0, monitoring_coverage_percent: 0 };
