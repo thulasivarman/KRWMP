@@ -38,24 +38,24 @@
 
                 <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-4 mt-9">
                     <article class="glass-card rounded-[1.5rem] p-5 text-slate-900 border border-white/40">
-                        <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Catchment Condition</p>
-                        <div class="mt-3 flex items-end justify-between"><strong class="text-3xl text-emerald-800">Moderate</strong><span class="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-bold">Watch</span></div>
-                        <p class="mt-3 text-sm text-slate-600">Composite view of water quality, land pressure, flood exposure and pollution observations.</p>
+                        <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Water Quality Compliance</p>
+                        <div class="mt-3 flex items-end justify-between"><strong id="heroFailedSamples" class="text-3xl text-rose-700">--</strong><span id="heroFailedPercent" class="text-xs px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 font-bold">Loading</span></div>
+                        <p class="mt-3 text-sm text-slate-600">Failed or caution samples compared with total available water quality records.</p>
                     </article>
                     <article class="glass-card rounded-[1.5rem] p-5 text-slate-900 border border-white/40">
-                        <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Priority Risks</p>
-                        <div class="mt-3 flex items-end justify-between"><strong class="text-3xl text-rose-700">5</strong><span class="text-xs px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 font-bold">High Attention</span></div>
-                        <p class="mt-3 text-sm text-slate-600">Flooding, pollution, erosion, deforestation and settlement pressure require regular review.</p>
+                        <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Community Complaint Pressure</p>
+                        <div class="mt-3 flex items-end justify-between"><strong id="heroComplaints30" class="text-3xl text-sky-700">--</strong><span class="text-xs px-2.5 py-1 rounded-full bg-sky-100 text-sky-700 font-bold">30 Days</span></div>
+                        <p class="mt-3 text-sm text-slate-600">Community complaints received during the latest operational monitoring window.</p>
                     </article>
                     <article class="glass-card rounded-[1.5rem] p-5 text-slate-900 border border-white/40">
-                        <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Community Signal</p>
-                        <div class="mt-3 flex items-end justify-between"><strong class="text-3xl text-sky-700">Active</strong><span class="text-xs px-2.5 py-1 rounded-full bg-sky-100 text-sky-700 font-bold">Field Input</span></div>
-                        <p class="mt-3 text-sm text-slate-600">Citizen reports and VWMC observations support field verification and action planning.</p>
+                        <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Intervention Response</p>
+                        <div class="mt-3 flex items-end justify-between"><strong id="heroOngoingInterventions" class="text-3xl text-emerald-800">--</strong><span class="text-xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold">Ongoing</span></div>
+                        <p id="heroLinkedComplaints" class="mt-3 text-sm text-slate-600">Ongoing interventions responding to linked community complaints.</p>
                     </article>
                     <article class="glass-card rounded-[1.5rem] p-5 text-slate-900 border border-white/40">
-                        <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Action Status</p>
-                        <div class="mt-3 flex items-end justify-between"><strong class="text-3xl text-emerald-800">Tracked</strong><span class="text-xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold">Registry</span></div>
-                        <p class="mt-3 text-sm text-slate-600">Intervention registry connects catchment issues with responsible officers and progress.</p>
+                        <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Pollution Monitoring</p>
+                        <div class="mt-3 flex items-end justify-between"><strong id="heroMonitoredSources" class="text-3xl text-amber-700">--</strong><span class="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-bold">30 Days</span></div>
+                        <p class="mt-3 text-sm text-slate-600">Pollution sources with at least one monitoring record within the last 30 days.</p>
                     </article>
                 </div>
             </div>
@@ -68,14 +68,31 @@
                         <div>
                             <p class="text-xs uppercase tracking-[0.25em] text-emerald-700 font-bold">Basin Health Indicators</p>
                             <h2 class="text-2xl font-semibold mt-2">Current situation summary</h2>
+                            <p id="summaryGeneratedAt" class="mt-2 text-xs text-slate-500">Loading latest database summary...</p>
                         </div>
                         <a href="/reports.html" class="text-sm font-semibold text-emerald-800 hover:text-emerald-600">View full dashboard →</a>
                     </div>
                     <div class="grid md:grid-cols-2 gap-4">
-                        <article class="rounded-2xl bg-slate-50 border border-slate-100 p-5"><div class="flex justify-between"><span class="font-semibold">Water Quality</span><span class="text-amber-700 font-bold">Moderate</span></div><div class="mt-4 h-2 rounded-full bg-slate-200"><div class="h-2 rounded-full bg-amber-500 w-[58%]"></div></div><p class="mt-3 text-sm text-slate-600">Use WQI records to identify polluted river segments and monitoring gaps.</p></article>
-                        <article class="rounded-2xl bg-slate-50 border border-slate-100 p-5"><div class="flex justify-between"><span class="font-semibold">Flood Exposure</span><span class="text-rose-700 font-bold">High</span></div><div class="mt-4 h-2 rounded-full bg-slate-200"><div class="h-2 rounded-full bg-rose-500 w-[78%]"></div></div><p class="mt-3 text-sm text-slate-600">Prioritize low-lying settlements and river-adjacent GN divisions.</p></article>
-                        <article class="rounded-2xl bg-slate-50 border border-slate-100 p-5"><div class="flex justify-between"><span class="font-semibold">Riverbank Degradation</span><span class="text-amber-700 font-bold">Watch</span></div><div class="mt-4 h-2 rounded-full bg-slate-200"><div class="h-2 rounded-full bg-amber-500 w-[64%]"></div></div><p class="mt-3 text-sm text-slate-600">Monitor vulnerable bank sections and affected communities.</p></article>
-                        <article class="rounded-2xl bg-slate-50 border border-slate-100 p-5"><div class="flex justify-between"><span class="font-semibold">Settlement Pressure</span><span class="text-rose-700 font-bold">Increasing</span></div><div class="mt-4 h-2 rounded-full bg-slate-200"><div class="h-2 rounded-full bg-rose-500 w-[72%]"></div></div><p class="mt-3 text-sm text-slate-600">Combine building density, road proximity and land-use change layers.</p></article>
+                        <article class="rounded-2xl bg-slate-50 border border-slate-100 p-5">
+                            <div class="flex justify-between gap-4"><span class="font-semibold">Water Quality Compliance</span><span id="waterQualityStatus" class="text-rose-700 font-bold">--</span></div>
+                            <div class="mt-4 h-2 rounded-full bg-slate-200"><div id="waterQualityBar" class="h-2 rounded-full bg-rose-500" style="width:0%"></div></div>
+                            <p id="waterQualityText" class="mt-3 text-sm text-slate-600">Loading water quality records...</p>
+                        </article>
+                        <article class="rounded-2xl bg-slate-50 border border-slate-100 p-5">
+                            <div class="flex justify-between gap-4"><span class="font-semibold">Community Complaint Pressure</span><span id="complaintStatus" class="text-sky-700 font-bold">--</span></div>
+                            <div class="mt-4 h-2 rounded-full bg-slate-200"><div id="complaintBar" class="h-2 rounded-full bg-sky-500" style="width:0%"></div></div>
+                            <p id="complaintText" class="mt-3 text-sm text-slate-600">Loading community complaints...</p>
+                        </article>
+                        <article class="rounded-2xl bg-slate-50 border border-slate-100 p-5">
+                            <div class="flex justify-between gap-4"><span class="font-semibold">Intervention Response</span><span id="interventionStatus" class="text-emerald-800 font-bold">--</span></div>
+                            <div class="mt-4 h-2 rounded-full bg-slate-200"><div id="interventionBar" class="h-2 rounded-full bg-emerald-500" style="width:0%"></div></div>
+                            <p id="interventionText" class="mt-3 text-sm text-slate-600">Loading intervention response...</p>
+                        </article>
+                        <article class="rounded-2xl bg-slate-50 border border-slate-100 p-5">
+                            <div class="flex justify-between gap-4"><span class="font-semibold">Pollution Source Monitoring</span><span id="pollutionStatus" class="text-amber-700 font-bold">--</span></div>
+                            <div class="mt-4 h-2 rounded-full bg-slate-200"><div id="pollutionBar" class="h-2 rounded-full bg-amber-500" style="width:0%"></div></div>
+                            <p id="pollutionText" class="mt-3 text-sm text-slate-600">Loading pollution monitoring records...</p>
+                        </article>
                     </div>
                 </section>
 
@@ -106,9 +123,9 @@
                     <p class="text-xs uppercase tracking-[0.25em] text-emerald-700 font-bold">Today in Kelani</p>
                     <h2 class="text-2xl font-semibold mt-2">Operational signals</h2>
                     <div class="mt-5 space-y-3">
-                        <a href="/admin-community-issues.html" class="block rounded-2xl bg-slate-50 border border-slate-100 p-4 hover:border-emerald-200"><strong>Community issues</strong><p class="text-sm text-slate-600 mt-1">Review new public reports and verification status.</p></a>
-                        <a href="/water-quality-records.html" class="block rounded-2xl bg-slate-50 border border-slate-100 p-4 hover:border-emerald-200"><strong>Water quality records</strong><p class="text-sm text-slate-600 mt-1">Check latest sampling results and station coverage.</p></a>
-                        <a href="/pollution-sources.html" class="block rounded-2xl bg-slate-50 border border-slate-100 p-4 hover:border-emerald-200"><strong>Pollution sources</strong><p class="text-sm text-slate-600 mt-1">Update source inventory and responsible party details.</p></a>
+                        <a href="/admin-community-issues.html" class="block rounded-2xl bg-slate-50 border border-slate-100 p-4 hover:border-emerald-200"><strong>Community issues</strong><p id="signalCommunity" class="text-sm text-slate-600 mt-1">Loading complaint count...</p></a>
+                        <a href="/water-quality-records.html" class="block rounded-2xl bg-slate-50 border border-slate-100 p-4 hover:border-emerald-200"><strong>Water quality records</strong><p id="signalWater" class="text-sm text-slate-600 mt-1">Loading sample compliance...</p></a>
+                        <a href="/pollution-sources.html" class="block rounded-2xl bg-slate-50 border border-slate-100 p-4 hover:border-emerald-200"><strong>Pollution sources</strong><p id="signalPollution" class="text-sm text-slate-600 mt-1">Loading monitored source count...</p></a>
                         <a href="/vwmc-management.html" class="block rounded-2xl bg-slate-50 border border-slate-100 p-4 hover:border-emerald-200"><strong>VWMC coordination</strong><p class="text-sm text-slate-600 mt-1">Track committee structure, membership and local contacts.</p></a>
                     </div>
                 </section>
@@ -130,8 +147,67 @@
     <script src="/assets/js/krwmp-global.js"></script>
     <script src="/assets/js/krwmp-ui-enhancements.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.KRWMP_ENGINE) window.KRWMP_ENGINE.assembleInterfaceContext();
+        const fmt = new Intl.NumberFormat('en-US');
+        function setText(id, value) { const el = document.getElementById(id); if (el) el.textContent = value; }
+        function setBar(id, percent) { const el = document.getElementById(id); if (el) el.style.width = `${Math.max(0, Math.min(100, Number(percent) || 0))}%`; }
+        function num(value) { return fmt.format(Number(value) || 0); }
+
+        function renderSummary(summary) {
+            const water = summary.water_quality || {};
+            const community = summary.community || {};
+            const interventions = summary.interventions || {};
+            const pollution = summary.pollution || {};
+
+            setText('heroFailedSamples', num(water.failed_samples));
+            setText('heroFailedPercent', `${num(water.failed_percent)}% Failed`);
+            setText('heroComplaints30', num(community.complaints_30_days));
+            setText('heroOngoingInterventions', num(interventions.ongoing_interventions));
+            setText('heroLinkedComplaints', `${num(interventions.ongoing_interventions)} ongoing interventions are responding to ${num(community.linked_complaints)} linked community complaints.`);
+            setText('heroMonitoredSources', num(pollution.monitored_sources_30_days));
+
+            setText('waterQualityStatus', `${num(water.failed_percent)}% Failed`);
+            setText('waterQualityText', `${num(water.failed_samples)} failed samples (${num(water.failed_percent)}%) out of ${num(water.total_samples)} total water quality samples.`);
+            setBar('waterQualityBar', water.failed_percent);
+
+            const complaintScale = Math.min(100, Number(community.complaints_30_days || 0) * 5);
+            setText('complaintStatus', `${num(community.complaints_30_days)} in 30 days`);
+            setText('complaintText', `${num(community.complaints_30_days)} community complaints were received within the last 30 days.`);
+            setBar('complaintBar', complaintScale);
+
+            const responsePercent = community.linked_complaints > 0 ? Math.min(100, Math.round((interventions.ongoing_interventions / community.linked_complaints) * 100)) : 0;
+            setText('interventionStatus', `${num(interventions.ongoing_interventions)} ongoing`);
+            setText('interventionText', `${num(interventions.ongoing_interventions)} interventions are ongoing to solve ${num(community.linked_complaints)} linked community complaints.`);
+            setBar('interventionBar', responsePercent);
+
+            const pollutionScale = Math.min(100, Number(pollution.monitored_sources_30_days || 0) * 5);
+            setText('pollutionStatus', `${num(pollution.monitored_sources_30_days)} monitored`);
+            setText('pollutionText', `${num(pollution.monitored_sources_30_days)} pollution sources were monitored within the last 30 days.`);
+            setBar('pollutionBar', pollutionScale);
+
+            setText('signalCommunity', `${num(community.complaints_30_days)} complaints received in the last 30 days.`);
+            setText('signalWater', `${num(water.failed_samples)} failed samples from ${num(water.total_samples)} water quality records.`);
+            setText('signalPollution', `${num(pollution.monitored_sources_30_days)} sources monitored in the last 30 days.`);
+
+            if (summary.generated_at) {
+                const generatedAt = new Date(summary.generated_at);
+                setText('summaryGeneratedAt', `Database summary generated ${generatedAt.toLocaleString()}. Operational window: last ${summary.window_days || 30} days.`);
+            }
+        }
+
+        async function loadSummary() {
+            try {
+                const data = await window.KRWMP_UTILS.apiRequest('/api/home/summary');
+                renderSummary(data.summary || {});
+            } catch (error) {
+                console.error('Failed to load catchment homepage summary:', error);
+                setText('summaryGeneratedAt', 'Unable to load database summary. Please check API access and privileges.');
+                ['waterQualityText', 'complaintText', 'interventionText', 'pollutionText'].forEach(id => setText(id, 'Database value unavailable.'));
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.KRWMP_ENGINE) await window.KRWMP_ENGINE.assembleInterfaceContext();
+            await loadSummary();
         });
     </script>
 </body>
