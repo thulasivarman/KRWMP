@@ -21,6 +21,7 @@ fastify.register(require('./routes/vwmc.routes'), { prefix: '/api' });
 fastify.register(require('./routes/intervention.routes'), { prefix: '/api' });
 fastify.register(require('./routes/institution.routes'), { prefix: '/api' });
 fastify.register(require('./routes/reports.routes'), { prefix: '/api' });
+fastify.register(require('./routes/home-summary.routes'), { prefix: '/api' });
 fastify.register(require('./routes/community-issue-interventions.routes'), { prefix: '/api' });
 fastify.register(require('./routes/water-quality.routes'), { prefix: '/api' });
 fastify.register(require('./routes/pollution-source.routes'), { prefix: '/api' });
