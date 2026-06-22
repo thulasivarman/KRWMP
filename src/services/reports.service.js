@@ -1,107 +1,94 @@
 const pool = require('../../config/database');
-const knowledgeService = require('./knowledge.service');
 
-function parseFilters(query = {}, dateColumn = 'updated_at') {
-  const filters = [];
+const REPORTS = {
+  'community-complaints': {
+    title: 'Community Complaints Report', statusColumn: 'r.status', dateColumn: 'r.submitted_at',
+    columns: [['complaint_reference_no','Complaint Reference No'],['date_reported','Date Reported'],['complaint_category','Complaint Category'],['specific_issue_type','Specific Issue Type'],['complaint_description','Complaint Description'],['reported_by','Reported By'],['contact_information','Contact Information'],['location_dsd_gnd','Location (DSD / GND)'],['geographic_coordinates','Geographic Coordinates'],['assigned_institution','Assigned Institution'],['current_status','Current Status'],['severity_level','Severity Level'],['recommended_solution','Recommended Solution'],['follow_up_actions','Follow-up Actions'],['date_closed','Date Closed'],['remarks','Remarks']],
+    sql: `SELECT r.report_code AS complaint_reference_no, r.submitted_at AS date_reported, c.category_name AS complaint_category, si.issue_name AS specific_issue_type, COALESCE(r.description, r.issue_title) AS complaint_description, COALESCE(p.full_name, r.reporter_name) AS reported_by, COALESCE(p.phone_number, r.reporter_contact, p.email, r.reporter_email) AS contact_information, CONCAT_WS(' / ', COALESCE(r.dsd_name, d.dsd_name), COALESCE(r.gnd_name, g.gnd_name)) AS location_dsd_gnd, CONCAT_WS(', ', r.latitude, r.longitude) AS geographic_coordinates, r.assigned_institution AS assigned_institution, r.status AS current_status, r.severity_level, s.solution_title AS recommended_solution, r.review_notes AS follow_up_actions, r.resolved_at AS date_closed, r.remarks FROM public.community_issue_reports r LEFT JOIN public.issue_categories c ON c.id = r.category_id LEFT JOIN public.specific_issues si ON si.id = r.issue_id LEFT JOIN public.solution_library s ON s.id = r.assigned_solution_id LEFT JOIN public.persons p ON p.id = r.reporter_person_id LEFT JOIN LATERAL (SELECT db.dsd_n AS dsd_name FROM public.dsd_boundary db WHERE r.geom IS NOT NULL AND ST_Intersects(r.geom, db.geom) LIMIT 1) d ON true LEFT JOIN LATERAL (SELECT gb.gnd_name FROM public.gnd_boundary gb WHERE r.geom IS NOT NULL AND ST_Intersects(r.geom, gb.geom) LIMIT 1) g ON true`
+  },
+  interventions: {
+    title: 'Interventions Report', statusColumn: 'r.status', dateColumn: 'r.updated_at',
+    columns: [['intervention_reference','Intervention Reference'],['intervention_title','Intervention Title'],['intervention_category','Intervention Category'],['intervention_description','Intervention Description'],['responsible_institution','Responsible Institution'],['lead_officer','Lead Officer'],['intervention_area','Intervention Area (DSD / GND)'],['target_location','Target Location'],['start_date','Start Date'],['expected_completion_date','Expected Completion Date'],['current_progress','Current Progress (%)'],['implementation_status','Implementation Status'],['budget_allocation','Budget Allocation'],['funding_source','Funding Source'],['key_achievements','Key Achievements'],['challenges_identified','Challenges Identified'],['next_actions','Next Actions']],
+    sql: `SELECT r.intervention_code AS intervention_reference, r.intervention_title, l.intervention_category, COALESCE(r.remarks, l.description) AS intervention_description, COALESCE(r.implementing_office, l.responsible_institution) AS responsible_institution, r.lead_officer_name AS lead_officer, CONCAT_WS(' / ', r.dsd_name, r.gnd_name) AS intervention_area, COALESCE(r.location_name, r.village_name) AS target_location, COALESCE(r.actual_start_date, r.planned_start_date) AS start_date, COALESCE(r.actual_end_date, r.planned_end_date) AS expected_completion_date, r.progress_percent AS current_progress, r.status AS implementation_status, NULL AS budget_allocation, NULL AS funding_source, latest.action_title AS key_achievements, latest.action_description AS challenges_identified, latest.action_status AS next_actions FROM public.intervention_registry r LEFT JOIN public.intervention_library l ON l.id = r.library_id LEFT JOIN LATERAL (SELECT t.action_title, t.action_description, t.action_status FROM public.intervention_action_timeline t WHERE t.intervention_id = r.id ORDER BY t.action_date DESC NULLS LAST, t.created_at DESC LIMIT 1) latest ON true`
+  },
+  'catchment-programmes': {
+    title: 'Catchment Improvement Programme Report', statusColumn: 'p.overall_status', dateColumn: 'p.updated_at',
+    columns: [['programme_reference','Programme Reference'],['volunteer_organization_name','Volunteer Organization Name'],['programme_title','Programme Title'],['programme_coordinator','Programme Coordinator'],['programme_status','Programme Status'],['activity_type','Activity Type'],['activity_description','Activity Description'],['activity_date','Activity Date'],['partner_institution','Partner Institution'],['activity_location','Activity Location'],['number_of_participants','Number of Participants'],['evidence_submitted','Evidence Submitted'],['recommendations','Recommendations'],['follow_up_required','Follow-up Required'],['reporting_officer','Reporting Officer'],['report_date','Report Date']],
+    sql: `SELECT p.id AS programme_reference, org.institution_name AS volunteer_organization_name, p.programme_name AS programme_title, coordinator.full_name AS programme_coordinator, p.overall_status AS programme_status, COALESCE(t.activity_type_name, a.other_activity_type) AS activity_type, a.notes AS activity_description, a.activity_date, partner.institution_name AS partner_institution, CONCAT_WS(' / ', a.location_description, a.dsd_name, a.gnd_name) AS activity_location, NULL AS number_of_participants, CASE WHEN a.photo_url IS NOT NULL THEN 'Yes' ELSE 'No' END AS evidence_submitted, p.recommendations, CASE WHEN p.overall_status IN ('Delayed','Ongoing') THEN 'Yes' ELSE 'No' END AS follow_up_required, a.created_by AS reporting_officer, a.created_at AS report_date FROM public.volunteer_catchment_programmes p JOIN public.intervention_institutions org ON org.id = p.organisation_id LEFT JOIN public.persons coordinator ON coordinator.id = p.coordinator_person_id LEFT JOIN public.volunteer_catchment_programme_activities a ON a.programme_id = p.id AND a.active = true LEFT JOIN public.catchment_programme_activity_types t ON t.id = a.activity_type_id LEFT JOIN public.intervention_institutions partner ON partner.id = a.partner_organisation_id WHERE p.active = true`
+  },
+  institutions: {
+    title: 'Institution Registry Report', statusColumn: 'r.active', dateColumn: 'r.updated_at',
+    columns: [['institution_id','Institution ID'],['institution_name','Institution Name'],['institution_type','Institution Type'],['contact_person','Contact Person'],['official_email','Official Email'],['contact_number','Contact Number'],['address','Address'],['district','District'],['dsd','DSD'],['gnd','GND'],['service_coverage_area','Service Coverage Area'],['active_status','Active Status'],['date_registered','Date Registered'],['last_updated','Last Updated']],
+    sql: `SELECT r.id AS institution_id, r.institution_name, r.institution_type, r.contact_person, r.contact_email AS official_email, r.contact_phone AS contact_number, r.address, r.district, r.dsd_name AS dsd, r.gnd_name AS gnd, CONCAT_WS(' / ', r.dsd_name, r.gnd_name) AS service_coverage_area, CASE WHEN r.active THEN 'Active' ELSE 'Inactive' END AS active_status, r.created_at AS date_registered, r.updated_at AS last_updated FROM public.intervention_institutions r WHERE COALESCE(r.is_deleted, false) = false`
+  },
+  'volunteer-organisations': {
+    title: 'Volunteer Organizations Report', statusColumn: 'r.active', dateColumn: 'r.updated_at',
+    columns: [['organization_id','Organization ID'],['organization_name','Organization Name'],['registration_number','Registration Number'],['organization_type','Organization Type'],['organization_email','Organization Email'],['address','Address'],['coverage_area','Coverage Area'],['number_of_members','Number of Members'],['active_programmes','Active Programmes'],['status','Status'],['date_established','Date Established'],['last_updated','Last Updated']],
+    sql: `SELECT r.id AS organization_id, r.institution_name AS organization_name, r.institution_code AS registration_number, r.institution_type AS organization_type, r.contact_email AS organization_email, r.address, CONCAT_WS(' / ', r.dsd_name, r.gnd_name) AS coverage_area, COALESCE(m.member_count,0) AS number_of_members, COALESCE(p.programme_count,0) AS active_programmes, CASE WHEN r.active THEN 'Active' ELSE 'Inactive' END AS status, r.created_at AS date_established, r.updated_at AS last_updated FROM public.intervention_institutions r LEFT JOIN LATERAL (SELECT COUNT(*)::int member_count FROM public.volunteer_organisation_members vm WHERE vm.organisation_id = r.id AND vm.active = true) m ON true LEFT JOIN LATERAL (SELECT COUNT(*)::int programme_count FROM public.volunteer_catchment_programmes cp WHERE cp.organisation_id = r.id AND cp.active = true) p ON true WHERE COALESCE(r.is_deleted,false)=false AND (LOWER(COALESCE(r.institution_type,'')) LIKE '%volunteer%' OR LOWER(COALESCE(r.institution_type,'')) LIKE '%community based%' OR LOWER(COALESCE(r.institution_type,'')) LIKE '%youth group%' OR LOWER(COALESCE(r.institution_type,'')) LIKE '%environmental ngo%' OR LOWER(COALESCE(r.institution_type,'')) LIKE '%civil society%')`
+  },
+  'pollution-sources': {
+    title: 'Pollution Source Monitoring Report', statusColumn: 'r.status', dateColumn: 'r.updated_at',
+    columns: [['source_id','Source ID'],['pollution_source_name','Pollution Source Name'],['pollution_category','Pollution Category'],['pollution_type','Pollution Type'],['overseeing_institution','Overseeing Institution'],['source_contact_person','Source Contact Person'],['contact_details','Contact Details'],['location_dsd_gnd','Location (DSD / GND)'],['coordinates','Coordinates'],['risk_level','Risk Level'],['current_status','Current Status'],['last_inspection_date','Last Inspection Date'],['recommended_actions','Recommended Actions'],['compliance_status','Compliance Status'],['evidence_attachments','Evidence Attachments'],['remarks','Remarks']],
+    sql: `SELECT r.source_code AS source_id, r.source_name AS pollution_source_name, r.type_name AS pollution_category, r.type_name AS pollution_type, ps.overseeing_institution, cp.full_name AS source_contact_person, COALESCE(cp.phone_number, cp.email) AS contact_details, CONCAT_WS(' / ', r.dsd_name, r.gnd_name) AS location_dsd_gnd, CONCAT_WS(', ', ST_Y(r.geom), ST_X(r.geom)) AS coordinates, r.risk_class AS risk_level, COALESCE(m.current_status, r.status) AS current_status, r.last_inspection_date, COALESCE(m.action_recommendation, m.action_recommendation_other) AS recommended_actions, m.follow_up_status AS compliance_status, CASE WHEN m.evidence_url IS NOT NULL OR m.photo_url IS NOT NULL THEN 'Yes' ELSE 'No' END AS evidence_attachments, m.observation_summary AS remarks FROM public.vw_pollution_source_risk r LEFT JOIN public.pollution_sources ps ON ps.id = r.id LEFT JOIN public.persons cp ON cp.id = ps.source_contact_person_id LEFT JOIN LATERAL (SELECT * FROM public.pollution_source_monitoring pm WHERE pm.pollution_source_id = r.id ORDER BY COALESCE(pm.reported_at, pm.created_at) DESC LIMIT 1) m ON true`
+  },
+  vwmc: {
+    title: 'VWMC Report', statusColumn: 'r.status', dateColumn: 'r.updated_at',
+    columns: [['vwmc_id','VWMC ID'],['committee_name','Committee Name'],['catchment_area','Catchment Area'],['dsd','DSD'],['gnd','GND'],['chairperson','Chairperson'],['secretary','Secretary'],['total_members','Total Members'],['registered_date','Registered Date'],['current_status','Current Status'],['key_issues_raised','Key Issues Raised'],['active_interventions','Active Interventions'],['remarks','Remarks']],
+    sql: `SELECT r.committee_code AS vwmc_id, r.committee_name, r.sub_watershed_name AS catchment_area, r.dsd_name AS dsd, r.gnd_name AS gnd, chair.member_name AS chairperson, sec.member_name AS secretary, COALESCE(m.member_count,0) AS total_members, r.created_at AS registered_date, r.status AS current_status, NULL AS key_issues_raised, NULL AS active_interventions, r.remarks FROM public.vwmc_committees r LEFT JOIN LATERAL (SELECT member_name FROM public.vwmc_members WHERE committee_id = r.id AND active = true AND LOWER(role_in_committee) LIKE '%chair%' LIMIT 1) chair ON true LEFT JOIN LATERAL (SELECT member_name FROM public.vwmc_members WHERE committee_id = r.id AND active = true AND LOWER(role_in_committee) LIKE '%secret%' LIMIT 1) sec ON true LEFT JOIN LATERAL (SELECT COUNT(*)::int member_count FROM public.vwmc_members WHERE committee_id = r.id AND active = true) m ON true`
+  },
+  'water-quality': {
+    title: 'Water Quality Monitoring Report', statusColumn: 'r.overall_status', dateColumn: 'r.sample_collection_datetime',
+    columns: [['sample_id','Sample ID'],['sampling_date','Sampling Date'],['sampling_location','Sampling Location'],['dsd_gnd','DSD / GND'],['water_source_type','Water Source Type'],['ph_level','pH Level'],['turbidity','Turbidity'],['dissolved_oxygen','Dissolved Oxygen'],['conductivity','Conductivity'],['tds','TDS'],['contamination_level','Contamination Level'],['wqi_score','WQI Score'],['risk_category','Risk Category'],['recommended_actions','Recommended Actions'],['analyst_name','Analyst Name']],
+    sql: `SELECT r.sample_code AS sample_id, r.sample_collection_datetime AS sampling_date, r.sample_location_name AS sampling_location, CONCAT_WS(' / ', r.dsd_name, r.gnd_name) AS dsd_gnd, NULL AS water_source_type, MAX(CASE WHEN LOWER(p.parameter_name) LIKE '%ph%' THEN COALESCE(tr.measured_value::text, tr.text_value) END) AS ph_level, MAX(CASE WHEN LOWER(p.parameter_name) LIKE '%turbidity%' THEN COALESCE(tr.measured_value::text, tr.text_value) END) AS turbidity, MAX(CASE WHEN LOWER(p.parameter_name) LIKE '%dissolved oxygen%' THEN COALESCE(tr.measured_value::text, tr.text_value) END) AS dissolved_oxygen, MAX(CASE WHEN LOWER(p.parameter_name) LIKE '%conductivity%' THEN COALESCE(tr.measured_value::text, tr.text_value) END) AS conductivity, MAX(CASE WHEN LOWER(p.parameter_name) LIKE '%tds%' OR LOWER(p.parameter_name) LIKE '%total dissolved%' THEN COALESCE(tr.measured_value::text, tr.text_value) END) AS tds, r.overall_status AS contamination_level, NULL AS wqi_score, r.overall_status AS risk_category, r.remarks AS recommended_actions, r.collected_by AS analyst_name FROM public.water_quality_tests r LEFT JOIN public.water_quality_test_results tr ON tr.test_id = r.id LEFT JOIN public.water_quality_parameters p ON p.id = tr.parameter_id GROUP BY r.id`
+  },
+  users: {
+    title: 'System User Access Report', statusColumn: null, dateColumn: null,
+    columns: [['user_id','User ID'],['full_name','Full Name'],['designation','Designation'],['institution','Institution'],['user_role','User Role'],['access_level','Access Level'],['email_address','Email Address'],['last_login_date','Last Login Date'],['account_status','Account Status'],['created_date','Created Date'],['created_by','Created By']],
+    sql: `SELECT u.id AS user_id, u.name AS full_name, u.designation, i.institution_name AS institution, r.role_name AS user_role, COALESCE(string_agg(DISTINCT r2.role_name, ', '), r.role_name) AS access_level, u.email AS email_address, u.last_login_at AS last_login_date, CASE WHEN COALESCE(u.is_active,true) THEN 'Active' ELSE 'Inactive' END AS account_status, u.created_at AS created_date, u.created_by FROM public.users u LEFT JOIN public.roles r ON r.id = u.role_id LEFT JOIN public.intervention_institutions i ON i.id = u.institution_id LEFT JOIN public.user_roles ur ON ur.user_id = u.id LEFT JOIN public.roles r2 ON r2.id = ur.role_id GROUP BY u.id, i.institution_name, r.role_name`
+  },
+  persons: {
+    title: 'Master Person Registry Report', statusColumn: 'r.status', dateColumn: 'r.created_at',
+    columns: [['person_id','Person ID'],['full_name','Full Name'],['nic_identification','NIC / Identification'],['contact_number','Contact Number'],['email_address','Email Address'],['address','Address'],['dsd','DSD'],['gnd','GND'],['linked_user_account','Linked User Account'],['associated_organizations','Associated Organizations'],['registered_date','Registered Date']],
+    sql: `SELECT r.id AS person_id, r.full_name, r.nic_number AS nic_identification, r.phone_number AS contact_number, r.email AS email_address, r.address, r.dsd, r.gnd, u.identifier AS linked_user_account, orgs.associated_organizations, r.created_at AS registered_date FROM public.persons r LEFT JOIN public.users u ON u.id::text = r.linked_user_id::text LEFT JOIN LATERAL (SELECT string_agg(DISTINCT i.institution_name, ', ') AS associated_organizations FROM public.volunteer_organisation_members vm JOIN public.intervention_institutions i ON i.id = vm.organisation_id WHERE vm.person_id = r.id AND vm.active = true) orgs ON true`
+  },
+  solutions: {
+    title: 'Solutions Registry Report', statusColumn: null, dateColumn: 'r.created_at',
+    columns: [['solution_code','Solution Code'],['solution_title','Solution Title'],['solution_category','Solution Category'],['related_issues','Related Issues'],['description','Description'],['recommended_actions','Recommended Actions'],['responsible_stakeholder','Responsible Stakeholder'],['priority_level','Priority Level'],['estimated_timeline','Estimated Timeline'],['effectiveness_rating','Effectiveness Rating'],['active_status','Active Status']],
+    sql: `SELECT r.id AS solution_code, r.solution_title, c.category_name AS solution_category, issues.related_issues, r.description, r.recommended_actions, r.responsible_party AS responsible_stakeholder, r.priority AS priority_level, r.estimated_timeframe AS estimated_timeline, r.effectiveness_rating, CASE WHEN COALESCE(r.active,true) THEN 'Active' ELSE 'Inactive' END AS active_status FROM public.solution_library r LEFT JOIN public.issue_categories c ON c.id = r.category_id LEFT JOIN LATERAL (SELECT string_agg(si.issue_name, ', ') AS related_issues FROM public.solution_issue_links sil JOIN public.specific_issues si ON si.id = sil.issue_id WHERE sil.solution_id = r.id) issues ON true`
+  },
+  issues: {
+    title: 'Issues Library Report', statusColumn: null, dateColumn: 'r.created_at',
+    columns: [['issue_code','Issue Code'],['issue_category','Issue Category'],['specific_issue_name','Specific Issue Name'],['description','Description'],['severity_classification','Severity Classification'],['common_causes','Common Causes'],['potential_impacts','Potential Impacts'],['standard_solutions','Standard Solutions'],['responsible_agencies','Responsible Agencies'],['priority_level','Priority Level'],['active_status','Active Status']],
+    sql: `SELECT si.id AS issue_code, c.category_name AS issue_category, si.issue_name AS specific_issue_name, si.description, si.severity_classification, si.common_causes, si.potential_impacts, solutions.standard_solutions, si.responsible_agencies, si.priority_level, CASE WHEN COALESCE(si.active,true) THEN 'Active' ELSE 'Inactive' END AS active_status FROM public.specific_issues si LEFT JOIN public.issue_categories c ON c.id = si.category_id LEFT JOIN LATERAL (SELECT string_agg(sl.solution_title, ', ') AS standard_solutions FROM public.solution_issue_links sil JOIN public.solution_library sl ON sl.id = sil.solution_id WHERE sil.issue_id = si.id) solutions ON true`
+  }
+};
+
+function title(v) { return String(v ?? '').replaceAll('_',' ').replace(/\b\w/g, c => c.toUpperCase()); }
+function withFilters(def, query = {}) {
   const values = [];
-  if (query.status) {
-    values.push(query.status);
-    filters.push(`r.status = $${values.length}`);
+  const filters = [];
+  if (query.status && def.statusColumn) { values.push(query.status); filters.push(`${def.statusColumn}::text = $${values.length}`); }
+  if (query.date_from && def.dateColumn) { values.push(query.date_from); filters.push(`${def.dateColumn}::date >= $${values.length}`); }
+  if (query.date_to && def.dateColumn) { values.push(query.date_to); filters.push(`${def.dateColumn}::date <= $${values.length}`); }
+  if (!filters.length) return { sql: def.sql, values };
+  const hasWhere = /\bwhere\b/i.test(def.sql);
+  return { sql: `${def.sql} ${hasWhere ? 'AND' : 'WHERE'} ${filters.join(' AND ')}`, values };
+}
+async function generate(type, query = {}) {
+  const def = REPORTS[type];
+  if (!def) { const err = new Error('Unknown report type.'); err.statusCode = 404; throw err; }
+  const { sql, values } = withFilters(def, query);
+  const records = await pool.query(`${sql} ORDER BY 1 DESC NULLS LAST LIMIT 1000`, values);
+  const columns = def.columns.map(([key,label]) => ({ key, label }));
+  const statusCounts = new Map();
+  for (const row of records.rows) {
+    const status = row.current_status || row.status || row.implementation_status || row.programme_status || row.active_status || row.account_status || row.risk_category || row.contamination_level || 'Not Specified';
+    statusCounts.set(status, (statusCounts.get(status) || 0) + 1);
   }
-  if (query.date_from) {
-    values.push(query.date_from);
-    filters.push(`r.${dateColumn}::date >= $${values.length}`);
-  }
-  if (query.date_to) {
-    values.push(query.date_to);
-    filters.push(`r.${dateColumn}::date <= $${values.length}`);
-  }
-  return { where: filters.length ? `WHERE ${filters.join(' AND ')}` : '', values };
+  return { type, title: def.title, columns, records: records.rows, summary: { total: records.rowCount }, byStatus: Array.from(statusCounts, ([status,count]) => ({ status, count })), bySecondary: [] };
 }
 
-async function communityComplaints(query = {}) {
-  const { where, values } = parseFilters(query, 'submitted_at');
-  const summarySql = `
-    SELECT COUNT(*)::int AS total,
-      COUNT(*) FILTER (WHERE status = 'submitted')::int AS submitted,
-      COUNT(*) FILTER (WHERE status = 'under_review')::int AS under_review,
-      COUNT(*) FILTER (WHERE status = 'verified')::int AS verified,
-      COUNT(*) FILTER (WHERE status = 'resolved')::int AS resolved,
-      COUNT(*) FILTER (WHERE severity_level = 'high')::int AS high_severity
-    FROM public.community_issue_reports r ${where};
-  `;
-  const rowsSql = `
-    SELECT r.report_code, r.issue_title, r.description, r.status, r.severity_level,
-      r.latitude, r.longitude, r.location_description, r.submitted_at,
-      r.reporter_name AS submitter_name,
-      c.category_name,
-      s.solution_title,
-      d.dsd_name,
-      g.gnd_name
-    FROM public.community_issue_reports r
-    LEFT JOIN public.issue_categories c ON c.id = r.category_id
-    LEFT JOIN public.solution_library s ON s.id = r.assigned_solution_id
-    LEFT JOIN LATERAL (
-      SELECT db.dsd_n AS dsd_name
-      FROM public.dsd_boundary db
-      WHERE r.geom IS NOT NULL AND db.geom IS NOT NULL AND ST_Intersects(r.geom, db.geom)
-      ORDER BY db.id ASC
-      LIMIT 1
-    ) d ON true
-    LEFT JOIN LATERAL (
-      SELECT gb.gnd_name AS gnd_name
-      FROM public.gnd_boundary gb
-      WHERE r.geom IS NOT NULL AND gb.geom IS NOT NULL AND ST_Intersects(r.geom, gb.geom)
-      ORDER BY gb.id ASC
-      LIMIT 1
-    ) g ON true
-    ${where}
-    ORDER BY r.submitted_at DESC NULLS LAST
-    LIMIT 500;
-  `;
-  const statusSql = `SELECT status, COUNT(*)::int AS count FROM public.community_issue_reports r ${where} GROUP BY status ORDER BY status;`;
-  const severitySql = `SELECT severity_level, COUNT(*)::int AS count FROM public.community_issue_reports r ${where} GROUP BY severity_level ORDER BY severity_level;`;
-  const [summary, records, byStatus, bySeverity] = await Promise.all([
-    pool.query(summarySql, values), pool.query(rowsSql, values), pool.query(statusSql, values), pool.query(severitySql, values)
-  ]);
-  return { summary: summary.rows[0], byStatus: byStatus.rows, bySeverity: bySeverity.rows, records: records.rows };
-}
-
-async function interventions(query = {}) {
-  const { where, values } = parseFilters(query, 'updated_at');
-  const summarySql = `
-    SELECT COUNT(*)::int AS total,
-      COUNT(*) FILTER (WHERE status = 'planned')::int AS planned,
-      COUNT(*) FILTER (WHERE status = 'ongoing')::int AS ongoing,
-      COUNT(*) FILTER (WHERE status = 'completed')::int AS completed,
-      COUNT(*) FILTER (WHERE priority = 'high')::int AS high_priority,
-      COALESCE(ROUND(AVG(progress_percent)::numeric, 1), 0) AS avg_progress
-    FROM public.intervention_registry r ${where};
-  `;
-  const rowsSql = `
-    SELECT r.intervention_code, r.intervention_title, r.location_name, r.village_name,
-      r.dsd_name, r.gnd_name, r.priority, r.status, r.progress_percent,
-      r.planned_start_date, r.planned_end_date, r.actual_start_date, r.actual_end_date,
-      r.lead_officer_name, r.implementing_office, r.updated_by, r.updated_at,
-      l.intervention_name AS library_name,
-      COALESCE((SELECT COUNT(*) FROM public.intervention_action_timeline t WHERE t.intervention_id = r.id), 0)::int AS action_count,
-      COALESCE((SELECT COUNT(*) FROM public.intervention_officers o WHERE o.intervention_id = r.id), 0)::int AS officer_count
-    FROM public.intervention_registry r
-    LEFT JOIN public.intervention_library l ON l.id = r.library_id
-    ${where}
-    ORDER BY r.updated_at DESC
-    LIMIT 500;
-  `;
-  const statusSql = `SELECT status, COUNT(*)::int AS count FROM public.intervention_registry r ${where} GROUP BY status ORDER BY status;`;
-  const prioritySql = `SELECT priority, COUNT(*)::int AS count FROM public.intervention_registry r ${where} GROUP BY priority ORDER BY priority;`;
-  const [summary, records, byStatus, byPriority] = await Promise.all([
-    pool.query(summarySql, values), pool.query(rowsSql, values), pool.query(statusSql, values), pool.query(prioritySql, values)
-  ]);
-  return { summary: summary.rows[0], byStatus: byStatus.rows, byPriority: byPriority.rows, records: records.rows };
-}
-
-async function knowledge(query = {}) {
-  return knowledgeService.report(query);
-}
-
-module.exports = { communityComplaints, interventions, knowledge };
+async function communityComplaints(query) { return generate('community-complaints', query); }
+async function interventions(query) { return generate('interventions', query); }
+async function knowledge(query) { return generate(query.type || 'solutions', query); }
+module.exports = { REPORTS, generate, communityComplaints, interventions, knowledge };
