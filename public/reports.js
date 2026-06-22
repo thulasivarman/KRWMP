@@ -97,12 +97,21 @@ function renderReport(report) {
     summaryCard('Total Records', report.summary?.total ?? records.length),
     summaryCard('Visible Columns', columns.length),
     summaryCard('Report Type', title(report.type || reportType.value)),
-    summaryCard('Export', 'Print / PDF')
+    summaryCard('Export', 'Report Area PDF')
   ].join('');
   document.getElementById('statusSummary').innerHTML = renderStatusSummary(report.byStatus || []);
   document.getElementById('secondarySummary').innerHTML = '<p class="text-slate-500">Professional reporting labels are used instead of raw database column names.</p>';
   document.getElementById('reportTableHead').innerHTML = '<tr>' + columns.map(col => '<th class="border p-2 text-left whitespace-nowrap">' + esc(col.label) + '</th>').join('') + '</tr>';
   document.getElementById('reportTableBody').innerHTML = records.length ? records.map(row => '<tr>' + columns.map(col => '<td class="border p-2 align-top">' + esc(formatValue(row[col.key])) + '</td>').join('') + '</tr>').join('') : '<tr><td colspan="' + Math.max(columns.length, 1) + '" class="border p-3 text-center text-slate-500">No records found.</td></tr>';
+}
+
+function exportReportPdf() {
+  const reportPaper = document.getElementById('reportPaper');
+  if (!reportPaper) {
+    show('Report area is not available for export.', true);
+    return;
+  }
+  window.print();
 }
 
 async function init() {
@@ -116,5 +125,5 @@ async function init() {
 reportType.addEventListener('change', () => { fillStatus(); loadReport(); });
 document.getElementById('loadReportBtn').addEventListener('click', loadReport);
 document.getElementById('resetBtn').addEventListener('click', () => { statusFilter.value = ''; dateFrom.value = ''; dateTo.value = ''; loadReport(); });
-document.getElementById('exportPdfBtn').addEventListener('click', () => window.print());
+document.getElementById('exportPdfBtn').addEventListener('click', exportReportPdf);
 init().catch(error => show(error.message || 'Unable to initialize reports.', true));
