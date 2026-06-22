@@ -5,202 +5,83 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Volunteer Organisations - KRWMP Portal</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
-  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
   <div class="flex min-h-screen">
     <aside id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></aside>
-
     <main class="flex-1 krwmp-page krwmp-stack-lg">
       <header class="krwmp-page-header flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div>
           <p class="krwmp-eyebrow">Environmental Monitoring</p>
           <h1 class="krwmp-page-title">Volunteer Organisations</h1>
-          <p class="krwmp-body-text">Register, view, map and manage volunteer organisations supporting watershed management activities.</p>
+          <p class="krwmp-body-text">View and manage volunteer organisations supporting watershed management activities.</p>
         </div>
-        <button id="reloadBtn" type="button"  class="krwmp-btn krwmp-btn-secondary">Reload</button>
+        <div class="flex flex-wrap gap-2">
+          <a id="addOrganisationBtn" href="/volunteer-organisation-form.html" class="krwmp-btn krwmp-btn-primary hidden">Add Organisation</a>
+          <button id="reloadBtn" type="button" class="krwmp-btn krwmp-btn-secondary">Reload</button>
+        </div>
       </header>
-
       <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
-
       <section class="krwmp-stat-grid" aria-label="Volunteer organisation dashboard summary">
         <article class="krwmp-stat-card"><p class="krwmp-stat-label">Total Organisations</p><div id="totalOrganisations" class="krwmp-stat-value">0</div></article>
         <article class="krwmp-stat-card"><p class="krwmp-stat-label">Active Organisations</p><div id="activeOrganisations" class="krwmp-stat-value krwmp-stat-value-accent">0</div></article>
         <article class="krwmp-stat-card"><p class="krwmp-stat-label">Average Score</p><div id="averageScore" class="krwmp-stat-value">-</div></article>
         <article class="krwmp-stat-card"><p class="krwmp-stat-label">Mapped Records</p><div id="mappedRecords" class="krwmp-stat-value">0</div></article>
       </section>
-
-      <section class="krwmp-panel krwmp-stack-md">
-        <div>
-          <h2 class="form-section-heading">Add Volunteer Organisation</h2>
-          <p class="form-helper">Mark the organisation location on the map. DSD, GND and sub-watershed are auto-captured from the selected point.</p>
-        </div>
-
-        <form id="volunteerForm" class="grid grid-cols-1 xl:grid-cols-3 gap-5" enctype="multipart/form-data">
-          <section class="xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label  class="form-label">Organisation Name <span class="text-rose-400">*</span><input name="institution_name" required  class="form-input mt-1" placeholder="e.g. Kelani Youth Volunteers"></label>
-            <label  class="form-label">Registration / Code<input name="institution_code"  class="form-input mt-1" placeholder="e.g. VO-001"></label>
-            <label  class="form-label">Organisation Type<select name="institution_type"  class="form-select mt-1"><option value="Volunteer Organisation">Volunteer Organisation</option><option value="Community Based Organisation">Community Based Organisation</option><option value="Youth Group">Youth Group</option><option value="Environmental NGO">Environmental NGO</option><option value="Civil Society Organisation">Civil Society Organisation</option></select></label>
-            <label  class="form-label">Contact Person<input name="contact_person"  class="form-input mt-1"></label>
-            <label  class="form-label">Contact Phone<input name="contact_phone"  class="form-input mt-1"></label>
-            <label  class="form-label">Contact Email<input name="contact_email" type="email"  class="form-input mt-1"></label>
-            <label  class="form-label md:col-span-2">Address <span class="text-rose-400">*</span><input name="address" required  class="form-input mt-1"></label>
-            <label  class="form-label">Website<input name="website"  class="form-input mt-1" placeholder="https://example.org"></label>
-            <label  class="form-label">Status<select name="active"  class="form-select mt-1"><option value="true">Active</option><option value="false">Inactive</option></select></label>
-            <label  class="form-label md:col-span-2">Supportive Document<input name="supporting_document" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,application/pdf,image/jpeg,image/png,image/webp"  class="form-input mt-1"><span class="block mt-1 text-xs text-slate-500">Allowed: PDF, image, DOC/DOCX, XLS/XLSX.</span></label>
-            <label  class="form-label md:col-span-2">Description / Mandate<textarea name="description" rows="3"  class="form-textarea mt-1"></textarea></label>
-          </section>
-
-          <section class="krwmp-map-panel space-y-3">
-            <h3 class="form-section-heading">Organisation Location</h3>
-            <div id="volunteerLocationPicker" class="space-y-2">
-              <div data-location-map class="krwmp-location-map h-80"></div>
-              <div class="flex gap-2">
-                <button type="button" data-location-gps  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Use GPS</button>
-                <button type="button" data-location-clear  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Clear</button>
-              </div>
-              <p data-location-status class="krwmp-status-label">Map is focused on the Kelani River Basin. Click the map to mark the organisation location.</p>
-            </div>
-            <input type="hidden" name="latitude" id="latitudeInput" required>
-            <input type="hidden" name="longitude" id="longitudeInput" required>
-            <input type="hidden" name="district" id="districtInput">
-            <input type="hidden" name="dsd_name" id="dsdNameInput" required>
-            <input type="hidden" name="gnd_name" id="gndNameInput" required>
-            <input type="hidden" name="sub_watershed_id" id="subWatershedIdInput">
-            <input type="hidden" name="sub_watershed_name" id="subWatershedNameInput">
-            <div id="locationInfo" class="krwmp-identify-panel">No location selected.</div>
-          </section>
-
-          <div class="xl:col-span-3 flex flex-wrap gap-3">
-            <button id="saveBtn" type="submit"  class="krwmp-btn krwmp-btn-primary">Save Organisation</button>
-            <button type="reset"  class="krwmp-btn krwmp-btn-secondary">Clear</button>
-          </div>
-        </form>
-      </section>
-
       <section class="krwmp-panel krwmp-stack-md">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <div><h2 class="form-section-heading">Organisation Directory</h2><p class="form-helper">Admin users can delete volunteer organisation records.</p></div>
-          <input id="searchInput" type="search" placeholder="Search name, type, DSD, GND or contact"  class="form-input lg:w-96 focus:ring-2 focus:ring-emerald-400">
+          <div><h2 class="form-section-heading">Organisation Directory</h2><p class="form-helper">Open an organisation to view and maintain linked members.</p></div>
+          <input id="searchInput" type="search" placeholder="Search name, type, DSD, GND or contact" class="form-input lg:w-96 focus:ring-2 focus:ring-emerald-400">
         </div>
-        <div class="krwmp-table-wrap">
-          <table class="krwmp-table krwmp-table-compact">
-            <thead><tr><th>Organisation</th><th>Type</th><th>Contact</th><th>Location</th><th>Score</th><th>Document</th><th>Status</th><th class="admin-only hidden">Action</th></tr></thead>
-            <tbody id="organisationRows"><tr><td colspan="8" class="krwmp-table-empty">Loading volunteer organisations...</td></tr></tbody>
-          </table>
-        </div>
+        <div id="organisationCards" class="space-y-3"></div>
       </section>
     </main>
   </div>
 
+  <dialog id="organisationModal" class="krwmp-modal krwmp-modal-xl">
+    <header class="krwmp-modal-header">
+      <h2 class="krwmp-modal-title">Volunteer Organisation Details</h2>
+      <button type="button" class="krwmp-modal-close" data-close-modal="organisationModal" aria-label="Close details">&times;</button>
+    </header>
+    <div id="organisationModalContent" class="krwmp-modal-body krwmp-stack-md"></div>
+    <footer class="krwmp-modal-actions"><button type="button" class="krwmp-btn krwmp-btn-secondary" data-close-modal="organisationModal">Close</button></footer>
+  </dialog>
+
+  <dialog id="memberModal" class="krwmp-modal krwmp-modal-lg">
+    <header class="krwmp-modal-header">
+      <h2 id="memberModalTitle" class="krwmp-modal-title">Link Organisation Member</h2>
+      <button type="button" class="krwmp-modal-close" data-close-modal="memberModal" aria-label="Close member form">&times;</button>
+    </header>
+    <form id="memberForm" class="krwmp-modal-body krwmp-stack-md">
+      <input type="hidden" id="memberOrganisationId">
+      <input type="hidden" name="person_id" id="memberPersonId">
+      <label class="form-label">Search Master Person
+        <input id="memberPersonSearch" type="search" class="form-input mt-1" placeholder="Search by name, phone, NIC or email">
+      </label>
+      <div id="memberSearchResults" class="space-y-2"></div>
+      <div id="memberSelectedSummary" class="krwmp-empty-state py-3">No person selected.</div>
+      <label class="form-label">Role in Organisation
+        <select name="organisation_role" class="form-select mt-1" required>
+          <option value="President">President</option>
+          <option value="Secretary">Secretary</option>
+          <option value="Treasurer">Treasurer</option>
+          <option value="Member" selected>Member</option>
+          <option value="Coordinator">Coordinator</option>
+        </select>
+      </label>
+      <label class="form-label">Responsibility
+        <input name="responsibility" class="form-input mt-1" placeholder="Optional responsibility or assignment">
+      </label>
+      <footer class="krwmp-modal-actions">
+        <button type="button" class="krwmp-btn krwmp-btn-secondary" data-close-modal="memberModal">Cancel</button>
+        <button type="submit" class="krwmp-btn krwmp-btn-primary">Link Member</button>
+      </footer>
+    </form>
+  </dialog>
+
   <script src="/assets/js/krwmp-global.js"></script>
   <script src="/assets/js/privilege-guard.js"></script>
-  <script src="/assets/js/location-picker.js"></script>
-  <script>
-    const state = { organisations: [], locationPicker: null, isAdmin: false, canCreate: false };
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      await window.KRWMP_ENGINE.assembleInterfaceContext();
-      await window.KRWMP_PRIVILEGES.protectPage('volunteer_organisation_management', 'view');
-      state.isAdmin = isAdminUser();
-      state.canCreate = window.KRWMP_PRIVILEGES.can('volunteer_organisation_management', 'create');
-      document.getElementById('volunteerForm')?.closest('section')?.classList.toggle('hidden', !state.canCreate);
-      document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !state.isAdmin));
-      initLocationPicker();
-      document.getElementById('reloadBtn')?.addEventListener('click', loadVolunteerOrganisations);
-      document.getElementById('searchInput')?.addEventListener('input', renderOrganisationRows);
-      document.getElementById('volunteerForm')?.addEventListener('submit', saveVolunteerOrganisation);
-      document.getElementById('volunteerForm')?.addEventListener('reset', () => setTimeout(clearLocationInfo, 0));
-      document.getElementById('organisationRows')?.addEventListener('click', handleTableAction);
-      await loadVolunteerOrganisations();
-    });
-
-    function isAdminUser() {
-      const user = window.KRWMP_ENGINE?.Session?.user || JSON.parse(localStorage.getItem('krwmp_user') || '{}');
-      const identifier = String(user.identifier || user.username || '').toLowerCase();
-      const role = String(user.role_name || user.role || '').toLowerCase();
-      return identifier === 'thulasi' || role === 'admin';
-    }
-
-    function initLocationPicker() {
-      if (!window.KRWMPLocationPicker) return;
-      state.locationPicker = new window.KRWMPLocationPicker({ containerId: 'volunteerLocationPicker', latitudeInput: '#latitudeInput', longitudeInput: '#longitudeInput', initialCenter: [80.2280810, 7.2334995], initialZoom: 10, onChange: async point => { if (point.cleared) { clearLocationInfo(); return; } await identifyAdministrativeLocation(point.latitude, point.longitude); } });
-    }
-
-    async function identifyAdministrativeLocation(latitude, longitude) {
-      setLocationInfo('Identifying DSD, GND and sub-watershed...', 'info');
-      try {
-        const response = await fetch(`/api/spatial/identify?lat=${encodeURIComponent(latitude)}&lng=${encodeURIComponent(longitude)}`, { cache: 'no-store' });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok || !data.success) throw new Error(data.message || 'Unable to identify location.');
-        document.getElementById('dsdNameInput').value = data.dsd?.dsd_name || '';
-        document.getElementById('gndNameInput').value = data.gnd?.gnd_name || '';
-        document.getElementById('districtInput').value = data.dsd?.iddistrict || '';
-        document.getElementById('subWatershedIdInput').value = data.sub_watershed?.id || '';
-        document.getElementById('subWatershedNameInput').value = data.sub_watershed?.watershed_name || '';
-        const html = `<strong class="text-slate-200">Selected Location</strong><br>Latitude: ${escapeHtml(latitude)}<br>Longitude: ${escapeHtml(longitude)}<br>DSD: ${escapeHtml(data.dsd?.dsd_name || 'Not identified')}<br>GND: ${escapeHtml(data.gnd?.gnd_name || 'Not identified')}<br>Sub-watershed: ${escapeHtml(data.sub_watershed?.watershed_name || 'Not identified')}`;
-        setLocationInfo(html, data.dsd?.dsd_name && data.gnd?.gnd_name ? 'success' : 'error', true);
-      } catch (error) { console.error(error); clearAutoSpatialFields(); setLocationInfo(error.message || 'Unable to identify selected location.', 'error'); }
-    }
-
-    async function saveVolunteerOrganisation(event) {
-      event.preventDefault();
-      if (!state.canCreate) { showStatus('You do not have create access for volunteer organisations.', 'error'); return; }
-      const form = event.currentTarget; const saveBtn = document.getElementById('saveBtn');
-      if (!document.getElementById('latitudeInput').value || !document.getElementById('longitudeInput').value) { showStatus('Please mark the organisation location on the map before saving.', 'error'); return; }
-      if (!document.getElementById('dsdNameInput').value || !document.getElementById('gndNameInput').value) { showStatus('DSD/GND is not captured. Please select a valid point inside the Kelani River Basin area.', 'error'); return; }
-      saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; showStatus('Saving volunteer organisation...', 'info');
-      try {
-        const response = await fetch('/api/volunteer-organisations', { method: 'POST', body: new FormData(form) });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok || !data.success) throw new Error(data.message || 'Unable to save volunteer organisation.');
-        form.reset(); clearLocationInfo(); showStatus('Volunteer organisation saved successfully. Enable/refresh the Volunteer Organisations layer in the Map Portal to view it.', 'success'); await loadVolunteerOrganisations();
-      } catch (error) { console.error(error); showStatus(error.message || 'Unable to save volunteer organisation.', 'error'); }
-      finally { saveBtn.disabled = false; saveBtn.textContent = 'Save Organisation'; }
-    }
-
-    async function loadVolunteerOrganisations() {
-      showStatus('Loading volunteer organisation records...', 'info');
-      try {
-        const [dashboardResponse, listResponse] = await Promise.all([fetch('/api/volunteer-organisations/dashboard', { cache: 'no-store' }), fetch('/api/volunteer-organisations', { cache: 'no-store' })]);
-        const dashboardData = await dashboardResponse.json().catch(() => ({})); const listData = await listResponse.json().catch(() => ({}));
-        if (!dashboardResponse.ok || !dashboardData.success) throw new Error(dashboardData.message || 'Unable to load volunteer organisation dashboard.');
-        if (!listResponse.ok || !listData.success) throw new Error(listData.message || 'Unable to load volunteer organisation records.');
-        state.organisations = Array.isArray(listData.organisations) ? listData.organisations : [];
-        renderSummary(dashboardData.dashboard?.summary || {}, state.organisations); renderOrganisationRows(); showStatus(`Loaded ${state.organisations.length} volunteer organisation record(s).`, 'success');
-      } catch (error) { console.error(error); state.organisations = []; renderSummary({}, []); renderOrganisationRows(); showStatus(error.message || 'Volunteer organisation records could not be loaded.', 'error'); }
-    }
-
-    async function handleTableAction(event) {
-      const button = event.target.closest('[data-delete-id]');
-      if (!button) return;
-      if (!state.isAdmin) { showStatus('Only Admin user group can delete volunteer organisations.', 'error'); return; }
-      const id = button.dataset.deleteId; const name = button.dataset.name || 'this volunteer organisation';
-      if (!confirm(`Delete ${name}? This action cannot be undone.`)) return;
-      button.disabled = true; button.textContent = 'Deleting...';
-      try {
-        const response = await fetch(`/api/volunteer-organisations/${encodeURIComponent(id)}`, { method: 'DELETE' });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok || !data.success) throw new Error(data.message || 'Unable to delete volunteer organisation.');
-        showStatus('Volunteer organisation deleted successfully.', 'success'); await loadVolunteerOrganisations();
-      } catch (error) { console.error(error); showStatus(error.message || 'Unable to delete volunteer organisation.', 'error'); button.disabled = false; button.textContent = 'Delete'; }
-    }
-
-    function renderSummary(summary, rows) { const total = pickNumber(summary.total_organisations, summary.total_count, rows.length); const active = pickNumber(summary.active_organisations, summary.active_count, rows.filter(row => row.active !== false && row.active !== 'false').length); const avg = pickNumber(summary.average_performance_score, summary.avg_performance_score, calculateAverageScore(rows)); const mapped = pickNumber(summary.mapped_records, summary.mapped_count, rows.filter(row => row.active !== false && row.active !== 'false' && (row.latitude || row.longitude || row.geom)).length); setText('totalOrganisations', total); setText('activeOrganisations', active); setText('averageScore', avg === null || avg === undefined || Number.isNaN(Number(avg)) ? '-' : Number(avg).toFixed(1)); setText('mappedRecords', mapped); }
-    function renderOrganisationRows() { const tbody = document.getElementById('organisationRows'); if (!tbody) return; const term = String(document.getElementById('searchInput')?.value || '').trim().toLowerCase(); const filtered = state.organisations.filter(row => !term || [row.institution_name, row.organisation_name, row.organisation_type, row.institution_type, row.contact_person, row.contact_phone, row.contact_email, row.dsd_name, row.gnd_name, row.address].some(value => String(value || '').toLowerCase().includes(term))); if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="${state.isAdmin ? 8 : 7}" class="krwmp-table-empty">No volunteer organisations found.</td></tr>`; return; } tbody.innerHTML = filtered.map(row => `<tr><td><div class="font-semibold text-slate-100">${escapeHtml(row.institution_name || row.organisation_name || 'Unnamed Organisation')}</div><div class="krwmp-status-label">${escapeHtml(row.registration_no || row.institution_code || '-')}</div></td><td class="text-slate-300">${escapeHtml(row.organisation_type || row.institution_type || '-')}</td><td><div class="text-slate-300">${escapeHtml(row.contact_person || '-')}</div><div class="krwmp-status-label">${escapeHtml(row.contact_phone || row.contact_email || '-')}</div></td><td><div class="text-slate-300">${escapeHtml(row.dsd_name || '-')}</div><div class="krwmp-status-label">${escapeHtml(row.gnd_name || row.address || '-')}</div></td><td class="font-semibold">${formatScore(row.performance_score)}</td><td>${formatDocument(row)}</td><td>${formatStatus(row.active)}</td>${state.isAdmin ? `<td><div class="krwmp-table-actions"><button type="button" data-delete-id="${escapeHtml(row.id)}" data-name="${escapeHtml(row.institution_name || row.organisation_name || 'this record')}"  class="krwmp-btn krwmp-btn-danger krwmp-btn-sm">Delete</button></div></td>` : ''}</tr>`).join(''); }
-    function clearAutoSpatialFields() { ['dsdNameInput','gndNameInput','districtInput','subWatershedIdInput','subWatershedNameInput'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; }); }
-    function clearLocationInfo() { clearAutoSpatialFields(); setLocationInfo('No location selected.', 'info'); }
-    function setLocationInfo(message, type = 'info', html = false) { const box = document.getElementById('locationInfo'); if (!box) return; box.className = `krwmp-identify-panel ${type === 'error' ? 'krwmp-identify-panel-error' : type === 'success' ? 'krwmp-identify-panel-success' : ''}`; if (html) box.innerHTML = message; else box.textContent = message; }
-    function calculateAverageScore(rows) { const scores = rows.map(row => Number(row.performance_score)).filter(score => !Number.isNaN(score)); return scores.length ? scores.reduce((sum, score) => sum + score, 0) / scores.length : null; }
-    function pickNumber(...values) { for (const value of values) if (value !== undefined && value !== null && value !== '') return value; return 0; }
-    function formatScore(value) { const number = Number(value); return Number.isNaN(number) ? '-' : number.toFixed(1); }
-    function formatDocument(row) { const url = row.supporting_document_url; if (!url) return '<span class="text-slate-500">-</span>'; return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="text-emerald-300 hover:text-emerald-200 font-semibold">Open</a>`; }
-    function formatStatus(value) { const active = !(value === false || value === 'false'); return active ? '<span class="krwmp-badge krwmp-badge-success">Active</span>' : '<span class="krwmp-badge krwmp-badge-danger">Inactive</span>'; }
-    function showStatus(message, type = 'info') { const box = document.getElementById('statusBox'); if (!box) return; const classes = { info: 'bg-sky-500/10 border border-sky-500/20 text-sky-200', success: 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-200', error: 'bg-rose-500/10 border border-rose-500/20 text-rose-200' }; box.className = `rounded-lg p-3 text-sm ${classes[type] || classes.info}`; box.textContent = message; box.classList.remove('hidden'); }
-    function setText(id, value) { const element = document.getElementById(id); if (element) element.textContent = value ?? '-'; }
-    function escapeHtml(value) { return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#039;'); }
-  </script>
+  <script src="/volunteer-organisations.js"></script>
 </body>
 </html>
