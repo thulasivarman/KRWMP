@@ -246,10 +246,7 @@ window.KRWMP_ENGINE = {
         for (const [domId, sectionKey] of Object.entries(structuralSections)) {
             const containerNode = document.getElementById(domId);
             if (!containerNode) continue;
-
-            if (isCurrentPageAdminWorkspace && sectionKey !== 'user_management') {
-                containerNode.classList.add('hidden');
-            } else if (allowedSections.includes(sectionKey)) {
+            if (allowedSections.includes(sectionKey)) {
                 containerNode.classList.remove('hidden');
             } else {
                 containerNode.classList.add('hidden');
@@ -268,7 +265,7 @@ window.KRWMP_ENGINE = {
     },
 
     dispatchProfileEdit: function () {
-        alert('Profile editing is available from the User Management module.');
+        window.location.href = '/admin.html?edit_profile=1';
     },
 
     dispatchLogout: async function () {
