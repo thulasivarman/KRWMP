@@ -10,12 +10,16 @@
     <style>
         @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes floatGlow { 0%,100% { transform: translateY(0) scale(1); opacity: .75; } 50% { transform: translateY(-14px) scale(1.04); opacity: 1; } }
+        @keyframes softPulse { 0%,100% { transform: scale(1); filter: drop-shadow(0 8px 14px rgba(15,23,42,.14)); } 50% { transform: scale(1.08); filter: drop-shadow(0 14px 22px rgba(15,23,42,.2)); } }
         .fade-up { animation: fadeUp .55s ease both; }
         .hero-glow { animation: floatGlow 7s ease-in-out infinite; }
         .wis-glass { background: rgba(255,255,255,.86); backdrop-filter: blur(20px); }
         .wis-dark-glass { background: rgba(15,23,42,.55); backdrop-filter: blur(18px); }
-        .wis-card { transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
-        .wis-card:hover { transform: translateY(-4px); box-shadow: 0 24px 50px rgba(15,23,42,.18); }
+        .wis-card, .pulse-card { transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+        .wis-card:hover, .pulse-card:hover { transform: translateY(-4px); box-shadow: 0 24px 50px rgba(15,23,42,.18); }
+        .pulse-card:hover .pulse-icon { animation: softPulse 1.6s ease-in-out infinite; }
+        .mini-bars span { display: block; width: .38rem; border-radius: 999px 999px 0 0; opacity: .82; transition: height .25s ease, opacity .2s ease; }
+        .pulse-card:hover .mini-bars span { opacity: 1; }
     </style>
 </head>
 <body class="bg-[#f4fbf7] text-slate-900 min-h-screen antialiased overflow-x-hidden">
@@ -53,29 +57,40 @@
                         </div>
                     </div>
 
-                    <div class="wis-dark-glass rounded-[2rem] border border-white/20 p-5 shadow-2xl shadow-slate-950/30">
-                        <div class="rounded-[1.5rem] bg-white/95 p-5 text-slate-950 shadow-xl">
-                            <p class="text-xs font-black uppercase tracking-[0.24em] text-emerald-700">Live Catchment Pulse</p>
-                            <div class="mt-5 grid grid-cols-2 gap-3">
-                                <div class="rounded-2xl bg-gradient-to-br from-emerald-100 to-lime-100 p-4">
-                                    <span class="text-2xl">🏛️</span>
-                                    <strong id="kpiInstitutions" class="mt-2 block text-3xl font-black text-emerald-800">--</strong>
-                                    <p class="text-xs font-bold text-emerald-900/70">Institutions</p>
+                    <div class="wis-dark-glass rounded-[2rem] border border-white/20 p-4 shadow-2xl shadow-slate-950/30">
+                        <div class="rounded-[1.5rem] bg-white/95 p-4 text-slate-950 shadow-xl">
+                            <div class="flex items-center justify-between gap-3">
+                                <p class="text-xs font-black uppercase tracking-[0.24em] text-emerald-700">Live Catchment Pulse</p>
+                                <span class="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-700">Live KPIs</span>
+                            </div>
+                            <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <div class="pulse-card rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-lime-100 p-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="pulse-icon flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-4xl text-white">🏛️</div>
+                                        <div class="min-w-0 flex-1"><p class="text-[10px] font-black uppercase tracking-wide text-emerald-800">Institutions</p><strong id="kpiInstitutions" class="block text-4xl font-black leading-none text-emerald-900">--</strong><p class="text-[11px] font-semibold text-emerald-900/65">Governance partners</p></div>
+                                    </div>
+                                    <div class="mini-bars mt-3 flex h-8 items-end gap-1 text-emerald-500"><span class="h-3 bg-emerald-300"></span><span class="h-5 bg-emerald-400"></span><span class="h-4 bg-emerald-300"></span><span class="h-7 bg-emerald-500"></span><span class="h-6 bg-lime-400"></span><span class="h-8 bg-emerald-600"></span></div>
                                 </div>
-                                <div class="rounded-2xl bg-gradient-to-br from-sky-100 to-cyan-100 p-4">
-                                    <span class="text-2xl">💧</span>
-                                    <strong id="kpiVwmcs" class="mt-2 block text-3xl font-black text-sky-800">--</strong>
-                                    <p class="text-xs font-bold text-sky-900/70">Active VWMCs</p>
+                                <div class="pulse-card rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 to-cyan-100 p-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="pulse-icon flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-sky-600 text-4xl text-white">💧</div>
+                                        <div class="min-w-0 flex-1"><p class="text-[10px] font-black uppercase tracking-wide text-sky-800">Active VWMCs</p><strong id="kpiVwmcs" class="block text-4xl font-black leading-none text-sky-900">--</strong><p class="text-[11px] font-semibold text-sky-900/65">Water committees</p></div>
+                                    </div>
+                                    <div class="mini-bars mt-3 flex h-8 items-end gap-1"><span class="h-4 bg-sky-300"></span><span class="h-4 bg-cyan-300"></span><span class="h-5 bg-sky-400"></span><span class="h-6 bg-cyan-400"></span><span class="h-7 bg-sky-500"></span><span class="h-8 bg-cyan-500"></span></div>
                                 </div>
-                                <div class="rounded-2xl bg-gradient-to-br from-amber-100 to-orange-100 p-4">
-                                    <span class="text-2xl">🤝</span>
-                                    <strong id="kpiVolunteers" class="mt-2 block text-3xl font-black text-amber-800">--</strong>
-                                    <p class="text-xs font-bold text-amber-900/70">Volunteer Organisations</p>
+                                <div class="pulse-card rounded-2xl border border-lime-200 bg-gradient-to-br from-lime-50 to-green-100 p-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="pulse-icon flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-lime-600 text-4xl text-white">🤝</div>
+                                        <div class="min-w-0 flex-1"><p class="text-[10px] font-black uppercase tracking-wide text-lime-800">Volunteer Organisations</p><strong id="kpiVolunteers" class="block text-4xl font-black leading-none text-lime-900">--</strong><p class="text-[11px] font-semibold text-lime-900/65">Solution support</p></div>
+                                    </div>
+                                    <div class="mini-bars mt-3 flex h-8 items-end gap-1"><span class="h-3 bg-lime-300"></span><span class="h-5 bg-green-300"></span><span class="h-4 bg-lime-400"></span><span class="h-7 bg-green-400"></span><span class="h-6 bg-lime-500"></span><span class="h-8 bg-green-500"></span></div>
                                 </div>
-                                <div class="rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 p-4">
-                                    <span class="text-2xl">👥</span>
-                                    <strong id="kpiPersons" class="mt-2 block text-3xl font-black text-indigo-800">--</strong>
-                                    <p class="text-xs font-bold text-indigo-900/70">Persons in System</p>
+                                <div class="pulse-card rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-violet-100 p-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="pulse-icon flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-4xl text-white">👥</div>
+                                        <div class="min-w-0 flex-1"><p class="text-[10px] font-black uppercase tracking-wide text-indigo-800">Persons in System</p><strong id="kpiPersons" class="block text-4xl font-black leading-none text-indigo-900">--</strong><p class="text-[11px] font-semibold text-indigo-900/65">Officer registry</p></div>
+                                    </div>
+                                    <div class="mini-bars mt-3 flex h-8 items-end gap-1"><span class="h-5 bg-indigo-300"></span><span class="h-4 bg-violet-300"></span><span class="h-7 bg-indigo-400"></span><span class="h-6 bg-violet-400"></span><span class="h-8 bg-indigo-500"></span><span class="h-7 bg-violet-500"></span></div>
                                 </div>
                             </div>
                         </div>
@@ -118,14 +133,14 @@
                         <p class="text-xs font-black uppercase tracking-[0.28em] text-emerald-700">Operational Signals</p>
                         <h2 class="mt-2 text-2xl font-black text-slate-950 sm:text-3xl">What is happening in the catchment</h2>
                     </div>
-                    <p class="max-w-2xl text-sm leading-6 text-slate-500">Color-coded distribution views help identify dominant pressures, active responses and priority monitoring themes.</p>
+                    <p class="max-w-2xl text-sm leading-6 text-slate-500">Issue pressure uses red/rose gradients. Intervention and programme responses use green gradients.</p>
                 </div>
 
                 <div class="mt-6 grid gap-4 xl:grid-cols-4 md:grid-cols-2">
-                    <article class="rounded-[1.4rem] border border-emerald-100 bg-gradient-to-br from-white to-emerald-50 p-5"><h3 class="font-black text-emerald-950">Complaints by Issue Category</h3><div id="chartComplaints" class="mt-4 space-y-3"></div></article>
-                    <article class="rounded-[1.4rem] border border-amber-100 bg-gradient-to-br from-white to-amber-50 p-5"><h3 class="font-black text-amber-950">Pollution Sources by Type</h3><div id="chartPollution" class="mt-4 space-y-3"></div></article>
-                    <article class="rounded-[1.4rem] border border-lime-100 bg-gradient-to-br from-white to-lime-50 p-5"><h3 class="font-black text-lime-950">Interventions by Type</h3><div id="chartInterventions" class="mt-4 space-y-3"></div></article>
-                    <article class="rounded-[1.4rem] border border-cyan-100 bg-gradient-to-br from-white to-cyan-50 p-5"><h3 class="font-black text-cyan-950">Programmes by Activity</h3><div id="chartProgrammes" class="mt-4 space-y-3"></div></article>
+                    <article class="signal-card rounded-[1.4rem] border border-rose-200 bg-gradient-to-br from-white to-rose-50 p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"><h3 class="font-black text-rose-950">Complaints by Issue Category</h3><div id="chartComplaints" class="mt-4 space-y-3"></div></article>
+                    <article class="signal-card rounded-[1.4rem] border border-red-200 bg-gradient-to-br from-white to-red-50 p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"><h3 class="font-black text-red-950">Pollution Sources by Type</h3><div id="chartPollution" class="mt-4 space-y-3"></div></article>
+                    <article class="signal-card rounded-[1.4rem] border border-emerald-200 bg-gradient-to-br from-white to-emerald-50 p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"><h3 class="font-black text-emerald-950">Interventions by Type</h3><div id="chartInterventions" class="mt-4 space-y-3"></div></article>
+                    <article class="signal-card rounded-[1.4rem] border border-lime-200 bg-gradient-to-br from-white to-lime-50 p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"><h3 class="font-black text-lime-950">Programmes by Activity</h3><div id="chartProgrammes" class="mt-4 space-y-3"></div></article>
                 </div>
             </section>
 
@@ -151,7 +166,7 @@
         const setText = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
         const setBar = (id, value) => { const el = document.getElementById(id); if (el) el.style.width = `${Math.max(0, Math.min(100, Number(value) || 0))}%`; };
 
-        function renderDistribution(id, rows = []) {
+        function renderDistribution(id, rows = [], theme = 'green') {
             const container = document.getElementById(id);
             if (!container) return;
             if (!rows.length) {
@@ -159,12 +174,19 @@
                 return;
             }
             const max = Math.max(...rows.map(row => Number(row.count) || 0), 1);
+            const themes = {
+                issue: ['from-rose-600 to-red-400', 'from-red-500 to-orange-400', 'from-rose-500 to-pink-400'],
+                pollution: ['from-red-700 to-rose-500', 'from-orange-600 to-red-400', 'from-amber-500 to-orange-500'],
+                solution: ['from-emerald-600 to-lime-400', 'from-green-500 to-emerald-400', 'from-lime-500 to-green-400'],
+                water: ['from-sky-600 to-cyan-400', 'from-blue-500 to-sky-400', 'from-cyan-500 to-teal-400']
+            };
+            const colors = themes[theme] || themes.solution;
             container.innerHTML = rows.map((row, index) => {
                 const count = Number(row.count) || 0;
-                const width = Math.max(6, Math.round((count / max) * 100));
+                const width = Math.max(8, Math.round((count / max) * 100));
                 const label = String(row.label || 'Unclassified').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-                const colors = ['from-emerald-500 to-lime-400', 'from-sky-500 to-cyan-400', 'from-amber-500 to-yellow-400', 'from-rose-500 to-orange-400', 'from-indigo-500 to-violet-400'];
-                return `<div><div class="flex justify-between gap-3 text-sm"><span class="truncate text-slate-700">${label}</span><strong>${fmtNum(count)}</strong></div><div class="mt-1 h-2.5 rounded-full bg-white border border-slate-200 overflow-hidden"><div class="h-full bg-gradient-to-r ${colors[index % colors.length]}" style="width:${width}%"></div></div></div>`;
+                const mini = [36, 52, 42, 68, 58, 84].map((h, i) => `<span class="inline-block w-1 rounded-full bg-gradient-to-t ${colors[(index + i) % colors.length]}" style="height:${Math.max(8, Math.round((h * width) / 100))}px"></span>`).join('');
+                return `<div class="rounded-xl bg-white/70 p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><div class="flex justify-between gap-3 text-sm"><span class="truncate text-slate-700">${label}</span><strong>${fmtNum(count)}</strong></div><div class="mt-2 flex items-end justify-between gap-3"><div class="h-2.5 flex-1 rounded-full bg-white border border-slate-200 overflow-hidden"><div class="h-full bg-gradient-to-r ${colors[index % colors.length]} transition-all duration-500" style="width:${width}%"></div></div><div class="flex h-7 items-end gap-0.5">${mini}</div></div></div>`;
             }).join('');
         }
 
@@ -182,10 +204,10 @@
             setText('kpiVolunteers', fmtNum(governance.active_volunteer_organisations));
             setText('kpiPersons', fmtNum(governance.persons));
 
-            renderDistribution('chartComplaints', operations.complaints_by_category || []);
-            renderDistribution('chartPollution', operations.pollution_sources_by_type || []);
-            renderDistribution('chartInterventions', operations.interventions_by_type || []);
-            renderDistribution('chartProgrammes', operations.programmes_by_activity_type || []);
+            renderDistribution('chartComplaints', operations.complaints_by_category || [], 'issue');
+            renderDistribution('chartPollution', operations.pollution_sources_by_type || [], 'pollution');
+            renderDistribution('chartInterventions', operations.interventions_by_type || [], 'solution');
+            renderDistribution('chartProgrammes', operations.programmes_by_activity_type || [], 'solution');
 
             setText('waterQualityStatus', `${fmtNum(water.failed_percent)}% failed`);
             setText('waterQualityText', `${fmtNum(water.failed_samples)} failed samples out of ${fmtNum(water.total_samples)} total water quality samples.`);
