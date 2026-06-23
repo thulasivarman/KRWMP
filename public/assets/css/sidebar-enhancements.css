@@ -63,13 +63,11 @@ body.krwmp-has-sidebar #sidebar.krwmp-sidebar {
   filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.28));
 }
 
-/* Override previous floating toggle. The logo is the sidebar control now. */
 #krwmp-sidebar-toggle,
 .krwmp-sidebar-toggle {
   display: none !important;
 }
 
-/* Keep a compact logo rail visible when collapsed so the sidebar can be reopened. */
 body.krwmp-has-sidebar.krwmp-sidebar-collapsed #sidebar.krwmp-sidebar {
   transform: none !important;
   width: 4.75rem !important;
@@ -148,7 +146,6 @@ body.krwmp-sidebar-collapsed #sidebar nav {
   outline-color: rgba(251, 113, 133, 0.24);
 }
 
-/* Dark mode scrollbars */
 html,
 body,
 #sidebar,
@@ -216,7 +213,7 @@ body::-webkit-scrollbar-thumb:hover,
     box-shadow: 18px 0 42px rgba(2, 6, 23, 0.45);
   }
 
-  body.krwmp-has-sidebar:not(.krwmp-sidebar-collapsed) #sidebar.krwmp-sidebar {
+  body.krwmp-mobile-sidebar-open #sidebar.krwmp-sidebar {
     transform: translateX(0) !important;
   }
 
