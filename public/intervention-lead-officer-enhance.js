@@ -25,10 +25,27 @@
     };
   }
 
+  function setSelectorSelectionMode(selected) {
+    const resultsNode = selectorContainer.querySelector('[data-person-results]');
+    const searchInput = selectorContainer.querySelector('[data-person-search]');
+    const createPanel = selectorContainer.querySelector('[data-person-create-panel]');
+    const createToggleButtons = selectorContainer.querySelectorAll('[data-person-action="toggle-create"]');
+
+    if (resultsNode) resultsNode.classList.toggle('hidden', Boolean(selected));
+    createPanel?.classList.add('hidden');
+    createToggleButtons.forEach(button => button.classList.toggle('hidden', Boolean(selected)));
+
+    if (selected && searchInput) {
+      searchInput.value = '';
+      searchInput.blur();
+    }
+  }
+
   function applyLeadOfficer(person = null) {
     if (personIdInput) personIdInput.value = person?.id || '';
     if (officerNameInput) officerNameInput.value = person?.full_name || person?.name || person?.preferred_name || '';
     if (officerContactInput) officerContactInput.value = person ? firstContact(person) : '';
+    window.setTimeout(() => setSelectorSelectionMode(Boolean(person)), 0);
   }
 
   function mountLeadOfficerSelector() {
@@ -37,29 +54,37 @@
       container: selectorContainer,
       valueInput: '#leadOfficerPersonId',
       label: 'Search Lead Officer',
-      helperText: 'Select the lead officer from the master person registry. Use Create New Person only when the officer is not available.',
+      helperText: 'Search and select the lead officer from the master person registry. If the officer is not found, use Create New Person.',
       allowCreate: true,
       selectedPerson: selectedPersonFromForm(),
       onSelect: applyLeadOfficer,
       onCreate: applyLeadOfficer,
     });
+    setSelectorSelectionMode(Boolean(selectedPersonFromForm()));
   }
 
   function clearLeadOfficerIfFormCleared() {
     window.setTimeout(() => {
       if (!officerNameInput?.value && !officerContactInput?.value && !personIdInput?.value) {
         leadOfficerSelector?.clear?.();
+        setSelectorSelectionMode(false);
       }
     }, 0);
   }
 
   mountLeadOfficerSelector();
 
+  selectorContainer.addEventListener('click', event => {
+    const clearButton = event.target.closest('[data-person-action="clear"]');
+    if (clearButton) window.setTimeout(() => setSelectorSelectionMode(false), 0);
+  });
+
   document.getElementById('resetBtn')?.addEventListener('click', () => {
     if (personIdInput) personIdInput.value = '';
     if (officerNameInput) officerNameInput.value = '';
     if (officerContactInput) officerContactInput.value = '';
     leadOfficerSelector?.clear?.();
+    setSelectorSelectionMode(false);
   });
 
   form.addEventListener('reset', clearLeadOfficerIfFormCleared);
