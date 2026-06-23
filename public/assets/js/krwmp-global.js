@@ -1,7 +1,7 @@
 /**
- * ==========================================================================
+ * ===========================================================================
  * KRWMP MANAGEMENT PORTAL - CENTRALIZED GLOBAL RUNTIME ORCHESTRATOR
- * ==========================================================================
+ * ===========================================================================
  */
 window.KRWMP_UTILS = window.KRWMP_UTILS || (() => {
     const isPlainObject = value => Object.prototype.toString.call(value) === '[object Object]';
@@ -166,6 +166,8 @@ window.KRWMP_ENGINE = {
         sidebarContainer.dataset.krwmpShellInstalled = 'true';
         sidebarContainer.classList.add('krwmp-sidebar');
         document.body.classList.add('krwmp-has-sidebar');
+        document.body.classList.remove('krwmp-sidebar-collapsed', 'krwmp-mobile-sidebar-open');
+        localStorage.removeItem('krwmp_sidebar_collapsed');
 
         const oldToggle = document.getElementById('krwmp-sidebar-toggle');
         if (oldToggle) oldToggle.remove();
@@ -193,13 +195,14 @@ window.KRWMP_ENGINE = {
         const closeMobileSidebar = () => {
             document.body.classList.remove('krwmp-mobile-sidebar-open');
             mobileToggle.setAttribute('aria-expanded', 'false');
+            mobileToggle.setAttribute('aria-label', 'Open navigation menu');
             mobileToggle.textContent = '☰';
         };
 
         const openMobileSidebar = () => {
             document.body.classList.add('krwmp-mobile-sidebar-open');
-            document.body.classList.remove('krwmp-sidebar-collapsed');
             mobileToggle.setAttribute('aria-expanded', 'true');
+            mobileToggle.setAttribute('aria-label', 'Close navigation menu');
             mobileToggle.textContent = '×';
         };
 
@@ -216,36 +219,21 @@ window.KRWMP_ENGINE = {
             mobileScrim.addEventListener('click', closeMobileSidebar);
         }
 
+        if (document.body.dataset.krwmpSidebarEscapeBound !== 'true') {
+            document.body.dataset.krwmpSidebarEscapeBound = 'true';
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape') closeMobileSidebar();
+            });
+        }
+
         sidebarContainer.querySelectorAll('a').forEach(link => link.addEventListener('click', closeMobileSidebar));
 
-        const savedState = localStorage.getItem('krwmp_sidebar_collapsed');
-        const shouldCollapse = savedState === 'true';
-        document.body.classList.toggle('krwmp-sidebar-collapsed', shouldCollapse);
-
         const brandToggle = document.getElementById('krwmp-sidebar-brand-toggle');
-        if (!brandToggle) return;
-
-        const syncToggle = () => {
-            const collapsed = document.body.classList.contains('krwmp-sidebar-collapsed');
-            brandToggle.setAttribute('aria-expanded', String(!collapsed));
-            brandToggle.setAttribute('aria-label', collapsed ? 'Show sidebar' : 'Hide sidebar');
-            brandToggle.setAttribute('title', collapsed ? 'Show sidebar' : 'Hide sidebar');
-        };
-
-        syncToggle();
-
-        if (brandToggle.dataset.krwmpBound !== 'true') {
-            brandToggle.dataset.krwmpBound = 'true';
-            brandToggle.addEventListener('click', () => {
-                if (window.matchMedia('(max-width: 768px)').matches) {
-                    closeMobileSidebar();
-                    return;
-                }
-                const collapsed = document.body.classList.toggle('krwmp-sidebar-collapsed');
-                localStorage.setItem('krwmp_sidebar_collapsed', String(collapsed));
-                syncToggle();
-                window.setTimeout(() => window.dispatchEvent(new Event('resize')), 260);
-            });
+        if (brandToggle) {
+            brandToggle.setAttribute('aria-expanded', 'true');
+            brandToggle.setAttribute('aria-label', 'Watershed Intelligence System');
+            brandToggle.setAttribute('title', 'Watershed Intelligence System');
+            brandToggle.disabled = true;
         }
     },
 
