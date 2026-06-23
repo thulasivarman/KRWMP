@@ -161,10 +161,28 @@
         </div>
       </dialog>
 
-      <section class="krwmp-panel">
-        <div class="flex justify-between mb-4">
-          <h2 class="form-section-heading">Registered Interventions</h2>
+      <section class="krwmp-panel krwmp-stack-md">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h2 class="form-section-heading">Registered Interventions</h2>
+            <p class="form-helper mt-1">Search by title, code, location, DSD/GND, institution or officer; filter by implementation status.</p>
+          </div>
           <button id="refreshBtn" class="krwmp-btn krwmp-btn-primary">Refresh</button>
+        </div>
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
+          <label class="form-label md:col-span-3">Search Interventions
+            <input id="interventionSearchInput" type="search" class="form-input mt-1" placeholder="Search title, code, DSD, GND, officer or institution">
+          </label>
+          <label class="form-label">Status
+            <select id="interventionStatusFilter" class="form-select mt-1">
+              <option value="">All Status</option>
+              <option value="planned">Planned</option>
+              <option value="ongoing">Ongoing</option>
+              <option value="delayed">Delayed</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </label>
         </div>
         <div id="registryList" class="space-y-4"></div>
       </section>
