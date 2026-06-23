@@ -59,6 +59,7 @@ body.krwmp-has-sidebar #sidebar.krwmp-sidebar {
   max-width: 13.5rem;
   height: auto;
   display: block;
+  object-fit: contain;
   filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.28));
 }
 
@@ -99,9 +100,10 @@ body.krwmp-sidebar-collapsed .krwmp-sidebar-brand-toggle::after {
 body.krwmp-sidebar-collapsed .krwmp-sidebar-logo {
   width: 3.05rem;
   height: 3.05rem;
-  object-fit: cover;
-  object-position: left center;
-  border-radius: 999px;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 0.85rem;
+  background: transparent;
 }
 
 body.krwmp-sidebar-collapsed #sidebar nav,
@@ -113,6 +115,37 @@ body.krwmp-sidebar-collapsed #sidebar > div:last-child {
 
 body.krwmp-sidebar-collapsed #sidebar nav {
   display: none !important;
+}
+
+.krwmp-sidebar-icon-btn {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(51, 65, 85, 0.85);
+  background: rgba(15, 23, 42, 0.82);
+  color: #94a3b8;
+  font-size: 0.95rem;
+  line-height: 1;
+  transition: all 0.18s ease;
+}
+
+.krwmp-sidebar-icon-btn:hover,
+.krwmp-sidebar-icon-btn:focus-visible {
+  background: rgba(30, 41, 59, 0.96);
+  color: #d1fae5;
+  border-color: rgba(52, 211, 153, 0.45);
+  outline: 2px solid rgba(52, 211, 153, 0.28);
+  outline-offset: 2px;
+}
+
+.krwmp-sidebar-icon-btn-danger:hover,
+.krwmp-sidebar-icon-btn-danger:focus-visible {
+  color: #fecdd3;
+  border-color: rgba(251, 113, 133, 0.45);
+  outline-color: rgba(251, 113, 133, 0.24);
 }
 
 /* Dark mode scrollbars */
@@ -176,13 +209,28 @@ body::-webkit-scrollbar-thumb:hover,
 }
 
 @media (max-width: 768px) {
+  body.krwmp-has-sidebar #sidebar.krwmp-sidebar,
   body.krwmp-has-sidebar.krwmp-sidebar-collapsed #sidebar.krwmp-sidebar {
-    width: 4.75rem !important;
-    transform: none !important;
+    width: min(86vw, 18rem) !important;
+    transform: translateX(-105%) !important;
+    box-shadow: 18px 0 42px rgba(2, 6, 23, 0.45);
+  }
+
+  body.krwmp-has-sidebar:not(.krwmp-sidebar-collapsed) #sidebar.krwmp-sidebar {
+    transform: translateX(0) !important;
   }
 
   body.krwmp-has-sidebar main,
   body.krwmp-has-sidebar.krwmp-sidebar-collapsed main {
-    margin-left: 4.75rem !important;
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  body.krwmp-sidebar-collapsed #sidebar nav,
+  body.krwmp-sidebar-collapsed #sidebar > div:last-child {
+    display: block !important;
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
   }
 }
