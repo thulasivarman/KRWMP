@@ -11,71 +11,20 @@
   <div class="flex min-h-screen">
     <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
     <main class="flex-1 krwmp-page krwmp-stack-lg">
-      <header class="krwmp-page-header krwmp-cluster-between">
+      <header class="krwmp-page-header krwmp-cluster-between gap-4">
         <div>
           <p class="krwmp-eyebrow">Administration</p>
           <h1 class="krwmp-page-title">User Management</h1>
-          <p class="krwmp-body-text">Register users, assign access groups, and maintain account details.</p>
+          <p class="krwmp-body-text">Register users, assign access groups, search accounts, and maintain account details.</p>
         </div>
-        <a href="/privilege-group-management.html" class="krwmp-btn krwmp-btn-secondary">Privilege Groups</a>
+        <div class="flex flex-wrap gap-2 justify-end">
+          <button id="openRegistrationModalBtn" type="button" class="krwmp-btn krwmp-btn-primary">New User</button>
+          <a href="/privilege-group-management.html" class="krwmp-btn krwmp-btn-secondary">Privilege Groups</a>
+        </div>
       </header>
 
-      <section class="grid grid-cols-1 xl:grid-cols-[minmax(22rem,28rem)_1fr] gap-6 items-start">
-        <div class="krwmp-stack-md">
-          <section class="krwmp-panel krwmp-stack-md">
-            <div>
-              <h2 class="form-section-heading">Register User</h2>
-              <p class="form-helper">Create a portal identity and assign one or more access groups.</p>
-            </div>
-
-            <form id="registrationForm" class="krwmp-stack-md">
-              <div class="krwmp-form-grid">
-                <label class="form-label">
-                  Full Name
-                  <input type="text" id="regName" class="form-input" autocomplete="name" required>
-                </label>
-                <label class="form-label">
-                  Username
-                  <input type="text" id="regIdentifier" class="form-input lowercase" autocomplete="username" required>
-                </label>
-                <label class="form-label">
-                  Initials
-                  <input type="text" id="regInitials" maxlength="3" class="form-input uppercase" required>
-                </label>
-                <label class="form-label">
-                  Designation
-                  <input type="text" id="regDesignation" class="form-input" required>
-                </label>
-                <label class="form-label">
-                  Phone Number
-                  <input type="tel" id="regPhoneNumber" class="form-input" autocomplete="tel" pattern="[0-9+()\-\s]{7,30}" placeholder="+94...">
-                  <span class="form-helper">Optional.</span>
-                </label>
-                <label class="form-label">
-                  Email Address
-                  <input type="email" id="regEmail" class="form-input" autocomplete="email" placeholder="name@example.lk">
-                  <span class="form-helper">Optional.</span>
-                </label>
-                <label class="form-label md:col-span-2">
-                  Institution
-                  <select id="regInstitutionId" class="form-select">
-                    <option value="">Select institution</option>
-                  </select>
-                </label>
-                <label class="form-label md:col-span-2">
-                  Access Groups
-                  <select id="regRoleId" multiple size="5" class="form-select text-emerald-300 cursor-pointer" required></select>
-                  <span class="form-helper">Use Ctrl or Cmd to select multiple groups.</span>
-                </label>
-                <label class="form-label md:col-span-2">
-                  Temporary Password
-                  <input type="password" id="regPassword" class="form-input" autocomplete="new-password" required>
-                </label>
-              </div>
-              <button type="submit" class="krwmp-btn krwmp-btn-primary krwmp-btn-full">Register User</button>
-            </form>
-          </section>
-
+      <section class="grid grid-cols-1 xl:grid-cols-[20rem_1fr] gap-6 items-start">
+        <aside class="krwmp-stack-md">
           <section class="krwmp-panel krwmp-stack-md">
             <div>
               <h2 class="form-section-heading">Reset Password</h2>
@@ -93,16 +42,48 @@
               <button type="submit" class="krwmp-btn krwmp-btn-secondary krwmp-btn-full">Reset Password</button>
             </form>
           </section>
-        </div>
+        </aside>
 
         <section class="krwmp-panel krwmp-stack-md min-w-0">
-          <div class="krwmp-cluster-between">
+          <div class="krwmp-cluster-between gap-4">
             <div>
               <h2 class="form-section-heading">User Directory</h2>
-              <p class="form-helper">Review users, assign access groups, or edit account details.</p>
+              <p class="form-helper">Search, filter, edit, delete and assign access groups.</p>
             </div>
             <a href="/privilege-group-management.html" class="krwmp-btn krwmp-btn-ghost krwmp-btn-sm">Manage Privilege Groups</a>
           </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <label class="form-label md:col-span-2">
+              Search Users
+              <input id="userSearchInput" type="search" class="form-input" placeholder="Search name, username, email, phone, designation">
+            </label>
+            <label class="form-label">
+              Access Group
+              <select id="userRoleFilter" class="form-select">
+                <option value="">All groups</option>
+              </select>
+            </label>
+            <label class="form-label">
+              Institution
+              <select id="userInstitutionFilter" class="form-select">
+                <option value="">All institutions</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div id="userDirectoryMeta" class="form-helper">Loading users...</div>
+            <div class="flex items-center gap-2">
+              <label class="form-helper" for="userPageSize">Rows</label>
+              <select id="userPageSize" class="form-select w-24">
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+              </select>
+            </div>
+          </div>
+
           <div class="krwmp-table-wrap">
             <table class="krwmp-table krwmp-table-compact">
               <thead>
@@ -119,9 +100,70 @@
               </tbody>
             </table>
           </div>
+          <div id="userDirectoryPagination" class="krwmp-pagination"></div>
         </section>
       </section>
     </main>
+  </div>
+
+  <div id="registrationModal" class="hidden krwmp-modal-backdrop">
+    <div class="krwmp-modal krwmp-modal-lg" role="dialog" aria-modal="true" aria-labelledby="registration-modal-title">
+      <div class="krwmp-modal-header">
+        <h3 id="registration-modal-title" class="krwmp-modal-title">Register New User</h3>
+        <button type="button" onclick="toggleRegistrationModal(false)" class="krwmp-modal-close" aria-label="Close dialog">&times;</button>
+      </div>
+      <form id="registrationForm">
+        <div class="krwmp-modal-body krwmp-stack-md">
+          <div class="krwmp-form-grid">
+            <label class="form-label">
+              Full Name
+              <input type="text" id="regName" class="form-input" autocomplete="name" required>
+            </label>
+            <label class="form-label">
+              Username
+              <input type="text" id="regIdentifier" class="form-input lowercase" autocomplete="username" required>
+            </label>
+            <label class="form-label">
+              Initials
+              <input type="text" id="regInitials" maxlength="3" class="form-input uppercase" required>
+            </label>
+            <label class="form-label">
+              Designation
+              <input type="text" id="regDesignation" class="form-input" required>
+            </label>
+            <label class="form-label">
+              Phone Number
+              <input type="tel" id="regPhoneNumber" class="form-input" autocomplete="tel" pattern="[0-9+()\-\s]{7,30}" placeholder="+94...">
+              <span class="form-helper">Optional.</span>
+            </label>
+            <label class="form-label">
+              Email Address
+              <input type="email" id="regEmail" class="form-input" autocomplete="email" placeholder="name@example.lk">
+              <span class="form-helper">Optional.</span>
+            </label>
+            <label class="form-label md:col-span-2">
+              Institution
+              <select id="regInstitutionId" class="form-select">
+                <option value="">Select institution</option>
+              </select>
+            </label>
+            <label class="form-label md:col-span-2">
+              Access Groups
+              <select id="regRoleId" multiple size="5" class="form-select text-emerald-300 cursor-pointer" required></select>
+              <span class="form-helper">Use Ctrl or Cmd to select multiple groups.</span>
+            </label>
+            <label class="form-label md:col-span-2">
+              Temporary Password
+              <input type="password" id="regPassword" class="form-input" autocomplete="new-password" required>
+            </label>
+          </div>
+        </div>
+        <div class="krwmp-modal-actions">
+          <button type="button" onclick="toggleRegistrationModal(false)" class="krwmp-btn krwmp-btn-secondary">Cancel</button>
+          <button type="submit" class="krwmp-btn krwmp-btn-primary">Register User</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <div id="inlineEditModal" class="hidden krwmp-modal-backdrop">
