@@ -3,75 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catchment Home - KRWMP Portal</title>
+    <title>Catchment Home - WIS</title>
     <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/assets/css/style.css">
     <style>
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes floatGlow { 0%,100% { transform: translateY(0) scale(1); opacity: .75; } 50% { transform: translateY(-14px) scale(1.04); opacity: 1; } }
         .fade-up { animation: fadeUp .55s ease both; }
-        .glass-card { background: rgba(255,255,255,.88); backdrop-filter: blur(18px); }
+        .hero-glow { animation: floatGlow 7s ease-in-out infinite; }
+        .wis-glass { background: rgba(255,255,255,.86); backdrop-filter: blur(20px); }
+        .wis-dark-glass { background: rgba(15,23,42,.55); backdrop-filter: blur(18px); }
+        .wis-card { transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+        .wis-card:hover { transform: translateY(-4px); box-shadow: 0 24px 50px rgba(15,23,42,.18); }
     </style>
 </head>
-<body class="bg-[#f5f8f4] text-slate-900 min-h-screen antialiased">
+<body class="bg-[#f4fbf7] text-slate-900 min-h-screen antialiased overflow-x-hidden">
     <a href="#main-content" class="krwmp-skip-link">Skip to main content</a>
     <aside id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col z-30 krwmp-sidebar" aria-label="System navigation"></aside>
 
     <main id="main-content" class="min-h-screen">
-        <section class="relative overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-900 to-slate-950 text-white">
-            <div class="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top_left,_#34d399,_transparent_35%),radial-gradient(circle_at_bottom_right,_#38bdf8,_transparent_32%)]"></div>
-            <div class="relative px-6 lg:px-10 py-8 lg:py-10">
-                <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-8 fade-up">
-                    <div class="max-w-4xl">
-                        <p class="text-xs uppercase tracking-[0.35em] text-emerald-200 font-semibold">Catchment Governance Dashboard</p>
-                        <h1 class="mt-4 text-4xl md:text-6xl font-semibold tracking-tight leading-tight">Kelani River Catchment Status</h1>
-                        <p id="summaryGeneratedAt" class="mt-4 text-xs text-emerald-100/70">Loading latest database KPI summary...</p>
-                    </div>
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 min-w-full xl:min-w-[560px]">
-                        <a href="/map.html" class="rounded-2xl bg-white text-emerald-950 px-5 py-4 font-semibold shadow-xl hover:-translate-y-0.5 transition">Open Map</a>
-                        <a href="/reports.html" class="rounded-2xl bg-white/10 border border-white/15 px-5 py-4 font-semibold hover:bg-white/15 transition">Reports</a>
-                        <a href="/community-report.html" class="rounded-2xl bg-white/10 border border-white/15 px-5 py-4 font-semibold hover:bg-white/15 transition">Report Issue</a>
-                        <a href="/intervention-registry.html" class="rounded-2xl bg-white/10 border border-white/15 px-5 py-4 font-semibold hover:bg-white/15 transition">Interventions</a>
-                    </div>
-                </div>
+        <section class="relative overflow-hidden text-white">
+            <div class="absolute inset-0 bg-[linear-gradient(125deg,#052e16_0%,#047857_34%,#0ea5e9_68%,#312e81_100%)]"></div>
+            <div class="absolute -left-24 -top-24 h-80 w-80 rounded-full bg-lime-300/30 blur-3xl hero-glow"></div>
+            <div class="absolute right-0 top-16 h-96 w-96 rounded-full bg-cyan-300/30 blur-3xl hero-glow" style="animation-delay:1.5s"></div>
+            <div class="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-amber-300/25 blur-3xl hero-glow" style="animation-delay:3s"></div>
+            <div class="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_20%_20%,white,transparent_18%),radial-gradient(circle_at_80%_30%,white,transparent_14%),radial-gradient(circle_at_50%_90%,white,transparent_18%)]"></div>
 
-                <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-4 mt-9" aria-label="Institutional governance capacity">
-                    <article class="glass-card rounded-[1.5rem] p-5 text-slate-900 border border-white/40"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Institutions Involved</p><strong id="kpiInstitutions" class="mt-3 block text-4xl text-emerald-800">--</strong><p class="mt-2 text-sm text-slate-600">Agencies and institutions registered for catchment management.</p></article>
-                    <article class="glass-card rounded-[1.5rem] p-5 text-slate-900 border border-white/40"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Active VWMCs</p><strong id="kpiVwmcs" class="mt-3 block text-4xl text-sky-700">--</strong><p class="mt-2 text-sm text-slate-600">Village Water Management Committees active in the system.</p></article>
-                    <article class="glass-card rounded-[1.5rem] p-5 text-slate-900 border border-white/40"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Volunteer Organisations</p><strong id="kpiVolunteers" class="mt-3 block text-4xl text-amber-700">--</strong><p class="mt-2 text-sm text-slate-600">Civil society and voluntary organisations supporting catchment programmes.</p></article>
-                    <article class="glass-card rounded-[1.5rem] p-5 text-slate-900 border border-white/40"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Persons in System</p><strong id="kpiPersons" class="mt-3 block text-4xl text-indigo-700">--</strong><p class="mt-2 text-sm text-slate-600">Master person registry for officers, members and stakeholders.</p></article>
+            <div class="relative px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
+                <div class="grid gap-8 xl:grid-cols-[1.25fr_.75fr] xl:items-center fade-up">
+                    <div class="max-w-5xl">
+                        <div class="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/15 px-4 py-2 text-xs font-bold uppercase tracking-[0.28em] text-emerald-50 shadow-lg shadow-emerald-950/20">
+                            <span class="h-2 w-2 rounded-full bg-lime-300 shadow-[0_0_18px_rgba(190,242,100,.9)]"></span>
+                            Watershed Intelligence System
+                        </div>
+                        <h1 class="mt-6 max-w-4xl text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-7xl">
+                            Kelani River Catchment <span class="text-lime-200">Status Command Centre</span>
+                        </h1>
+                        <p class="mt-5 max-w-3xl text-base leading-8 text-emerald-50/90 sm:text-lg">
+                            A colorful, decision-focused entry point for catchment condition, community complaints, pollution pressure, interventions, water quality and institutional coordination.
+                        </p>
+                        <p id="summaryGeneratedAt" class="mt-4 text-sm font-medium text-cyan-100/85">Loading latest database KPI summary...</p>
+
+                        <div class="mt-8 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
+                            <a href="/map.html" class="rounded-2xl bg-lime-300 px-5 py-4 text-center text-sm font-black text-emerald-950 shadow-xl shadow-lime-950/20 transition hover:-translate-y-0.5 hover:bg-lime-200">Open GIS Map</a>
+                            <a href="/community-report.html" class="rounded-2xl bg-cyan-300 px-5 py-4 text-center text-sm font-black text-slate-950 shadow-xl shadow-cyan-950/20 transition hover:-translate-y-0.5 hover:bg-cyan-200">Report Issue</a>
+                            <a href="/reports.html" class="rounded-2xl border border-white/25 bg-white/15 px-5 py-4 text-center text-sm font-bold text-white transition hover:bg-white/25">View Reports</a>
+                            <a href="/intervention-registry.html" class="rounded-2xl border border-white/25 bg-white/15 px-5 py-4 text-center text-sm font-bold text-white transition hover:bg-white/25">Track Interventions</a>
+                        </div>
+                    </div>
+
+                    <div class="wis-dark-glass rounded-[2rem] border border-white/20 p-5 shadow-2xl shadow-slate-950/30">
+                        <div class="rounded-[1.5rem] bg-white/95 p-5 text-slate-950 shadow-xl">
+                            <p class="text-xs font-black uppercase tracking-[0.24em] text-emerald-700">Live Catchment Pulse</p>
+                            <div class="mt-5 grid grid-cols-2 gap-3">
+                                <div class="rounded-2xl bg-gradient-to-br from-emerald-100 to-lime-100 p-4">
+                                    <span class="text-2xl">🏛️</span>
+                                    <strong id="kpiInstitutions" class="mt-2 block text-3xl font-black text-emerald-800">--</strong>
+                                    <p class="text-xs font-bold text-emerald-900/70">Institutions</p>
+                                </div>
+                                <div class="rounded-2xl bg-gradient-to-br from-sky-100 to-cyan-100 p-4">
+                                    <span class="text-2xl">💧</span>
+                                    <strong id="kpiVwmcs" class="mt-2 block text-3xl font-black text-sky-800">--</strong>
+                                    <p class="text-xs font-bold text-sky-900/70">Active VWMCs</p>
+                                </div>
+                                <div class="rounded-2xl bg-gradient-to-br from-amber-100 to-orange-100 p-4">
+                                    <span class="text-2xl">🤝</span>
+                                    <strong id="kpiVolunteers" class="mt-2 block text-3xl font-black text-amber-800">--</strong>
+                                    <p class="text-xs font-bold text-amber-900/70">Volunteer Organisations</p>
+                                </div>
+                                <div class="rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 p-4">
+                                    <span class="text-2xl">👥</span>
+                                    <strong id="kpiPersons" class="mt-2 block text-3xl font-black text-indigo-800">--</strong>
+                                    <p class="text-xs font-bold text-indigo-900/70">Persons in System</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <section class="px-6 lg:px-10 py-8 space-y-6">
-            <section class="bg-white border border-emerald-100 rounded-[2rem] p-6 shadow-sm fade-up">
-                <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
-                    <div><p class="text-xs uppercase tracking-[0.25em] text-emerald-700 font-bold">Operational Signals</p><h2 class="text-2xl font-semibold mt-2">What is happening in the catchment</h2></div>
-                    <p class="text-sm text-slate-500">Distribution views help identify dominant pressure and response categories.</p>
+        <section class="px-4 py-8 sm:px-6 lg:px-10 lg:py-10 space-y-7">
+            <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <article class="wis-card rounded-[1.6rem] border border-rose-100 bg-gradient-to-br from-white to-rose-50 p-5 shadow-sm">
+                    <div class="flex items-center justify-between gap-4"><span class="rounded-2xl bg-rose-500 p-3 text-xl text-white">⚠️</span><span id="complaintStatus" class="text-lg font-black text-rose-700">--</span></div>
+                    <h3 class="mt-4 text-lg font-black">Complaint Escalation</h3>
+                    <div class="mt-4 h-3 rounded-full bg-rose-100"><div id="complaintBar" class="h-3 rounded-full bg-gradient-to-r from-rose-500 to-orange-400" style="width:0%"></div></div>
+                    <p id="complaintText" class="mt-3 text-sm leading-6 text-slate-600">Loading...</p>
+                </article>
+                <article class="wis-card rounded-[1.6rem] border border-emerald-100 bg-gradient-to-br from-white to-emerald-50 p-5 shadow-sm">
+                    <div class="flex items-center justify-between gap-4"><span class="rounded-2xl bg-emerald-500 p-3 text-xl text-white">🌱</span><span id="interventionStatus" class="text-lg font-black text-emerald-800">--</span></div>
+                    <h3 class="mt-4 text-lg font-black">Intervention Completion</h3>
+                    <div class="mt-4 h-3 rounded-full bg-emerald-100"><div id="interventionBar" class="h-3 rounded-full bg-gradient-to-r from-emerald-500 to-lime-400" style="width:0%"></div></div>
+                    <p id="interventionText" class="mt-3 text-sm leading-6 text-slate-600">Loading...</p>
+                </article>
+                <article class="wis-card rounded-[1.6rem] border border-sky-100 bg-gradient-to-br from-white to-sky-50 p-5 shadow-sm">
+                    <div class="flex items-center justify-between gap-4"><span class="rounded-2xl bg-sky-500 p-3 text-xl text-white">🧪</span><span id="waterQualityStatus" class="text-lg font-black text-sky-800">--</span></div>
+                    <h3 class="mt-4 text-lg font-black">Water Quality Risk</h3>
+                    <div class="mt-4 h-3 rounded-full bg-sky-100"><div id="waterQualityBar" class="h-3 rounded-full bg-gradient-to-r from-sky-500 to-cyan-400" style="width:0%"></div></div>
+                    <p id="waterQualityText" class="mt-3 text-sm leading-6 text-slate-600">Loading...</p>
+                </article>
+                <article class="wis-card rounded-[1.6rem] border border-amber-100 bg-gradient-to-br from-white to-amber-50 p-5 shadow-sm">
+                    <div class="flex items-center justify-between gap-4"><span class="rounded-2xl bg-amber-500 p-3 text-xl text-white">🏭</span><span id="pollutionStatus" class="text-lg font-black text-amber-800">--</span></div>
+                    <h3 class="mt-4 text-lg font-black">Pollution Monitoring</h3>
+                    <div class="mt-4 h-3 rounded-full bg-amber-100"><div id="pollutionBar" class="h-3 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400" style="width:0%"></div></div>
+                    <p id="pollutionText" class="mt-3 text-sm leading-6 text-slate-600">Loading...</p>
+                </article>
+            </section>
+
+            <section class="wis-glass rounded-[2rem] border border-white p-5 shadow-xl shadow-emerald-950/5 sm:p-6 fade-up">
+                <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                    <div>
+                        <p class="text-xs font-black uppercase tracking-[0.28em] text-emerald-700">Operational Signals</p>
+                        <h2 class="mt-2 text-2xl font-black text-slate-950 sm:text-3xl">What is happening in the catchment</h2>
+                    </div>
+                    <p class="max-w-2xl text-sm leading-6 text-slate-500">Color-coded distribution views help identify dominant pressures, active responses and priority monitoring themes.</p>
                 </div>
-                <div class="grid xl:grid-cols-4 md:grid-cols-2 gap-4">
-                    <article class="rounded-2xl bg-slate-50 border border-slate-100 p-5"><h3 class="font-semibold">Complaints by Issue Category</h3><div id="chartComplaints" class="mt-4 space-y-3"></div></article>
-                    <article class="rounded-2xl bg-slate-50 border border-slate-100 p-5"><h3 class="font-semibold">Pollution Sources by Type</h3><div id="chartPollution" class="mt-4 space-y-3"></div></article>
-                    <article class="rounded-2xl bg-slate-50 border border-slate-100 p-5"><h3 class="font-semibold">Interventions by Type</h3><div id="chartInterventions" class="mt-4 space-y-3"></div></article>
-                    <article class="rounded-2xl bg-slate-50 border border-slate-100 p-5"><h3 class="font-semibold">Catchment Programmes by Activity</h3><div id="chartProgrammes" class="mt-4 space-y-3"></div></article>
+
+                <div class="mt-6 grid gap-4 xl:grid-cols-4 md:grid-cols-2">
+                    <article class="rounded-[1.4rem] border border-emerald-100 bg-gradient-to-br from-white to-emerald-50 p-5"><h3 class="font-black text-emerald-950">Complaints by Issue Category</h3><div id="chartComplaints" class="mt-4 space-y-3"></div></article>
+                    <article class="rounded-[1.4rem] border border-amber-100 bg-gradient-to-br from-white to-amber-50 p-5"><h3 class="font-black text-amber-950">Pollution Sources by Type</h3><div id="chartPollution" class="mt-4 space-y-3"></div></article>
+                    <article class="rounded-[1.4rem] border border-lime-100 bg-gradient-to-br from-white to-lime-50 p-5"><h3 class="font-black text-lime-950">Interventions by Type</h3><div id="chartInterventions" class="mt-4 space-y-3"></div></article>
+                    <article class="rounded-[1.4rem] border border-cyan-100 bg-gradient-to-br from-white to-cyan-50 p-5"><h3 class="font-black text-cyan-950">Programmes by Activity</h3><div id="chartProgrammes" class="mt-4 space-y-3"></div></article>
                 </div>
             </section>
 
-            <section class="bg-white border border-emerald-100 rounded-[2rem] p-6 shadow-sm fade-up">
-                <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
-                    <div><p class="text-xs uppercase tracking-[0.25em] text-emerald-700 font-bold">Performance KPIs</p><h2 class="text-2xl font-semibold mt-2">Management effectiveness and compliance</h2></div>
-                    <a href="/reports.html" class="text-sm font-semibold text-emerald-800 hover:text-emerald-600">View full reports →</a>
-                </div>
-                <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
-                    <article class="rounded-2xl bg-slate-50 border border-slate-100 p-5"><div class="flex justify-between gap-4"><span class="font-semibold">Water Quality Compliance</span><span id="waterQualityStatus" class="text-rose-700 font-bold">--</span></div><div class="mt-4 h-2 rounded-full bg-slate-200"><div id="waterQualityBar" class="h-2 rounded-full bg-rose-500" style="width:0%"></div></div><p id="waterQualityText" class="mt-3 text-sm text-slate-600">Loading...</p></article>
-                    <article class="rounded-2xl bg-slate-50 border border-slate-100 p-5"><div class="flex justify-between gap-4"><span class="font-semibold">Complaint Escalation</span><span id="complaintStatus" class="text-sky-700 font-bold">--</span></div><div class="mt-4 h-2 rounded-full bg-slate-200"><div id="complaintBar" class="h-2 rounded-full bg-sky-500" style="width:0%"></div></div><p id="complaintText" class="mt-3 text-sm text-slate-600">Loading...</p></article>
-                    <article class="rounded-2xl bg-slate-50 border border-slate-100 p-5"><div class="flex justify-between gap-4"><span class="font-semibold">Intervention Completion</span><span id="interventionStatus" class="text-emerald-800 font-bold">--</span></div><div class="mt-4 h-2 rounded-full bg-slate-200"><div id="interventionBar" class="h-2 rounded-full bg-emerald-500" style="width:0%"></div></div><p id="interventionText" class="mt-3 text-sm text-slate-600">Loading...</p></article>
-                    <article class="rounded-2xl bg-slate-50 border border-slate-100 p-5"><div class="flex justify-between gap-4"><span class="font-semibold">Pollution Monitoring Coverage</span><span id="pollutionStatus" class="text-amber-700 font-bold">--</span></div><div class="mt-4 h-2 rounded-full bg-slate-200"><div id="pollutionBar" class="h-2 rounded-full bg-amber-500" style="width:0%"></div></div><p id="pollutionText" class="mt-3 text-sm text-slate-600">Loading...</p></article>
-                </div>
+            <section class="grid gap-4 lg:grid-cols-3">
+                <a href="/knowledge.html" class="wis-card rounded-[1.6rem] bg-gradient-to-br from-indigo-600 to-violet-700 p-6 text-white shadow-xl shadow-indigo-950/20">
+                    <p class="text-3xl">📚</p><h3 class="mt-4 text-xl font-black">Knowledge Portal</h3><p class="mt-2 text-sm leading-6 text-indigo-50/90">Access research, guidelines, videos and catchment management resources.</p>
+                </a>
+                <a href="/pollution-sources.html" class="wis-card rounded-[1.6rem] bg-gradient-to-br from-orange-500 to-rose-600 p-6 text-white shadow-xl shadow-rose-950/20">
+                    <p class="text-3xl">🏭</p><h3 class="mt-4 text-xl font-black">Pollution Sources</h3><p class="mt-2 text-sm leading-6 text-orange-50/90">Track pollution sources, monitoring history and enforcement follow-up.</p>
+                </a>
+                <a href="/water-quality-records.html" class="wis-card rounded-[1.6rem] bg-gradient-to-br from-sky-500 to-cyan-600 p-6 text-white shadow-xl shadow-sky-950/20">
+                    <p class="text-3xl">💧</p><h3 class="mt-4 text-xl font-black">Water Quality</h3><p class="mt-2 text-sm leading-6 text-sky-50/90">Review sampling outcomes, compliance status and monitoring priorities.</p>
+                </a>
             </section>
-
-            
         </section>
     </main>
 
@@ -91,11 +159,12 @@
                 return;
             }
             const max = Math.max(...rows.map(row => Number(row.count) || 0), 1);
-            container.innerHTML = rows.map(row => {
+            container.innerHTML = rows.map((row, index) => {
                 const count = Number(row.count) || 0;
                 const width = Math.max(6, Math.round((count / max) * 100));
                 const label = String(row.label || 'Unclassified').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-                return `<div><div class="flex justify-between gap-3 text-sm"><span class="truncate text-slate-700">${label}</span><strong>${fmtNum(count)}</strong></div><div class="mt-1 h-2 rounded-full bg-white border border-slate-200 overflow-hidden"><div class="h-full bg-emerald-500" style="width:${width}%"></div></div></div>`;
+                const colors = ['from-emerald-500 to-lime-400', 'from-sky-500 to-cyan-400', 'from-amber-500 to-yellow-400', 'from-rose-500 to-orange-400', 'from-indigo-500 to-violet-400'];
+                return `<div><div class="flex justify-between gap-3 text-sm"><span class="truncate text-slate-700">${label}</span><strong>${fmtNum(count)}</strong></div><div class="mt-1 h-2.5 rounded-full bg-white border border-slate-200 overflow-hidden"><div class="h-full bg-gradient-to-r ${colors[index % colors.length]}" style="width:${width}%"></div></div></div>`;
             }).join('');
         }
 
