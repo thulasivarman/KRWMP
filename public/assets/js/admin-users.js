@@ -5,6 +5,10 @@ window.KRWMP_ADMIN_USERS = {
     roles: [],
     institutions: [],
     privileges: [],
+    users: [],
+    filteredUsers: [],
+    currentPage: 1,
+    pageSize: 10,
 
     async refreshDirectoryData() {
         const tableBody = document.getElementById('userDirectoryTableBody');
@@ -12,34 +16,86 @@ window.KRWMP_ADMIN_USERS = {
         const privRole = document.getElementById('privRoleId');
         const regInstitution = document.getElementById('regInstitutionId');
         const editInstitution = document.getElementById('editInstitutionId');
+        const roleFilter = document.getElementById('userRoleFilter');
+        const institutionFilter = document.getElementById('userInstitutionFilter');
 
         try {
             const data = await window.KRWMP_ADMIN_API.getUsers();
             this.roles = data.roles || [];
             this.institutions = data.institutions || [];
             this.privileges = data.privileges || [];
+            this.users = data.users || [];
 
             const roleOptions = this.roles.map(role => `<option value="${role.id}">${this.escapeHtml(String(role.role_name).toUpperCase())} - ${this.escapeHtml(role.description || '')}</option>`).join('');
             if (selectRole) selectRole.innerHTML = roleOptions;
             if (privRole) privRole.innerHTML = roleOptions;
+            if (roleFilter) roleFilter.innerHTML = '<option value="">All groups</option>' + this.roles.map(role => `<option value="${role.id}">${this.escapeHtml(String(role.role_name).toUpperCase())}</option>`).join('');
 
             const institutionOptions = '<option value="">Select institution</option>' + this.institutions.map(i => `<option value="${i.id}">${this.escapeHtml(i.institution_name)}</option>`).join('');
             if (regInstitution) regInstitution.innerHTML = institutionOptions;
             if (editInstitution) editInstitution.innerHTML = institutionOptions;
+            if (institutionFilter) institutionFilter.innerHTML = '<option value="">All institutions</option>' + this.institutions.map(i => `<option value="${i.id}">${this.escapeHtml(i.institution_name)}</option>`).join('');
 
             this.renderRoleList();
             if (!tableBody) return;
-
-            const users = data.users || [];
-            if (users.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="5" class="krwmp-table-empty">No users found.</td></tr>`;
-                return;
-            }
-            tableBody.innerHTML = users.map(user => this.renderUserRow(user)).join('');
+            this.currentPage = 1;
+            this.applyDirectoryFilters();
         } catch (error) {
             if (tableBody) tableBody.innerHTML = `<tr><td colspan="5" class="krwmp-table-empty text-rose-400">Failed to synchronize identity data matrix from database rows.</td></tr>`;
             console.error(error);
         }
+    },
+
+    applyDirectoryFilters() {
+        const query = String(document.getElementById('userSearchInput')?.value || '').toLowerCase().trim();
+        const roleId = String(document.getElementById('userRoleFilter')?.value || '');
+        const institutionId = String(document.getElementById('userInstitutionFilter')?.value || '');
+        this.pageSize = Number(document.getElementById('userPageSize')?.value || this.pageSize || 10);
+
+        this.filteredUsers = this.users.filter(user => {
+            const roleIds = (user.roles || []).map(role => String(role.id));
+            if (user.role_id) roleIds.push(String(user.role_id));
+            const roleMatch = !roleId || roleIds.includes(roleId);
+            const institutionMatch = !institutionId || String(user.institution_id || '') === institutionId;
+            const roleText = (user.roles || []).map(r => r.role_name).join(' ');
+            const text = [user.name, user.identifier, user.designation, user.phone_number, user.email, user.institution_name, user.role_name, roleText].join(' ').toLowerCase();
+            const searchMatch = !query || text.includes(query);
+            return roleMatch && institutionMatch && searchMatch;
+        });
+
+        const totalPages = Math.max(1, Math.ceil(this.filteredUsers.length / this.pageSize));
+        if (this.currentPage > totalPages) this.currentPage = totalPages;
+        if (this.currentPage < 1) this.currentPage = 1;
+        this.renderDirectoryPage();
+    },
+
+    renderDirectoryPage() {
+        const tableBody = document.getElementById('userDirectoryTableBody');
+        const meta = document.getElementById('userDirectoryMeta');
+        if (!tableBody) return;
+
+        if (!this.filteredUsers.length) {
+            tableBody.innerHTML = `<tr><td colspan="5" class="krwmp-table-empty">No users match the current search/filter.</td></tr>`;
+            if (meta) meta.textContent = `Showing 0 of ${this.users.length} users`;
+            this.renderPagination();
+            return;
+        }
+
+        const start = (this.currentPage - 1) * this.pageSize;
+        const end = start + this.pageSize;
+        const pageUsers = this.filteredUsers.slice(start, end);
+        tableBody.innerHTML = pageUsers.map(user => this.renderUserRow(user)).join('');
+        if (meta) meta.textContent = `Showing ${start + 1}-${Math.min(end, this.filteredUsers.length)} of ${this.filteredUsers.length} users`;
+        this.renderPagination();
+    },
+
+    renderPagination() {
+        const container = document.getElementById('userDirectoryPagination');
+        if (!container) return;
+        const totalPages = Math.max(1, Math.ceil(this.filteredUsers.length / this.pageSize));
+        container.innerHTML = `<span class="krwmp-pagination-meta">Page ${this.currentPage} of ${totalPages}</span><div class="krwmp-pagination-controls"><button id="userPrevPageBtn" type="button" class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm" ${this.currentPage === 1 ? 'disabled' : ''}>Previous</button><button id="userNextPageBtn" type="button" class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm" ${this.currentPage === totalPages ? 'disabled' : ''}>Next</button></div>`;
+        container.querySelector('#userPrevPageBtn')?.addEventListener('click', () => { this.currentPage = Math.max(1, this.currentPage - 1); this.renderDirectoryPage(); });
+        container.querySelector('#userNextPageBtn')?.addEventListener('click', () => { this.currentPage = Math.min(totalPages, this.currentPage + 1); this.renderDirectoryPage(); });
     },
 
     renderUserRow(user) {
@@ -87,6 +143,12 @@ window.KRWMP_ADMIN_USERS = {
             });
         }
 
+        document.getElementById('openRegistrationModalBtn')?.addEventListener('click', () => window.KRWMP_ADMIN_UI.toggleRegistrationModal(true));
+        document.getElementById('userSearchInput')?.addEventListener('input', () => { this.currentPage = 1; this.applyDirectoryFilters(); });
+        document.getElementById('userRoleFilter')?.addEventListener('change', () => { this.currentPage = 1; this.applyDirectoryFilters(); });
+        document.getElementById('userInstitutionFilter')?.addEventListener('change', () => { this.currentPage = 1; this.applyDirectoryFilters(); });
+        document.getElementById('userPageSize')?.addEventListener('change', () => { this.currentPage = 1; this.applyDirectoryFilters(); });
+
         document.getElementById('roleList')?.addEventListener('click', async event => {
             const edit = event.target.closest('[data-role-edit]');
             const del = event.target.closest('[data-role-delete]');
@@ -105,7 +167,7 @@ window.KRWMP_ADMIN_USERS = {
         const roleForm = document.getElementById('roleForm');
         const privilegeForm = document.getElementById('privilegeForm');
 
-        if (registrationForm) registrationForm.addEventListener('submit', async event => { event.preventDefault(); if (!registrationForm.reportValidity()) return; try { await window.KRWMP_ADMIN_API.registerUser(window.KRWMP_ADMIN_UI.getRegistrationPayload()); window.KRWMP_ADMIN_UI.showSuccess('Success: User identity provisioned within Supabase.'); registrationForm.reset(); await this.refreshDirectoryData(); } catch (error) { window.KRWMP_ADMIN_UI.showError('Error: ' + error.message); } });
+        if (registrationForm) registrationForm.addEventListener('submit', async event => { event.preventDefault(); if (!registrationForm.reportValidity()) return; try { await window.KRWMP_ADMIN_API.registerUser(window.KRWMP_ADMIN_UI.getRegistrationPayload()); window.KRWMP_ADMIN_UI.showSuccess('Success: User identity provisioned within Supabase.'); registrationForm.reset(); window.KRWMP_ADMIN_UI.toggleRegistrationModal(false); await this.refreshDirectoryData(); } catch (error) { window.KRWMP_ADMIN_UI.showError('Error: ' + error.message); } });
         if (editForm) editForm.addEventListener('submit', async event => { event.preventDefault(); if (!editForm.reportValidity()) return; try { await window.KRWMP_ADMIN_API.updateUser(window.KRWMP_ADMIN_UI.getEditPayload()); window.KRWMP_ADMIN_UI.showSuccess('Success: Database identity adjustments saved.'); window.KRWMP_ADMIN_UI.toggleEditModal(false); await this.refreshDirectoryData(); } catch (error) { window.KRWMP_ADMIN_UI.showError('Error: ' + error.message); } });
         if (resetForm) resetForm.addEventListener('submit', async event => { event.preventDefault(); try { await window.KRWMP_ADMIN_API.resetPassword(window.KRWMP_ADMIN_UI.getResetPasswordPayload()); window.KRWMP_ADMIN_UI.showSuccess('Success: Passkey updated securely.'); resetForm.reset(); } catch (error) { window.KRWMP_ADMIN_UI.showError('Error: ' + error.message); } });
         if (roleForm) roleForm.addEventListener('submit', async event => { event.preventDefault(); const id = document.getElementById('roleEditId').value; const payload = { role_name: document.getElementById('roleName').value, description: document.getElementById('roleDescription').value }; try { if (id) await window.KRWMP_ADMIN_API.updateRole(id, payload); else await window.KRWMP_ADMIN_API.createRole(payload); roleForm.reset(); document.getElementById('roleEditId').value = ''; await this.refreshDirectoryData(); } catch (error) { window.KRWMP_ADMIN_UI.showError('Role save failed: ' + error.message); } });
