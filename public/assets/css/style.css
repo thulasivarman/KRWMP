@@ -489,10 +489,10 @@ body.krwmp-sidebar-collapsed .krwmp-sidebar-toggle {
         box-shadow: 18px 0 42px rgba(2, 6, 23, 0.45);
     }
 
-    body.krwmp-has-sidebar:not(.krwmp-sidebar-collapsed) #sidebar.krwmp-sidebar,
-    .krwmp-sidebar.krwmp-sidebar-open {
-        transform: translateX(0) !important;
-    }
+    body.krwmp-mobile-sidebar-open #sidebar.krwmp-sidebar,
+.krwmp-sidebar.krwmp-sidebar-open {
+    transform: translateX(0) !important;
+}
 
     .krwmp-sidebar-toggle {
         left: 1rem !important;
