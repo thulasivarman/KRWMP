@@ -33,9 +33,45 @@ function enhanceInterventionAccordions() {
   });
 }
 
-const interventionObserver = new MutationObserver(() => enhanceInterventionAccordions());
+function applyInterventionRegistryFilters() {
+  const searchInput = document.getElementById('interventionSearchInput');
+  const statusFilter = document.getElementById('interventionStatusFilter');
+  const list = document.getElementById('registryList');
+  if (!searchInput || !statusFilter || !list) return;
+
+  const query = String(searchInput.value || '').toLowerCase().trim();
+  const status = String(statusFilter.value || '').toLowerCase().trim();
+  let visibleCount = 0;
+
+  list.querySelectorAll('article.krwmp-card').forEach(card => {
+    const text = String(card.textContent || '').toLowerCase();
+    const visible = (!query || text.includes(query)) && (!status || text.includes(status));
+    card.classList.toggle('hidden', !visible);
+    if (visible) visibleCount += 1;
+  });
+
+  let empty = list.querySelector('[data-filter-empty]');
+  if (!empty) {
+    empty = document.createElement('div');
+    empty.dataset.filterEmpty = 'true';
+    empty.className = 'krwmp-empty-state hidden';
+    empty.textContent = 'No interventions match the current search/filter on this page.';
+    list.prepend(empty);
+  }
+  empty.classList.toggle('hidden', visibleCount > 0 || (!query && !status));
+}
+
+const interventionObserver = new MutationObserver(() => {
+  enhanceInterventionAccordions();
+  applyInterventionRegistryFilters();
+});
 window.addEventListener('DOMContentLoaded', () => {
   const list = document.getElementById('registryList');
   if (list) interventionObserver.observe(list, { childList: true, subtree: false });
-  setTimeout(enhanceInterventionAccordions, 500);
+  document.getElementById('interventionSearchInput')?.addEventListener('input', applyInterventionRegistryFilters);
+  document.getElementById('interventionStatusFilter')?.addEventListener('change', applyInterventionRegistryFilters);
+  setTimeout(() => {
+    enhanceInterventionAccordions();
+    applyInterventionRegistryFilters();
+  }, 500);
 });
