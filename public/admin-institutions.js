@@ -11,6 +11,7 @@ const institutionTypeSelect = document.getElementById('institutionTypeSelect');
 const typeFilter = document.getElementById('typeFilter');
 const activeFilter = document.getElementById('activeFilter');
 const searchInput = document.getElementById('searchInput');
+const openInstitutionModalBtn = document.getElementById('openInstitutionModalBtn');
 
 let institutions = [];
 let institutionTypes = [];
@@ -21,6 +22,13 @@ let locationPicker = null;
 function showStatus(message, error = false) {
   window.KRWMP_UTILS.showStatus(statusBox, message, error);
 }
+
+function toggleInstitutionModal(show) {
+  if (!writePanel) return;
+  writePanel.classList.toggle('hidden', !show);
+  if (show) setTimeout(() => locationPicker?.refresh?.(), 160);
+}
+window.toggleInstitutionModal = toggleInstitutionModal;
 
 const { apiRequest: json, escapeHtml } = window.KRWMP_UTILS;
 
@@ -40,7 +48,8 @@ async function initSidebar() {
 
 function applyPermissions() {
   const canWrite = canCreateInstitution || canUpdateInstitution;
-  writePanel.classList.toggle('hidden', !canWrite);
+  if (openInstitutionModalBtn) openInstitutionModalBtn.classList.toggle('hidden', !canCreateInstitution);
+  if (!canWrite) toggleInstitutionModal(false);
   document.querySelectorAll('[data-edit]').forEach(el => el.classList.toggle('hidden', !canUpdateInstitution));
   document.querySelectorAll('[data-delete]').forEach(el => el.classList.toggle('hidden', !canDeleteInstitution));
   if (locationPicker) locationPicker.refresh();
@@ -192,6 +201,17 @@ function resetForm() {
   if (locationPicker) locationPicker.clear();
 }
 
+function openCreateInstitutionModal() {
+  if (!canCreateInstitution) return showStatus('You do not have create access for institutions.', true);
+  resetForm();
+  toggleInstitutionModal(true);
+}
+
+function closeInstitutionModal() {
+  resetForm();
+  toggleInstitutionModal(false);
+}
+
 function setLocationValues(row) {
   institutionForm.latitude.value = row?.latitude || '';
   institutionForm.longitude.value = row?.longitude || '';
@@ -260,7 +280,7 @@ function editInstitution(id) {
   const row = institutions.find(item => String(item.id) === String(id));
   if (!row) return;
   fillForm(row);
-  writePanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  toggleInstitutionModal(true);
 }
 
 function viewInstitution(id) {
@@ -305,6 +325,7 @@ institutionForm.addEventListener('submit', async event => {
     await json(url, { method, body: getFormPayload() });
     showStatus(id ? 'Institution updated successfully.' : 'Institution created successfully.');
     resetForm();
+    toggleInstitutionModal(false);
     await loadInstitutions();
   } catch (error) {
     showStatus(error.message, true);
@@ -338,8 +359,10 @@ async function init() {
   });
 
   document.getElementById('refreshBtn')?.addEventListener('click', () => { currentPage = 1; loadInstitutions(); });
+  openInstitutionModalBtn?.addEventListener('click', openCreateInstitutionModal);
+  document.getElementById('closeInstitutionModalBtn')?.addEventListener('click', closeInstitutionModal);
   document.getElementById('resetInstitutionBtn')?.addEventListener('click', resetForm);
-  document.getElementById('cancelEditBtn')?.addEventListener('click', resetForm);
+  document.getElementById('cancelEditBtn')?.addEventListener('click', closeInstitutionModal);
   searchInput.addEventListener('input', debounce(() => { currentPage = 1; loadInstitutions(); }));
   typeFilter.addEventListener('change', () => { currentPage = 1; loadInstitutions(); });
   activeFilter.addEventListener('change', () => { currentPage = 1; loadInstitutions(); });
