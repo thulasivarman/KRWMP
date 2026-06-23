@@ -94,6 +94,15 @@ window.KRWMP_ENGINE = {
     ZONING_TERMINOLOGY_TAMIL: "வலயம்",
     Session: { user: null, isAuthenticated: false },
 
+    ensureMobileStylesheet: function () {
+        if (document.getElementById('krwmp-mobile-fixes-css')) return;
+        const link = document.createElement('link');
+        link.id = 'krwmp-mobile-fixes-css';
+        link.rel = 'stylesheet';
+        link.href = '/assets/css/krwmp-mobile-fixes.css';
+        document.head.appendChild(link);
+    },
+
     initSession: async function () {
         try {
             localStorage.removeItem('krwmp_token');
@@ -153,12 +162,61 @@ window.KRWMP_ENGINE = {
 
     installSidebarShell: function (sidebarContainer) {
         if (!sidebarContainer || sidebarContainer.dataset.krwmpShellInstalled === 'true') return;
+        this.ensureMobileStylesheet();
         sidebarContainer.dataset.krwmpShellInstalled = 'true';
         sidebarContainer.classList.add('krwmp-sidebar');
         document.body.classList.add('krwmp-has-sidebar');
 
-        const floatingToggle = document.getElementById('krwmp-sidebar-toggle');
-        if (floatingToggle) floatingToggle.remove();
+        const oldToggle = document.getElementById('krwmp-sidebar-toggle');
+        if (oldToggle) oldToggle.remove();
+
+        let mobileToggle = document.getElementById('krwmp-mobile-sidebar-btn');
+        if (!mobileToggle) {
+            mobileToggle = document.createElement('button');
+            mobileToggle.id = 'krwmp-mobile-sidebar-btn';
+            mobileToggle.type = 'button';
+            mobileToggle.className = 'krwmp-mobile-sidebar-btn';
+            mobileToggle.setAttribute('aria-label', 'Open navigation menu');
+            mobileToggle.setAttribute('aria-expanded', 'false');
+            mobileToggle.textContent = '☰';
+            document.body.appendChild(mobileToggle);
+        }
+
+        let mobileScrim = document.getElementById('krwmp-mobile-sidebar-scrim');
+        if (!mobileScrim) {
+            mobileScrim = document.createElement('div');
+            mobileScrim.id = 'krwmp-mobile-sidebar-scrim';
+            mobileScrim.className = 'krwmp-mobile-sidebar-scrim';
+            document.body.appendChild(mobileScrim);
+        }
+
+        const closeMobileSidebar = () => {
+            document.body.classList.remove('krwmp-mobile-sidebar-open');
+            mobileToggle.setAttribute('aria-expanded', 'false');
+            mobileToggle.textContent = '☰';
+        };
+
+        const openMobileSidebar = () => {
+            document.body.classList.add('krwmp-mobile-sidebar-open');
+            document.body.classList.remove('krwmp-sidebar-collapsed');
+            mobileToggle.setAttribute('aria-expanded', 'true');
+            mobileToggle.textContent = '×';
+        };
+
+        if (mobileToggle.dataset.krwmpBound !== 'true') {
+            mobileToggle.dataset.krwmpBound = 'true';
+            mobileToggle.addEventListener('click', () => {
+                if (document.body.classList.contains('krwmp-mobile-sidebar-open')) closeMobileSidebar();
+                else openMobileSidebar();
+            });
+        }
+
+        if (mobileScrim.dataset.krwmpBound !== 'true') {
+            mobileScrim.dataset.krwmpBound = 'true';
+            mobileScrim.addEventListener('click', closeMobileSidebar);
+        }
+
+        sidebarContainer.querySelectorAll('a').forEach(link => link.addEventListener('click', closeMobileSidebar));
 
         const savedState = localStorage.getItem('krwmp_sidebar_collapsed');
         const shouldCollapse = savedState === 'true';
@@ -179,6 +237,10 @@ window.KRWMP_ENGINE = {
         if (brandToggle.dataset.krwmpBound !== 'true') {
             brandToggle.dataset.krwmpBound = 'true';
             brandToggle.addEventListener('click', () => {
+                if (window.matchMedia('(max-width: 768px)').matches) {
+                    closeMobileSidebar();
+                    return;
+                }
                 const collapsed = document.body.classList.toggle('krwmp-sidebar-collapsed');
                 localStorage.setItem('krwmp_sidebar_collapsed', String(collapsed));
                 syncToggle();
