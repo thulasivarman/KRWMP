@@ -1,0 +1,231 @@
+/* KRWMP shared mobile responsiveness fixes */
+
+.krwmp-mobile-sidebar-btn {
+  display: none;
+  position: fixed;
+  left: 0.85rem;
+  top: 0.85rem;
+  z-index: 90;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(52, 211, 153, 0.42);
+  background: rgba(2, 6, 23, 0.94);
+  color: #d1fae5;
+  font-size: 1.35rem;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 16px 34px rgba(2, 6, 23, 0.45);
+  backdrop-filter: blur(14px);
+}
+
+.krwmp-mobile-sidebar-scrim {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: rgba(2, 6, 23, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+body.krwmp-mobile-sidebar-open .krwmp-mobile-sidebar-scrim {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .krwmp-mobile-sidebar-btn {
+    display: inline-flex;
+  }
+
+  body.krwmp-has-sidebar #sidebar.krwmp-sidebar,
+  body.krwmp-has-sidebar.krwmp-sidebar-collapsed #sidebar.krwmp-sidebar {
+    width: min(88vw, 19rem) !important;
+    transform: translateX(-110%) !important;
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    z-index: 60;
+  }
+
+  body.krwmp-mobile-sidebar-open #sidebar.krwmp-sidebar {
+    transform: translateX(0) !important;
+  }
+
+  body.krwmp-has-sidebar main,
+  body.krwmp-has-sidebar.krwmp-sidebar-collapsed main {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+
+  .krwmp-page {
+    max-width: 100% !important;
+    padding: 4.25rem 0.9rem 1rem !important;
+  }
+
+  .krwmp-page-header,
+  .krwmp-cluster-between {
+    align-items: stretch !important;
+  }
+
+  .krwmp-page-title {
+    font-size: 1.45rem !important;
+    line-height: 1.18 !important;
+  }
+
+  .krwmp-body-text,
+  .form-helper {
+    font-size: 0.78rem !important;
+  }
+
+  .krwmp-panel,
+  .krwmp-card {
+    padding: 0.95rem !important;
+    border-radius: 0.9rem !important;
+  }
+
+  .krwmp-btn {
+    width: 100%;
+    white-space: normal;
+    min-height: 2.55rem;
+  }
+
+  .krwmp-table-wrap {
+    border: 0;
+    background: transparent;
+    overflow-x: visible;
+  }
+
+  .krwmp-table {
+    min-width: 0 !important;
+  }
+
+  .krwmp-table thead {
+    display: none;
+  }
+
+  .krwmp-table tbody,
+  .krwmp-table tr,
+  .krwmp-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .krwmp-table tr {
+    margin-bottom: 0.85rem;
+    border: 1px solid var(--krwmp-color-border, #1e293b);
+    border-radius: 0.95rem;
+    background: rgba(15, 23, 42, 0.82);
+    overflow: hidden;
+    box-shadow: 0 14px 30px rgba(2, 6, 23, 0.18);
+  }
+
+  .krwmp-table td {
+    min-height: auto;
+    padding: 0.7rem 0.85rem !important;
+    border-bottom: 1px solid rgba(30, 41, 59, 0.7);
+  }
+
+  .krwmp-table td:last-child {
+    border-bottom: none;
+  }
+
+  .krwmp-table td.text-right,
+  .krwmp-table-actions {
+    text-align: left !important;
+    justify-content: flex-start !important;
+  }
+
+  .krwmp-table-actions .krwmp-btn {
+    flex: 1 1 46%;
+  }
+
+  .krwmp-pagination,
+  .krwmp-pagination-controls {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .krwmp-pagination-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .krwmp-modal-backdrop {
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 0.6rem;
+  }
+
+  .krwmp-modal,
+  dialog.krwmp-modal {
+    width: 100% !important;
+    max-width: none !important;
+    max-height: calc(100dvh - 1.2rem) !important;
+    border-radius: 1rem !important;
+    overflow-y: auto !important;
+  }
+
+  .krwmp-modal-header,
+  .krwmp-modal-body,
+  .krwmp-modal-actions {
+    padding: 0.9rem !important;
+  }
+
+  .krwmp-modal-actions {
+    position: sticky;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.98);
+    z-index: 2;
+  }
+
+  .krwmp-location-map,
+  .krwmp-map-canvas {
+    min-height: 13rem !important;
+    height: 13rem !important;
+  }
+
+  .krwmp-map-panel {
+    padding: 0.85rem !important;
+  }
+
+  .krwmp-form-grid,
+  .form-grid,
+  .style-form {
+    grid-template-columns: 1fr !important;
+  }
+
+  .raster-class-row {
+    padding: 0.85rem !important;
+  }
+
+  .raster-class-row .grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .raster-symbology-box {
+    padding: 0.9rem !important;
+  }
+
+  .pulse-card .pulse-icon {
+    width: 3rem !important;
+    height: 3rem !important;
+    font-size: 1.8rem !important;
+  }
+
+  .pulse-card strong {
+    font-size: 2rem !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .krwmp-page {
+    padding-left: 0.7rem !important;
+    padding-right: 0.7rem !important;
+  }
+
+  .krwmp-table-actions .krwmp-btn,
+  .krwmp-pagination-controls {
+    grid-template-columns: 1fr;
+  }
+}
