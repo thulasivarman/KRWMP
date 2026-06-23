@@ -15,8 +15,6 @@ async function initializeVectorLayerSidebar() {
   const basemapSection = document.querySelector('.krwmp-panel-section');
   if (basemapSection) basemapSection.classList.add('hidden');
 
-  const dataLayersSection = document.getElementById('section-data-layers');
-  if (dataLayersSection) dataLayersSection.classList.add('hidden');
   const uploadSection = uploadForm?.closest('section');
   if (uploadSection) uploadSection.classList.toggle('hidden', !canCreateVectorLayer);
 }
@@ -80,84 +78,75 @@ function renderLayer(layer) {
     await saveStyle(form);
   });
 
-  card.querySelector('[data-action="delete"]').addEventListener('click', async () => {
-    await deleteLayer(layer.id, layer.name || layer.id);
-  });
+  card.querySelector('[data-action="delete"]').addEventListener('click', async () => deleteLayer(layer.id));
   form.querySelector('button[type="submit"]')?.classList.toggle('hidden', !canUpdateVectorLayer);
   card.querySelector('[data-action="delete"]')?.classList.toggle('hidden', !canDeleteVectorLayer);
-
   layersList.appendChild(node);
 }
 
 async function saveStyle(form) {
   if (!canUpdateVectorLayer) return showStatus('You do not have update access for vector layers.', true);
   const id = form.id.value;
-  const payload = {
-    style: {
-      color: form.color.value,
-      fillColor: form.fillColor.value,
-      weight: Number(form.weight.value),
-      fillOpacity: Number(form.fillOpacity.value),
-      radius: Number(form.radius.value),
-    },
-    visible: form.visible.checked,
+  const body = {
+    color: normalizeHex(form.color.value, '#3388ff'),
+    fillColor: normalizeHex(form.fillColor.value, form.color.value),
+    weight: Number(form.weight.value || 2),
+    fillOpacity: Number(form.fillOpacity.value || 0.2),
+    radius: Number(form.radius.value || 6),
+    visible: form.visible.checked
   };
-
   try {
-    await requestJson(`${API_BASE}/vector-layers/${encodeURIComponent(id)}/style`, {
-      method: 'PUT',
-      body: payload,
-    });
-
-    showStatus(`Symbol updated for ${id}.`);
+    await requestJson(`${API_BASE}/vector-layers/${encodeURIComponent(id)}/style`, { method: 'PUT', body });
+    showStatus('Layer symbol updated successfully.');
     await loadLayers();
   } catch (error) {
     showStatus(error.message, true);
   }
 }
 
-async function deleteLayer(id, name) {
+async function deleteLayer(id) {
   if (!canDeleteVectorLayer) return showStatus('You do not have delete access for vector layers.', true);
-  const confirmed = window.confirm(`Delete ${name}? This will remove the GeoJSON table and layer registry.`);
-  if (!confirmed) return;
-
+  if (!confirm(`Delete vector layer ${id}?`)) return;
   try {
     await requestJson(`${API_BASE}/vector-layers/${encodeURIComponent(id)}`, { method: 'DELETE' });
-    showStatus(`Layer deleted: ${id}.`);
+    showStatus('Layer deleted successfully.');
     await loadLayers();
   } catch (error) {
     showStatus(error.message, true);
   }
 }
 
-uploadForm.addEventListener('submit', async event => {
-  event.preventDefault();
-  if (!canCreateVectorLayer) return showStatus('You do not have create access for vector layers.', true);
-  const formData = new FormData(uploadForm);
-  formData.set('visible', uploadForm.visible.checked ? 'true' : 'false');
+document.addEventListener('DOMContentLoaded', async () => {
+  await initializeVectorLayerSidebar();
 
-  try {
-    await requestJson(`${API_BASE}/vector-layers/upload`, {
-      method: 'POST',
-      body: formData,
-    });
+  uploadForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!canCreateVectorLayer) return showStatus('You do not have create access for vector layers.', true);
+    const formData = new FormData(uploadForm);
+    formData.set('visible', uploadForm.visible.checked ? 'true' : 'false');
+    try {
+      await fetch(`${API_BASE}/vector-layers/upload`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'same-origin'
+      }).then(async response => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || payload.success === false) throw new Error(payload.message || 'Upload failed');
+        return payload;
+      });
+      uploadForm.reset();
+      uploadForm.color.value = '#10b981';
+      uploadForm.fillColor.value = '#10b981';
+      uploadForm.weight.value = 2;
+      uploadForm.fillOpacity.value = 0.2;
+      uploadForm.visible.checked = true;
+      showStatus('Vector layer uploaded successfully.');
+      await loadLayers();
+    } catch (error) {
+      showStatus(error.message, true);
+    }
+  });
 
-    uploadForm.reset();
-    uploadForm.color.value = '#10b981';
-    uploadForm.fillColor.value = '#10b981';
-    uploadForm.weight.value = 2;
-    uploadForm.fillOpacity.value = 0.2;
-    uploadForm.visible.checked = true;
-
-    showStatus('GeoJSON layer uploaded successfully.');
-    await loadLayers();
-  } catch (error) {
-    showStatus(error.message, true);
-  }
-});
-
-refreshBtn.addEventListener('click', loadLayers);
-
-initializeVectorLayerSidebar().then(() => {
-  loadLayers();
+  refreshBtn.addEventListener('click', loadLayers);
+  await loadLayers();
 });
