@@ -19,9 +19,11 @@ class KRWMPLocationPicker {
     this.statusElement = container.querySelector('[data-location-status]');
     const gpsButton = container.querySelector('[data-location-gps]');
     const clearButton = container.querySelector('[data-location-clear]');
-    const lat = Number(this.latitudeInput?.value);
-    const lng = Number(this.longitudeInput?.value);
-    const hasPoint = Number.isFinite(lat) && Number.isFinite(lng);
+    const rawLat = String(this.latitudeInput?.value || '').trim();
+    const rawLng = String(this.longitudeInput?.value || '').trim();
+    const lat = Number(rawLat);
+    const lng = Number(rawLng);
+    const hasPoint = rawLat !== '' && rawLng !== '' && Number.isFinite(lat) && Number.isFinite(lng);
     const center = hasPoint ? [lng, lat] : this.initialCenter;
 
     this.map = new maplibregl.Map({ container: mapNode, style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json', center, zoom: hasPoint ? 13 : this.initialZoom });
