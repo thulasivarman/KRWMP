@@ -53,6 +53,199 @@ window.KRWMP_UTILS = window.KRWMP_UTILS || (() => {
         select.disabled = disabled;
     }
 
+    function ensureConfirmationStyles() {
+        if (document.getElementById('krwmp-confirm-dialog-css')) return;
+        const style = document.createElement('style');
+        style.id = 'krwmp-confirm-dialog-css';
+        style.textContent = `
+            .krwmp-confirm-backdrop {
+                position: fixed;
+                inset: 0;
+                z-index: 10020;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 1rem;
+                background: rgba(2, 6, 23, 0.72);
+                backdrop-filter: blur(10px);
+            }
+            .krwmp-confirm-dialog {
+                width: min(100%, 28rem);
+                border: 1px solid rgba(52, 211, 153, 0.35);
+                border-radius: 1.25rem;
+                background: linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
+                color: #f8fafc;
+                box-shadow: 0 28px 70px rgba(2, 6, 23, 0.68), 0 0 0 1px rgba(15, 118, 110, 0.22) inset;
+                overflow: hidden;
+                transform: translateY(0);
+                animation: krwmpConfirmIn 0.16s ease-out;
+            }
+            .krwmp-confirm-dialog-danger {
+                border-color: rgba(251, 113, 133, 0.45);
+                box-shadow: 0 28px 70px rgba(2, 6, 23, 0.68), 0 0 0 1px rgba(190, 18, 60, 0.2) inset;
+            }
+            .krwmp-confirm-header {
+                display: flex;
+                align-items: flex-start;
+                gap: 0.85rem;
+                padding: 1.15rem 1.25rem 0.85rem;
+                border-bottom: 1px solid rgba(30, 41, 59, 0.88);
+                background: rgba(15, 23, 42, 0.72);
+            }
+            .krwmp-confirm-icon {
+                width: 2.35rem;
+                height: 2.35rem;
+                flex: 0 0 auto;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 0.85rem;
+                border: 1px solid rgba(52, 211, 153, 0.35);
+                background: rgba(16, 185, 129, 0.12);
+                color: #6ee7b7;
+                font-weight: 900;
+                box-shadow: 0 12px 30px rgba(5, 150, 105, 0.13);
+            }
+            .krwmp-confirm-dialog-danger .krwmp-confirm-icon {
+                border-color: rgba(251, 113, 133, 0.45);
+                background: rgba(244, 63, 94, 0.12);
+                color: #fecdd3;
+                box-shadow: 0 12px 30px rgba(225, 29, 72, 0.13);
+            }
+            .krwmp-confirm-title-wrap {
+                min-width: 0;
+                flex: 1;
+            }
+            .krwmp-confirm-kicker {
+                margin: 0 0 0.2rem;
+                color: #34d399;
+                font-size: 0.66rem;
+                font-weight: 850;
+                letter-spacing: 0.14em;
+                text-transform: uppercase;
+            }
+            .krwmp-confirm-dialog-danger .krwmp-confirm-kicker {
+                color: #fb7185;
+            }
+            .krwmp-confirm-title {
+                margin: 0;
+                color: #f8fafc;
+                font-size: 1.05rem;
+                font-weight: 800;
+                line-height: 1.25;
+            }
+            .krwmp-confirm-body {
+                padding: 1rem 1.25rem 0.25rem;
+            }
+            .krwmp-confirm-message {
+                margin: 0;
+                color: #cbd5e1;
+                font-size: 0.9rem;
+                line-height: 1.65;
+            }
+            .krwmp-confirm-actions {
+                display: flex;
+                justify-content: flex-end;
+                gap: 0.75rem;
+                padding: 1rem 1.25rem 1.25rem;
+            }
+            .krwmp-confirm-actions .krwmp-btn {
+                min-width: 6.75rem;
+            }
+            @keyframes krwmpConfirmIn {
+                from { opacity: 0; transform: translateY(10px) scale(0.98); }
+                to { opacity: 1; transform: translateY(0) scale(1); }
+            }
+            @media (max-width: 520px) {
+                .krwmp-confirm-backdrop {
+                    align-items: flex-end;
+                    padding: 0.75rem;
+                }
+                .krwmp-confirm-dialog {
+                    border-radius: 1rem;
+                }
+                .krwmp-confirm-actions {
+                    display: grid;
+                    grid-template-columns: 1fr;
+                }
+                .krwmp-confirm-actions .krwmp-btn {
+                    width: 100%;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    function confirmAction(options = {}) {
+        ensureConfirmationStyles();
+        const {
+            title = 'Confirm Action',
+            message = 'Are you sure you want to continue?',
+            confirmText = 'Confirm',
+            cancelText = 'Cancel',
+            variant = 'default',
+            kicker = variant === 'danger' ? 'Critical Action' : 'Confirmation',
+            icon = variant === 'danger' ? '!' : '?'
+        } = options;
+
+        return new Promise(resolve => {
+            const previousActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+            const backdrop = document.createElement('div');
+            backdrop.className = 'krwmp-confirm-backdrop';
+            backdrop.setAttribute('role', 'presentation');
+
+            const dialog = document.createElement('section');
+            dialog.className = `krwmp-confirm-dialog ${variant === 'danger' ? 'krwmp-confirm-dialog-danger' : ''}`.trim();
+            dialog.setAttribute('role', 'dialog');
+            dialog.setAttribute('aria-modal', 'true');
+            dialog.setAttribute('aria-labelledby', 'krwmp-confirm-title');
+            dialog.setAttribute('aria-describedby', 'krwmp-confirm-message');
+            dialog.innerHTML = `
+                <header class="krwmp-confirm-header">
+                    <span class="krwmp-confirm-icon" aria-hidden="true">${escapeHtml(icon)}</span>
+                    <div class="krwmp-confirm-title-wrap">
+                        <p class="krwmp-confirm-kicker">${escapeHtml(kicker)}</p>
+                        <h2 id="krwmp-confirm-title" class="krwmp-confirm-title">${escapeHtml(title)}</h2>
+                    </div>
+                </header>
+                <div class="krwmp-confirm-body">
+                    <p id="krwmp-confirm-message" class="krwmp-confirm-message">${escapeHtml(message)}</p>
+                </div>
+                <footer class="krwmp-confirm-actions">
+                    <button type="button" class="krwmp-btn krwmp-btn-secondary" data-krwmp-confirm-cancel>${escapeHtml(cancelText)}</button>
+                    <button type="button" class="krwmp-btn ${variant === 'danger' ? 'krwmp-btn-danger' : 'krwmp-btn-primary'}" data-krwmp-confirm-ok>${escapeHtml(confirmText)}</button>
+                </footer>
+            `;
+            backdrop.appendChild(dialog);
+            document.body.appendChild(backdrop);
+
+            const confirmButton = dialog.querySelector('[data-krwmp-confirm-ok]');
+            const cancelButton = dialog.querySelector('[data-krwmp-confirm-cancel]');
+
+            const close = result => {
+                document.removeEventListener('keydown', onKeyDown, true);
+                backdrop.remove();
+                if (previousActiveElement) previousActiveElement.focus({ preventScroll: true });
+                resolve(Boolean(result));
+            };
+
+            const onKeyDown = event => {
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    close(false);
+                }
+            };
+
+            document.addEventListener('keydown', onKeyDown, true);
+            backdrop.addEventListener('click', event => {
+                if (event.target === backdrop) close(false);
+            });
+            cancelButton.addEventListener('click', () => close(false));
+            confirmButton.addEventListener('click', () => close(true));
+            window.setTimeout(() => confirmButton.focus({ preventScroll: true }), 0);
+        });
+    }
+
     async function parseResponse(response) {
         const contentType = response.headers.get('content-type') || '';
         if (contentType.includes('application/json')) return response.json().catch(() => ({}));
@@ -87,6 +280,7 @@ window.KRWMP_UTILS = window.KRWMP_UTILS || (() => {
         showStatus,
         createOption,
         resetSelect,
+        confirmAction,
     };
 })();
 
@@ -235,6 +429,10 @@ window.KRWMP_ENGINE = {
             brandToggle.setAttribute('title', 'Watershed Intelligence System');
             brandToggle.disabled = true;
         }
+    },
+
+    confirmAction: function (options = {}) {
+        return window.KRWMP_UTILS.confirmAction(options);
     },
 
     injectReportsLink: function () {
