@@ -11,6 +11,10 @@ window.KRWMP_ADMIN_UI = {
             if (window.KRWMP_ENGINE && window.KRWMP_ENGINE.dispatchLogout) window.KRWMP_ENGINE.dispatchLogout();
         });
     },
+    toggleRegistrationModal(show) {
+        const modal = document.getElementById('registrationModal');
+        if (modal) modal.classList.toggle('hidden', !show);
+    },
     toggleEditModal(show) { const modal = document.getElementById('inlineEditModal'); if (modal) modal.classList.toggle('hidden', !show); },
     fillEditForm(user) {
         document.getElementById('editIdentifier').value = user.identifier || '';
@@ -54,3 +58,4 @@ window.KRWMP_ADMIN_UI = {
     showError(message) { alert(message); }
 };
 window.toggleEditModal = function (show) { window.KRWMP_ADMIN_UI.toggleEditModal(show); };
+window.toggleRegistrationModal = function (show) { window.KRWMP_ADMIN_UI.toggleRegistrationModal(show); };
