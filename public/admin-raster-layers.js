@@ -23,8 +23,6 @@ async function initializeRasterAdminSidebar() {
   canUpdateRasterLayer = window.KRWMP_PRIVILEGES.can('raster_layers', 'update');
   canDeleteRasterLayer = window.KRWMP_PRIVILEGES.can('raster_layers', 'delete');
   document.querySelector('.krwmp-panel-section')?.classList.add('hidden');
-  document.getElementById('section-data-layers')?.classList.add('hidden');
-  document.getElementById('section-raster-layers')?.classList.add('hidden');
   document.getElementById('uploadRasterForm')?.closest('section')?.classList.toggle('hidden', !canCreateRasterLayer);
 }
 
@@ -158,7 +156,7 @@ function renderSymbologyEditor(symbology) {
     </article>`;
   }).join('');
 
-  return `<section class="raster-symbology-box md:col-span-4 lg:col-span-4 mt-5 rounded-2xl border border-slate-800 bg-slate-950/35 p-5 space-y-5 text-xs">
+  return `<section class="raster-symbology-box mt-5 rounded-2xl border border-slate-800 bg-slate-950/35 p-5 space-y-5 text-xs">
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-800 pb-4">
       <div>
         <h4 class="font-bold uppercase tracking-wider text-emerald-400">Raster Symbology</h4>
