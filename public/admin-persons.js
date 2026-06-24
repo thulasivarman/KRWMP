@@ -1,6 +1,7 @@
 let canCreatePerson = false;
 let canUpdatePerson = false;
 let canDeletePerson = false;
+let canPromotePerson = false;
 
 const statusBox = document.getElementById('statusBox');
 const writePanel = document.getElementById('writePanel');
@@ -13,8 +14,15 @@ const areaFilter = document.getElementById('areaFilter');
 const openPersonModalBtn = document.getElementById('openPersonModalBtn');
 const viewPersonModal = document.getElementById('viewPersonModal');
 const viewPersonContent = document.getElementById('viewPersonContent');
+const promoteUserModal = document.getElementById('promoteUserModal');
+const promoteUserForm = document.getElementById('promoteUserForm');
+const promoteRoleSelect = document.getElementById('promoteRoleSelect');
+const promoteInstitutionSelect = document.getElementById('promoteInstitutionSelect');
 
 let persons = [];
+let roles = [];
+let institutions = [];
+let promoteLookupsLoaded = false;
 let currentPage = 1;
 const pageSize = 12;
 
@@ -44,6 +52,16 @@ function statusBadge(status) {
   return `<span class="krwmp-badge ${badgeClass}">${escapeHtml(value.toUpperCase())}</span>`;
 }
 
+function initialsFromName(name = '') {
+  return cleanText(name)
+    .split(/\s+/)
+    .map(part => part[0])
+    .filter(Boolean)
+    .join('')
+    .slice(0, 4)
+    .toLowerCase();
+}
+
 function togglePersonModal(show) {
   if (!writePanel) return;
   writePanel.classList.toggle('hidden', !show);
@@ -55,12 +73,14 @@ async function initSidebar() {
   canCreatePerson = window.KRWMP_PRIVILEGES.can('person_registry', 'create');
   canUpdatePerson = window.KRWMP_PRIVILEGES.can('person_registry', 'update');
   canDeletePerson = window.KRWMP_PRIVILEGES.can('person_registry', 'delete');
+  canPromotePerson = canUpdatePerson && window.KRWMP_PRIVILEGES.can('user_management_settings', 'create');
 }
 
 function applyPermissions() {
   if (openPersonModalBtn) openPersonModalBtn.classList.toggle('hidden', !canCreatePerson);
   document.querySelectorAll('[data-edit]').forEach(el => el.classList.toggle('hidden', !canUpdatePerson));
   document.querySelectorAll('[data-delete]').forEach(el => el.classList.toggle('hidden', !canDeletePerson));
+  document.querySelectorAll('[data-promote]').forEach(el => el.classList.toggle('hidden', !canPromotePerson));
 }
 
 function buildSearchQuery() {
@@ -133,6 +153,7 @@ function renderPersons() {
     const contactText = [row.phone_number, row.email].filter(Boolean).join('<br>') || '-';
     const areaText = [row.dsd, row.gnd].filter(Boolean).join(' / ') || '-';
     const systemUser = row.is_system_user || row.linked_user_id;
+    const promoteButton = systemUser ? '' : `<button data-promote="${escapeHtml(row.id)}" class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm hidden">Promote</button>`;
     tr.innerHTML = `
       <td>
         <div class="font-bold text-slate-100">${escapeHtml(name)}</div>
@@ -147,6 +168,7 @@ function renderPersons() {
       <td class="text-right">
         <div class="krwmp-table-actions">
           <button data-view="${escapeHtml(row.id)}" class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">View</button>
+          ${promoteButton}
           <button data-edit="${escapeHtml(row.id)}" class="krwmp-btn krwmp-btn-primary krwmp-btn-sm hidden">Edit</button>
           <button data-delete="${escapeHtml(row.id)}" class="krwmp-btn krwmp-btn-danger krwmp-btn-sm hidden">Delete</button>
         </div>
@@ -156,6 +178,7 @@ function renderPersons() {
   });
 
   tableBody.querySelectorAll('[data-view]').forEach(btn => btn.addEventListener('click', () => viewPerson(btn.dataset.view)));
+  tableBody.querySelectorAll('[data-promote]').forEach(btn => btn.addEventListener('click', () => openPromoteModal(btn.dataset.promote)));
   tableBody.querySelectorAll('[data-edit]').forEach(btn => btn.addEventListener('click', () => editPerson(btn.dataset.edit)));
   tableBody.querySelectorAll('[data-delete]').forEach(btn => btn.addEventListener('click', () => deletePerson(btn.dataset.delete)));
   renderPagination();
@@ -260,6 +283,113 @@ async function deletePerson(id) {
     await loadPersons();
   } catch (error) {
     showStatus(error.message || 'Unable to delete person.', true);
+  }
+}
+
+function populatePromoteLookups() {
+  promoteRoleSelect.innerHTML = '<option value="">Select user group</option>' + roles.map(role => `<option value="${escapeHtml(role.id)}">${escapeHtml(role.role_name)}</option>`).join('');
+  promoteInstitutionSelect.innerHTML = '<option value="">No institution</option>' + institutions.map(institution => `<option value="${escapeHtml(institution.id)}">${escapeHtml(institution.institution_name)}</option>`).join('');
+}
+
+async function loadPromoteLookups() {
+  if (promoteLookupsLoaded) return;
+  const data = await json('/api/admin/users');
+  roles = data.roles || [];
+  institutions = data.institutions || [];
+  promoteLookupsLoaded = true;
+  populatePromoteLookups();
+}
+
+function resetPromoteForm() {
+  promoteUserForm.reset();
+  promoteUserForm.person_id.value = '';
+  document.getElementById('promotePersonName').textContent = 'Selected Person';
+  document.getElementById('promotePersonMeta').textContent = 'Contact details will appear here.';
+}
+
+async function openPromoteModal(id) {
+  if (!canPromotePerson) return showStatus('You do not have access to promote persons as system users.', true);
+  const row = persons.find(item => String(item.id) === String(id));
+  if (!row) return showStatus('Person record not found in the current list.', true);
+  if (row.is_system_user || row.linked_user_id) return showStatus('This person is already linked to a system user.', true);
+
+  try {
+    await loadPromoteLookups();
+  } catch (error) {
+    showStatus(error.message || 'Unable to load user groups for promotion.', true);
+    return;
+  }
+
+  resetPromoteForm();
+  const name = personDisplayName(row);
+  promoteUserForm.person_id.value = row.id || '';
+  promoteUserForm.name.value = name;
+  promoteUserForm.identifier.value = initialsFromName(row.preferred_name || row.full_name) || '';
+  promoteUserForm.designation.value = 'System User';
+  promoteUserForm.email.value = row.email || '';
+  promoteUserForm.phone_number.value = row.phone_number || '';
+  document.getElementById('promotePersonName').textContent = name;
+  document.getElementById('promotePersonMeta').textContent = [row.phone_number, row.email, row.nic_number].filter(Boolean).join(' | ') || 'No contact details recorded.';
+  promoteUserModal?.showModal();
+}
+
+function closePromoteModal() {
+  resetPromoteForm();
+  promoteUserModal?.close();
+}
+
+function validatePromoteForm() {
+  const errors = [];
+  const identifier = cleanText(promoteUserForm.identifier.value);
+  const password = cleanText(promoteUserForm.password.value);
+  const roleId = cleanText(promoteUserForm.role_id.value);
+  const email = cleanText(promoteUserForm.email.value);
+  const phone = cleanText(promoteUserForm.phone_number.value);
+  if (!identifier) errors.push('Login username is required.');
+  if (identifier && !/^[A-Za-z0-9._-]{3,80}$/.test(identifier)) errors.push('Login username must be 3–80 characters using letters, numbers, dot, underscore or hyphen.');
+  if (password.length < 6) errors.push('Temporary password must contain at least 6 characters.');
+  if (!roleId) errors.push('User group is required.');
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Email format is invalid.');
+  if (phone && !/^[0-9+()\-\s]{7,30}$/.test(phone)) errors.push('Phone number format is invalid.');
+  if (errors.length) {
+    showStatus(errors.join(' '), true);
+    return false;
+  }
+  return true;
+}
+
+function getPromotePayload() {
+  return {
+    identifier: cleanText(promoteUserForm.identifier.value).toLowerCase(),
+    password: cleanText(promoteUserForm.password.value),
+    role_id: cleanText(promoteUserForm.role_id.value),
+    role_ids: [cleanText(promoteUserForm.role_id.value)],
+    institution_id: cleanText(promoteUserForm.institution_id.value) || null,
+    name: cleanText(promoteUserForm.name.value),
+    designation: cleanText(promoteUserForm.designation.value) || 'System User',
+    email: cleanText(promoteUserForm.email.value) || null,
+    phone_number: cleanText(promoteUserForm.phone_number.value) || null,
+  };
+}
+
+async function promotePerson(event) {
+  event.preventDefault();
+  if (!canPromotePerson) return showStatus('You do not have access to promote persons as system users.', true);
+  if (!validatePromoteForm()) return;
+  const personId = promoteUserForm.person_id.value;
+  const submitButton = promoteUserForm.querySelector('button[type="submit"]');
+  submitButton.disabled = true;
+  submitButton.textContent = 'Creating User...';
+  try {
+    await json(`/api/persons/${personId}/promote-user`, { method: 'POST', body: getPromotePayload() });
+    showStatus('System user created and linked to the person record successfully.');
+    closePromoteModal();
+    await loadPersons();
+  } catch (error) {
+    showStatus(error.message || 'Unable to promote person as system user.', true);
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = 'Create Linked User';
   }
 }
 
@@ -377,6 +507,8 @@ personForm.addEventListener('submit', async event => {
   }
 });
 
+promoteUserForm?.addEventListener('submit', promotePerson);
+
 function debounce(fn, delay = 350) {
   let timer = null;
   return (...args) => {
@@ -398,6 +530,8 @@ async function init() {
   document.getElementById('closePersonModalBtn')?.addEventListener('click', closePersonModal);
   document.getElementById('resetPersonBtn')?.addEventListener('click', resetForm);
   document.getElementById('cancelPersonBtn')?.addEventListener('click', closePersonModal);
+  document.getElementById('closePromoteModalBtn')?.addEventListener('click', closePromoteModal);
+  document.getElementById('cancelPromoteBtn')?.addEventListener('click', closePromoteModal);
   document.getElementById('closeViewModalBtn')?.addEventListener('click', () => viewPersonModal?.close());
   document.getElementById('closeViewModalFooterBtn')?.addEventListener('click', () => viewPersonModal?.close());
   searchInput.addEventListener('input', debounce(() => { currentPage = 1; loadPersons(); }));
