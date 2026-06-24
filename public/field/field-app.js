@@ -75,6 +75,7 @@
 
   const OTHER_VALUE = '__other__';
   const KELANI_CENTER = [80.2280810, 7.2334995];
+  const FIELD_BASEMAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
   const state = {
     user: null,
     profile: null,
@@ -260,7 +261,7 @@
 
   function initMap() {
     if (state.map || !window.maplibregl || !$('#fieldLocationMap')) return;
-    state.map = new maplibregl.Map({ container: 'fieldLocationMap', style: 'https://demotiles.maplibre.org/style.json', center: KELANI_CENTER, zoom: 9 });
+    state.map = new maplibregl.Map({ container: 'fieldLocationMap', style: FIELD_BASEMAP_STYLE, center: KELANI_CENTER, zoom: 9 });
     state.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
     state.map.on('click', event => setPosition({ latitude: event.lngLat.lat, longitude: event.lngLat.lng, manual: true }));
   }
@@ -268,7 +269,7 @@
   function updateMapMarker(position) {
     if (!state.map || !position?.latitude || !position?.longitude) return;
     const lngLat = [Number(position.longitude), Number(position.latitude)];
-    if (!state.marker) state.marker = new maplibregl.Marker({ draggable: true }).setLngLat(lngLat).addTo(state.map);
+    if (!state.marker) state.marker = new maplibregl.Marker({ draggable: true, color: '#059669' }).setLngLat(lngLat).addTo(state.map);
     else state.marker.setLngLat(lngLat);
     state.marker.off?.('dragend');
     state.marker.on('dragend', () => { const ll = state.marker.getLngLat(); setPosition({ latitude: ll.lat, longitude: ll.lng, manual: true }); });
