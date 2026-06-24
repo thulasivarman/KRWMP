@@ -10,6 +10,7 @@ fastify.register(require('@fastify/rate-limit'), { global: true, max: Number(pro
 fastify.register(require('@fastify/multipart'), { limits: { fileSize: Number(process.env.MAX_LAYER_UPLOAD_SIZE || process.env.MAX_RASTER_UPLOAD_SIZE || 250 * 1024 * 1024), files: 1 } });
 
 fastify.register(require('./routes/auth.routes'), { prefix: '/api' });
+fastify.register(require('./routes/me.routes'), { prefix: '/api' });
 fastify.register(require('./routes/admin.routes'), { prefix: '/api' });
 fastify.register(require('./routes/privileges.routes'), { prefix: '/api' });
 fastify.register(require('./routes/spatial.routes'), { prefix: '/api' });
