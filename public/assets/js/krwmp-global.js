@@ -58,191 +58,50 @@ window.KRWMP_UTILS = window.KRWMP_UTILS || (() => {
         const style = document.createElement('style');
         style.id = 'krwmp-confirm-dialog-css';
         style.textContent = `
-            .krwmp-confirm-backdrop {
-                position: fixed;
-                inset: 0;
-                z-index: 10020;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 1rem;
-                background: rgba(2, 6, 23, 0.72);
-                backdrop-filter: blur(10px);
-            }
-            .krwmp-confirm-dialog {
-                width: min(100%, 28rem);
-                border: 1px solid rgba(52, 211, 153, 0.35);
-                border-radius: 1.25rem;
-                background: linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
-                color: #f8fafc;
-                box-shadow: 0 28px 70px rgba(2, 6, 23, 0.68), 0 0 0 1px rgba(15, 118, 110, 0.22) inset;
-                overflow: hidden;
-                transform: translateY(0);
-                animation: krwmpConfirmIn 0.16s ease-out;
-            }
-            .krwmp-confirm-dialog-danger {
-                border-color: rgba(251, 113, 133, 0.45);
-                box-shadow: 0 28px 70px rgba(2, 6, 23, 0.68), 0 0 0 1px rgba(190, 18, 60, 0.2) inset;
-            }
-            .krwmp-confirm-header {
-                display: flex;
-                align-items: flex-start;
-                gap: 0.85rem;
-                padding: 1.15rem 1.25rem 0.85rem;
-                border-bottom: 1px solid rgba(30, 41, 59, 0.88);
-                background: rgba(15, 23, 42, 0.72);
-            }
-            .krwmp-confirm-icon {
-                width: 2.35rem;
-                height: 2.35rem;
-                flex: 0 0 auto;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                border-radius: 0.85rem;
-                border: 1px solid rgba(52, 211, 153, 0.35);
-                background: rgba(16, 185, 129, 0.12);
-                color: #6ee7b7;
-                font-weight: 900;
-                box-shadow: 0 12px 30px rgba(5, 150, 105, 0.13);
-            }
-            .krwmp-confirm-dialog-danger .krwmp-confirm-icon {
-                border-color: rgba(251, 113, 133, 0.45);
-                background: rgba(244, 63, 94, 0.12);
-                color: #fecdd3;
-                box-shadow: 0 12px 30px rgba(225, 29, 72, 0.13);
-            }
-            .krwmp-confirm-title-wrap {
-                min-width: 0;
-                flex: 1;
-            }
-            .krwmp-confirm-kicker {
-                margin: 0 0 0.2rem;
-                color: #34d399;
-                font-size: 0.66rem;
-                font-weight: 850;
-                letter-spacing: 0.14em;
-                text-transform: uppercase;
-            }
-            .krwmp-confirm-dialog-danger .krwmp-confirm-kicker {
-                color: #fb7185;
-            }
-            .krwmp-confirm-title {
-                margin: 0;
-                color: #f8fafc;
-                font-size: 1.05rem;
-                font-weight: 800;
-                line-height: 1.25;
-            }
-            .krwmp-confirm-body {
-                padding: 1rem 1.25rem 0.25rem;
-            }
-            .krwmp-confirm-message {
-                margin: 0;
-                color: #cbd5e1;
-                font-size: 0.9rem;
-                line-height: 1.65;
-            }
-            .krwmp-confirm-actions {
-                display: flex;
-                justify-content: flex-end;
-                gap: 0.75rem;
-                padding: 1rem 1.25rem 1.25rem;
-            }
-            .krwmp-confirm-actions .krwmp-btn {
-                min-width: 6.75rem;
-            }
-            @keyframes krwmpConfirmIn {
-                from { opacity: 0; transform: translateY(10px) scale(0.98); }
-                to { opacity: 1; transform: translateY(0) scale(1); }
-            }
-            @media (max-width: 520px) {
-                .krwmp-confirm-backdrop {
-                    align-items: flex-end;
-                    padding: 0.75rem;
-                }
-                .krwmp-confirm-dialog {
-                    border-radius: 1rem;
-                }
-                .krwmp-confirm-actions {
-                    display: grid;
-                    grid-template-columns: 1fr;
-                }
-                .krwmp-confirm-actions .krwmp-btn {
-                    width: 100%;
-                }
-            }
+            .krwmp-confirm-backdrop{position:fixed;inset:0;z-index:10020;display:flex;align-items:center;justify-content:center;padding:1rem;background:rgba(2,6,23,.72);backdrop-filter:blur(10px)}
+            .krwmp-confirm-dialog{width:min(100%,28rem);border:1px solid rgba(52,211,153,.35);border-radius:1.25rem;background:linear-gradient(145deg,rgba(15,23,42,.98),rgba(2,6,23,.98));color:#f8fafc;box-shadow:0 28px 70px rgba(2,6,23,.68),0 0 0 1px rgba(15,118,110,.22) inset;overflow:hidden;animation:krwmpConfirmIn .16s ease-out}
+            .krwmp-confirm-dialog-danger{border-color:rgba(251,113,133,.45);box-shadow:0 28px 70px rgba(2,6,23,.68),0 0 0 1px rgba(190,18,60,.2) inset}
+            .krwmp-confirm-header{display:flex;align-items:flex-start;gap:.85rem;padding:1.15rem 1.25rem .85rem;border-bottom:1px solid rgba(30,41,59,.88);background:rgba(15,23,42,.72)}
+            .krwmp-confirm-icon{width:2.35rem;height:2.35rem;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;border-radius:.85rem;border:1px solid rgba(52,211,153,.35);background:rgba(16,185,129,.12);color:#6ee7b7;font-weight:900;box-shadow:0 12px 30px rgba(5,150,105,.13)}
+            .krwmp-confirm-dialog-danger .krwmp-confirm-icon{border-color:rgba(251,113,133,.45);background:rgba(244,63,94,.12);color:#fecdd3;box-shadow:0 12px 30px rgba(225,29,72,.13)}
+            .krwmp-confirm-title-wrap{min-width:0;flex:1}.krwmp-confirm-kicker{margin:0 0 .2rem;color:#34d399;font-size:.66rem;font-weight:850;letter-spacing:.14em;text-transform:uppercase}.krwmp-confirm-dialog-danger .krwmp-confirm-kicker{color:#fb7185}
+            .krwmp-confirm-title{margin:0;color:#f8fafc;font-size:1.05rem;font-weight:800;line-height:1.25}.krwmp-confirm-body{padding:1rem 1.25rem .25rem}.krwmp-confirm-message{margin:0;color:#cbd5e1;font-size:.9rem;line-height:1.65}.krwmp-confirm-actions{display:flex;justify-content:flex-end;gap:.75rem;padding:1rem 1.25rem 1.25rem}.krwmp-confirm-actions .krwmp-btn{min-width:6.75rem}
+            @keyframes krwmpConfirmIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+            @media(max-width:520px){.krwmp-confirm-backdrop{align-items:flex-end;padding:.75rem}.krwmp-confirm-dialog{border-radius:1rem}.krwmp-confirm-actions{display:grid;grid-template-columns:1fr}.krwmp-confirm-actions .krwmp-btn{width:100%}}
         `;
         document.head.appendChild(style);
     }
 
     function confirmAction(options = {}) {
         ensureConfirmationStyles();
-        const {
-            title = 'Confirm Action',
-            message = 'Are you sure you want to continue?',
-            confirmText = 'Confirm',
-            cancelText = 'Cancel',
-            variant = 'default',
-            kicker = variant === 'danger' ? 'Critical Action' : 'Confirmation',
-            icon = variant === 'danger' ? '!' : '?'
-        } = options;
-
+        const { title = 'Confirm Action', message = 'Are you sure you want to continue?', confirmText = 'Confirm', cancelText = 'Cancel', variant = 'default', kicker = variant === 'danger' ? 'Critical Action' : 'Confirmation', icon = variant === 'danger' ? '!' : '?' } = options;
         return new Promise(resolve => {
             const previousActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
             const backdrop = document.createElement('div');
             backdrop.className = 'krwmp-confirm-backdrop';
             backdrop.setAttribute('role', 'presentation');
-
             const dialog = document.createElement('section');
             dialog.className = `krwmp-confirm-dialog ${variant === 'danger' ? 'krwmp-confirm-dialog-danger' : ''}`.trim();
             dialog.setAttribute('role', 'dialog');
             dialog.setAttribute('aria-modal', 'true');
-            dialog.setAttribute('aria-labelledby', 'krwmp-confirm-title');
-            dialog.setAttribute('aria-describedby', 'krwmp-confirm-message');
             dialog.innerHTML = `
-                <header class="krwmp-confirm-header">
-                    <span class="krwmp-confirm-icon" aria-hidden="true">${escapeHtml(icon)}</span>
-                    <div class="krwmp-confirm-title-wrap">
-                        <p class="krwmp-confirm-kicker">${escapeHtml(kicker)}</p>
-                        <h2 id="krwmp-confirm-title" class="krwmp-confirm-title">${escapeHtml(title)}</h2>
-                    </div>
-                </header>
-                <div class="krwmp-confirm-body">
-                    <p id="krwmp-confirm-message" class="krwmp-confirm-message">${escapeHtml(message)}</p>
-                </div>
-                <footer class="krwmp-confirm-actions">
-                    <button type="button" class="krwmp-btn krwmp-btn-secondary" data-krwmp-confirm-cancel>${escapeHtml(cancelText)}</button>
-                    <button type="button" class="krwmp-btn ${variant === 'danger' ? 'krwmp-btn-danger' : 'krwmp-btn-primary'}" data-krwmp-confirm-ok>${escapeHtml(confirmText)}</button>
-                </footer>
-            `;
+                <header class="krwmp-confirm-header"><span class="krwmp-confirm-icon" aria-hidden="true">${escapeHtml(icon)}</span><div class="krwmp-confirm-title-wrap"><p class="krwmp-confirm-kicker">${escapeHtml(kicker)}</p><h2 class="krwmp-confirm-title">${escapeHtml(title)}</h2></div></header>
+                <div class="krwmp-confirm-body"><p class="krwmp-confirm-message">${escapeHtml(message)}</p></div>
+                <footer class="krwmp-confirm-actions"><button type="button" class="krwmp-btn krwmp-btn-secondary" data-krwmp-confirm-cancel>${escapeHtml(cancelText)}</button><button type="button" class="krwmp-btn ${variant === 'danger' ? 'krwmp-btn-danger' : 'krwmp-btn-primary'}" data-krwmp-confirm-ok>${escapeHtml(confirmText)}</button></footer>`;
             backdrop.appendChild(dialog);
             document.body.appendChild(backdrop);
-
-            const confirmButton = dialog.querySelector('[data-krwmp-confirm-ok]');
-            const cancelButton = dialog.querySelector('[data-krwmp-confirm-cancel]');
-
             const close = result => {
                 document.removeEventListener('keydown', onKeyDown, true);
                 backdrop.remove();
                 if (previousActiveElement) previousActiveElement.focus({ preventScroll: true });
                 resolve(Boolean(result));
             };
-
-            const onKeyDown = event => {
-                if (event.key === 'Escape') {
-                    event.preventDefault();
-                    close(false);
-                }
-            };
-
+            const onKeyDown = event => { if (event.key === 'Escape') { event.preventDefault(); close(false); } };
             document.addEventListener('keydown', onKeyDown, true);
-            backdrop.addEventListener('click', event => {
-                if (event.target === backdrop) close(false);
-            });
-            cancelButton.addEventListener('click', () => close(false));
-            confirmButton.addEventListener('click', () => close(true));
-            window.setTimeout(() => confirmButton.focus({ preventScroll: true }), 0);
+            backdrop.addEventListener('click', event => { if (event.target === backdrop) close(false); });
+            dialog.querySelector('[data-krwmp-confirm-cancel]').addEventListener('click', () => close(false));
+            dialog.querySelector('[data-krwmp-confirm-ok]').addEventListener('click', () => close(true));
+            window.setTimeout(() => dialog.querySelector('[data-krwmp-confirm-ok]').focus({ preventScroll: true }), 0);
         });
     }
 
@@ -256,12 +115,10 @@ window.KRWMP_UTILS = window.KRWMP_UTILS || (() => {
     async function apiRequest(url, options = {}) {
         const requestOptions = { cache: 'no-store', credentials: 'same-origin', ...options };
         const headers = { ...(options.headers || {}) };
-
         if (isPlainObject(options.body)) {
             requestOptions.body = JSON.stringify(options.body);
             headers['Content-Type'] = headers['Content-Type'] || 'application/json';
         }
-
         if (Object.keys(headers).length) requestOptions.headers = headers;
         const response = await fetch(url, requestOptions);
         const data = await parseResponse(response);
@@ -269,23 +126,11 @@ window.KRWMP_UTILS = window.KRWMP_UTILS || (() => {
         return data;
     }
 
-    return {
-        apiRequest,
-        request: apiRequest,
-        escapeHtml,
-        escapeAttribute,
-        setText,
-        setHtml,
-        renderEmpty,
-        showStatus,
-        createOption,
-        resetSelect,
-        confirmAction,
-    };
+    return { apiRequest, request: apiRequest, escapeHtml, escapeAttribute, setText, setHtml, renderEmpty, showStatus, createOption, resetSelect, confirmAction };
 })();
 
 window.KRWMP_ENGINE = {
-    ZONING_TERMINOLOGY_TAMIL: "வலயம்",
+    ZONING_TERMINOLOGY_TAMIL: 'வலயம்',
     Session: { user: null, isAuthenticated: false },
 
     ensureMobileStylesheet: function () {
@@ -340,7 +185,6 @@ window.KRWMP_ENGINE = {
         if (!this.requireAuthenticatedSession()) return;
         const sidebarContainer = document.getElementById(sidebarContainerId);
         if (!sidebarContainer) return;
-
         try {
             const response = await fetch(sidebarUrl);
             if (!response.ok) throw new Error(`HTML fragment unresolved: ${sidebarUrl}`);
@@ -350,7 +194,7 @@ window.KRWMP_ENGINE = {
             this.syncProfileMetadata();
             document.dispatchEvent(new CustomEvent('krwmp:sidebar-loaded'));
         } catch (uiError) {
-            console.error("UI contextual engine compile fault:", uiError);
+            console.error('UI contextual engine compile fault:', uiError);
         }
     },
 
@@ -392,36 +236,25 @@ window.KRWMP_ENGINE = {
             mobileToggle.setAttribute('aria-label', 'Open navigation menu');
             mobileToggle.textContent = '☰';
         };
-
         const openMobileSidebar = () => {
             document.body.classList.add('krwmp-mobile-sidebar-open');
             mobileToggle.setAttribute('aria-expanded', 'true');
             mobileToggle.setAttribute('aria-label', 'Close navigation menu');
             mobileToggle.textContent = '×';
         };
-
         if (mobileToggle.dataset.krwmpBound !== 'true') {
             mobileToggle.dataset.krwmpBound = 'true';
-            mobileToggle.addEventListener('click', () => {
-                if (document.body.classList.contains('krwmp-mobile-sidebar-open')) closeMobileSidebar();
-                else openMobileSidebar();
-            });
+            mobileToggle.addEventListener('click', () => document.body.classList.contains('krwmp-mobile-sidebar-open') ? closeMobileSidebar() : openMobileSidebar());
         }
-
         if (mobileScrim.dataset.krwmpBound !== 'true') {
             mobileScrim.dataset.krwmpBound = 'true';
             mobileScrim.addEventListener('click', closeMobileSidebar);
         }
-
         if (document.body.dataset.krwmpSidebarEscapeBound !== 'true') {
             document.body.dataset.krwmpSidebarEscapeBound = 'true';
-            document.addEventListener('keydown', event => {
-                if (event.key === 'Escape') closeMobileSidebar();
-            });
+            document.addEventListener('keydown', event => { if (event.key === 'Escape') closeMobileSidebar(); });
         }
-
         sidebarContainer.querySelectorAll('a').forEach(link => link.addEventListener('click', closeMobileSidebar));
-
         const brandToggle = document.getElementById('krwmp-sidebar-brand-toggle');
         if (brandToggle) {
             brandToggle.setAttribute('aria-expanded', 'true');
@@ -431,9 +264,7 @@ window.KRWMP_ENGINE = {
         }
     },
 
-    confirmAction: function (options = {}) {
-        return window.KRWMP_UTILS.confirmAction(options);
-    },
+    confirmAction: function (options = {}) { return window.KRWMP_UTILS.confirmAction(options); },
 
     injectReportsLink: function () {
         if (document.querySelector('a[href="/reports.html"]')) return;
@@ -449,77 +280,134 @@ window.KRWMP_ENGINE = {
     syncProfileMetadata: function () {
         const profile = this.Session.user;
         if (!profile) return;
-
         const identifier = String(profile.identifier || profile.username || '').trim().toLowerCase();
         const roleName = String(profile.role_name || profile.role || '').trim().toLowerCase();
         const isMasterAdmin = identifier === 'thulasi' || roleName === 'admin';
-
         const elementsMap = {
-            'userNameLabel': profile.name,
-            'userDesignationLabel': `${profile.designation || ''} (${isMasterAdmin ? 'ADMIN' : String(profile.role_name || '').toUpperCase()})`,
-            'userInitialsLabel': profile.initials
+            userNameLabel: profile.name,
+            userDesignationLabel: `${profile.designation || ''} (${isMasterAdmin ? 'ADMIN' : String(profile.role_name || '').toUpperCase()})`,
+            userInitialsLabel: profile.initials
         };
-
         for (const [elementId, targetValue] of Object.entries(elementsMap)) {
             const domNode = document.getElementById(elementId);
             if (domNode) domNode.innerText = targetValue || '';
         }
 
         const currentPath = window.location.pathname;
-        const isCurrentPageAdminWorkspace =
-            currentPath.endsWith('admin.html') ||
-            currentPath.endsWith('admin-institutions.html') ||
-            currentPath.endsWith('admin-vector-layers.html') ||
-            currentPath.endsWith('admin-raster-layers.html');
-
-        const structuralSections = {
-            'section-data-layers': 'data_layers',
-            'section-raster-layers': 'raster_layers',
-            'section-user-management': 'user_management'
-        };
-
+        const isCurrentPageAdminWorkspace = currentPath.endsWith('admin.html') || currentPath.endsWith('admin-institutions.html') || currentPath.endsWith('admin-vector-layers.html') || currentPath.endsWith('admin-raster-layers.html') || currentPath.endsWith('admin-persons.html');
+        const structuralSections = { 'section-data-layers': 'data_layers', 'section-raster-layers': 'raster_layers', 'section-user-management': 'user_management' };
         let allowedSections = [];
         try {
-            allowedSections = typeof profile.visible_sections === 'string'
-                ? JSON.parse(profile.visible_sections)
-                : profile.visible_sections || [];
+            allowedSections = typeof profile.visible_sections === 'string' ? JSON.parse(profile.visible_sections) : profile.visible_sections || [];
         } catch (e) {
             allowedSections = profile.visible_sections || [];
         }
-
-        if (isMasterAdmin) {
-            allowedSections = Array.from(new Set([...allowedSections, 'data_layers', 'raster_layers', 'user_management']));
-        }
-
+        if (isMasterAdmin) allowedSections = Array.from(new Set([...allowedSections, 'data_layers', 'raster_layers', 'user_management']));
         for (const [domId, sectionKey] of Object.entries(structuralSections)) {
             const containerNode = document.getElementById(domId);
             if (!containerNode) continue;
-            if (allowedSections.includes(sectionKey)) {
-                containerNode.classList.remove('hidden');
-            } else {
-                containerNode.classList.add('hidden');
-            }
+            containerNode.classList.toggle('hidden', !allowedSections.includes(sectionKey));
         }
-
-        if (isMasterAdmin) {
-            const adminSection = document.getElementById('section-user-management');
-            if (adminSection) adminSection.classList.remove('hidden');
-        }
-
+        if (isMasterAdmin) document.getElementById('section-user-management')?.classList.remove('hidden');
         const basemapSection = document.getElementById('basemap-selector')?.closest('.krwmp-panel-section');
-        if (basemapSection && isCurrentPageAdminWorkspace) {
-            basemapSection.classList.add('hidden');
+        if (basemapSection && isCurrentPageAdminWorkspace) basemapSection.classList.add('hidden');
+    },
+
+    ensureSelfProfileModal: function () {
+        if (document.getElementById('krwmp-self-profile-modal')) return;
+        const { escapeHtml } = window.KRWMP_UTILS;
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = `
+            <dialog id="krwmp-self-profile-modal" class="krwmp-modal krwmp-modal-xl">
+                <header class="krwmp-modal-header">
+                    <div><h2 class="krwmp-modal-title">My Profile</h2><p class="form-helper mt-1">Update your own contact and profile details. Role, institution and login identifier are view-only.</p></div>
+                    <button type="button" id="krwmp-self-profile-close" class="krwmp-modal-close" aria-label="Close profile editor">&times;</button>
+                </header>
+                <form id="krwmp-self-profile-form" class="krwmp-modal-body grid grid-cols-1 md:grid-cols-2 gap-4" novalidate>
+                    <section id="krwmp-self-profile-status" class="hidden md:col-span-2 rounded-lg p-3 text-sm"></section>
+                    <input type="hidden" name="person_id">
+                    <label class="form-label">Full Name <span class="text-rose-400">*</span><input name="name" required minlength="2" maxlength="255" class="form-input mt-1"></label>
+                    <label class="form-label">Preferred Name<input name="preferred_name" maxlength="150" class="form-input mt-1"></label>
+                    <label class="form-label">Email<input name="email" type="email" maxlength="150" class="form-input mt-1"></label>
+                    <label class="form-label">Phone Number<input name="phone_number" maxlength="30" class="form-input mt-1"></label>
+                    <label class="form-label">DSD<input name="dsd" maxlength="150" class="form-input mt-1"></label>
+                    <label class="form-label">GND<input name="gnd" maxlength="150" class="form-input mt-1"></label>
+                    <label class="form-label md:col-span-2">Address<textarea name="address" maxlength="500" rows="3" class="form-textarea mt-1"></textarea></label>
+                    <section class="md:col-span-2 krwmp-card-muted p-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                        <div><div class="krwmp-status-label">Login Identifier</div><div id="krwmp-self-profile-identifier" class="font-semibold text-slate-200">-</div></div>
+                        <div><div class="krwmp-status-label">User Group</div><div id="krwmp-self-profile-role" class="font-semibold text-slate-200">-</div></div>
+                        <div><div class="krwmp-status-label">Institution</div><div id="krwmp-self-profile-institution" class="font-semibold text-slate-200">-</div></div>
+                    </section>
+                    <footer class="md:col-span-2 krwmp-modal-actions px-0 pb-0"><button type="submit" class="krwmp-btn krwmp-btn-primary">Save Profile</button><button type="button" id="krwmp-self-profile-cancel" class="krwmp-btn krwmp-btn-secondary">Cancel</button></footer>
+                </form>
+            </dialog>`;
+        document.body.appendChild(wrapper.firstElementChild);
+        const close = () => document.getElementById('krwmp-self-profile-modal')?.close();
+        document.getElementById('krwmp-self-profile-close')?.addEventListener('click', close);
+        document.getElementById('krwmp-self-profile-cancel')?.addEventListener('click', close);
+        document.getElementById('krwmp-self-profile-form')?.addEventListener('submit', event => this.saveSelfProfile(event));
+    },
+
+    setSelfProfileStatus: function (message, error = false) {
+        window.KRWMP_UTILS.showStatus(document.getElementById('krwmp-self-profile-status'), message, error);
+    },
+
+    openSelfProfileModal: async function () {
+        this.ensureSelfProfileModal();
+        const modal = document.getElementById('krwmp-self-profile-modal');
+        const form = document.getElementById('krwmp-self-profile-form');
+        const status = document.getElementById('krwmp-self-profile-status');
+        if (status) status.classList.add('hidden');
+        form?.reset();
+        modal?.showModal();
+        try {
+            const data = await window.KRWMP_UTILS.apiRequest('/api/me/profile');
+            const user = data.profile?.user || {};
+            const person = data.profile?.person || {};
+            form.elements.person_id.value = person.id || '';
+            form.elements.name.value = person.full_name || user.name || '';
+            form.elements.preferred_name.value = person.preferred_name || '';
+            form.elements.email.value = person.email || user.email || '';
+            form.elements.phone_number.value = person.phone_number || user.phone_number || '';
+            form.elements.dsd.value = person.dsd || '';
+            form.elements.gnd.value = person.gnd || '';
+            form.elements.address.value = person.address || '';
+            document.getElementById('krwmp-self-profile-identifier').textContent = user.identifier || '-';
+            document.getElementById('krwmp-self-profile-role').textContent = user.role_name || '-';
+            document.getElementById('krwmp-self-profile-institution').textContent = user.institution_name || '-';
+        } catch (error) {
+            this.setSelfProfileStatus(error.message || 'Unable to load profile.', true);
         }
     },
 
-    dispatchProfileEdit: function () {
-        window.location.href = '/admin.html?edit_profile=1';
+    saveSelfProfile: async function (event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const submit = form.querySelector('button[type="submit"]');
+        const payload = Object.fromEntries(new FormData(form).entries());
+        if (!String(payload.name || '').trim()) return this.setSelfProfileStatus('Full name is required.', true);
+        submit.disabled = true;
+        submit.textContent = 'Saving...';
+        try {
+            const data = await window.KRWMP_UTILS.apiRequest('/api/me/profile', { method: 'PUT', body: payload });
+            const user = data.profile?.user || {};
+            this.Session.user = { ...this.Session.user, ...user };
+            localStorage.setItem('krwmp_user', JSON.stringify(this.Session.user));
+            this.syncProfileMetadata();
+            this.setSelfProfileStatus('Profile updated successfully.');
+            window.setTimeout(() => document.getElementById('krwmp-self-profile-modal')?.close(), 700);
+        } catch (error) {
+            this.setSelfProfileStatus(error.message || 'Unable to update profile.', true);
+        } finally {
+            submit.disabled = false;
+            submit.textContent = 'Save Profile';
+        }
     },
+
+    dispatchProfileEdit: function () { this.openSelfProfileModal(); },
 
     dispatchLogout: async function () {
-        try {
-            await window.KRWMP_UTILS.apiRequest('/api/logout', { method: 'POST' });
-        } catch (error) {}
+        try { await window.KRWMP_UTILS.apiRequest('/api/logout', { method: 'POST' }); } catch (error) {}
         localStorage.removeItem('krwmp_user');
         localStorage.removeItem('krwmp_token');
         this.Session.user = null;
@@ -539,9 +427,9 @@ window.KRWMP_BASEMAPS = {
                 type: 'raster',
                 tiles: ['https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
                 tileSize: 256,
-                attribution: 'Esri'
+                attribution: 'Esri, Maxar, Earthstar Geographics'
             }
         },
-        layers: [{ id: 'satellite-layer', type: 'raster', source: 'satellite' }]
+        layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }]
     }
 };
