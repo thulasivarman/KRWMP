@@ -1,6 +1,6 @@
 let canCreatePerson = false;
 let canUpdatePerson = false;
-let canPromotePerson = false;
+let canDeletePerson = false;
 
 const statusBox = document.getElementById('statusBox');
 const writePanel = document.getElementById('writePanel');
@@ -54,14 +54,13 @@ async function initSidebar() {
   await window.KRWMP_PRIVILEGES.protectPage('person_registry', 'view');
   canCreatePerson = window.KRWMP_PRIVILEGES.can('person_registry', 'create');
   canUpdatePerson = window.KRWMP_PRIVILEGES.can('person_registry', 'update');
-  canPromotePerson = window.KRWMP_PRIVILEGES.can('user_management_settings', 'create');
+  canDeletePerson = window.KRWMP_PRIVILEGES.can('person_registry', 'delete');
 }
 
 function applyPermissions() {
   if (openPersonModalBtn) openPersonModalBtn.classList.toggle('hidden', !canCreatePerson);
   document.querySelectorAll('[data-edit]').forEach(el => el.classList.toggle('hidden', !canUpdatePerson));
-  document.querySelectorAll('[data-deactivate]').forEach(el => el.classList.toggle('hidden', !canUpdatePerson));
-  document.querySelectorAll('[data-promote]').forEach(el => el.classList.toggle('hidden', !(canUpdatePerson && canPromotePerson)));
+  document.querySelectorAll('[data-delete]').forEach(el => el.classList.toggle('hidden', !canDeletePerson));
 }
 
 function buildSearchQuery() {
@@ -149,7 +148,7 @@ function renderPersons() {
         <div class="krwmp-table-actions">
           <button data-view="${escapeHtml(row.id)}" class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">View</button>
           <button data-edit="${escapeHtml(row.id)}" class="krwmp-btn krwmp-btn-primary krwmp-btn-sm hidden">Edit</button>
-          <button data-deactivate="${escapeHtml(row.id)}" class="krwmp-btn krwmp-btn-danger krwmp-btn-sm hidden">Deactivate</button>
+          <button data-delete="${escapeHtml(row.id)}" class="krwmp-btn krwmp-btn-danger krwmp-btn-sm hidden">Delete</button>
         </div>
       </td>
     `;
@@ -158,7 +157,7 @@ function renderPersons() {
 
   tableBody.querySelectorAll('[data-view]').forEach(btn => btn.addEventListener('click', () => viewPerson(btn.dataset.view)));
   tableBody.querySelectorAll('[data-edit]').forEach(btn => btn.addEventListener('click', () => editPerson(btn.dataset.edit)));
-  tableBody.querySelectorAll('[data-deactivate]').forEach(btn => btn.addEventListener('click', () => deactivatePerson(btn.dataset.deactivate)));
+  tableBody.querySelectorAll('[data-delete]').forEach(btn => btn.addEventListener('click', () => deletePerson(btn.dataset.delete)));
   renderPagination();
   applyPermissions();
 }
@@ -252,15 +251,15 @@ function editPerson(id) {
   togglePersonModal(true);
 }
 
-async function deactivatePerson(id) {
-  if (!canUpdatePerson) return showStatus('You do not have update access for the person registry.', true);
-  if (!confirm('Deactivate this person? Existing linked records will remain unchanged.')) return;
+async function deletePerson(id) {
+  if (!canDeletePerson) return showStatus('You do not have delete access for the person registry.', true);
+  if (!confirm('Delete this person from the registry? Existing linked records will remain unchanged, but this person will no longer appear in registry search results.')) return;
   try {
-    await json(`/api/persons/${id}`, { method: 'PUT', body: { status: 'inactive' } });
-    showStatus('Person deactivated successfully.');
+    await json(`/api/persons/${id}`, { method: 'DELETE' });
+    showStatus('Person deleted successfully.');
     await loadPersons();
   } catch (error) {
-    showStatus(error.message || 'Unable to deactivate person.', true);
+    showStatus(error.message || 'Unable to delete person.', true);
   }
 }
 
