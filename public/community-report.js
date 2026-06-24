@@ -43,10 +43,41 @@ function currentUser() {
 
 const { apiRequest: json } = window.KRWMP_UTILS;
 
+function ensureAuthenticatedCommunityLayout() {
+  if (document.getElementById('community-report-auth-layout-css')) return;
+  const style = document.createElement('style');
+  style.id = 'community-report-auth-layout-css';
+  style.textContent = `
+    body.krwmp-community-authenticated #community-public-shell { margin-left: 16rem; }
+    body.krwmp-community-authenticated #community-public-shell > header { display: none; }
+    body.krwmp-community-authenticated #community-public-shell main { padding-top: 2rem; }
+    body.krwmp-community-authenticated #sidebar.krwmp-sidebar { position: fixed; inset: 0 auto 0 0; width: 16rem; z-index: 60; }
+    @media (max-width: 768px) {
+      body.krwmp-community-authenticated #community-public-shell { margin-left: 0; }
+      body.krwmp-community-authenticated #community-public-shell main { padding-top: 4.25rem; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 async function initializeCommunityReportSidebar() {
   if (!window.KRWMP_ENGINE) return;
   await window.KRWMP_ENGINE.initSession();
   if (!window.KRWMP_ENGINE.Session.isAuthenticated) return;
+
+  const publicShell = document.querySelector('body > div.min-h-screen');
+  if (publicShell && !publicShell.id) publicShell.id = 'community-public-shell';
+
+  let sidebar = document.getElementById('sidebar');
+  if (!sidebar) {
+    sidebar = document.createElement('aside');
+    sidebar.id = 'sidebar';
+    sidebar.className = 'w-64 shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col';
+    document.body.prepend(sidebar);
+  }
+
+  document.body.classList.add('krwmp-community-authenticated');
+  ensureAuthenticatedCommunityLayout();
   await window.KRWMP_ENGINE.assembleInterfaceContext('/sidebar.html', 'sidebar');
   document.querySelector('.krwmp-panel-section')?.classList.add('hidden');
   document.getElementById('section-data-layers')?.classList.add('hidden');
@@ -77,85 +108,26 @@ function revokePhotoUrls() { selectedPhotos.forEach(item => { if (item.previewUr
 function renderPhotoPreviews() {
   if (photoCountLabel) photoCountLabel.textContent = `${selectedPhotos.length} / ${MAX_PHOTOS}`;
   if (!photoPreviewGrid) return;
-  if (!selectedPhotos.length) {
-    photoPreviewGrid.innerHTML = '<div class="rounded border border-slate-800 bg-slate-950/40 p-3 text-xs text-slate-500 sm:col-span-2 lg:col-span-3">No images selected.</div>';
-    return;
-  }
+  if (!selectedPhotos.length) { photoPreviewGrid.innerHTML = '<div class="rounded border border-slate-800 bg-slate-950/40 p-3 text-xs text-slate-500 sm:col-span-2 lg:col-span-3">No images selected.</div>'; return; }
   photoPreviewGrid.innerHTML = selectedPhotos.map((item, index) => `
     <div class="overflow-hidden rounded border border-slate-800 bg-slate-950/50" data-photo-index="${index}">
-      <div class="aspect-video bg-slate-900">
-        <img src="${window.KRWMP_UTILS.escapeAttribute(item.previewUrl)}" alt="" class="h-full w-full object-cover">
-      </div>
+      <div class="aspect-video bg-slate-900"><img src="${window.KRWMP_UTILS.escapeAttribute(item.previewUrl)}" alt="" class="h-full w-full object-cover"></div>
       <div class="space-y-2 p-3">
         <div class="truncate text-xs font-semibold text-slate-200">${window.KRWMP_UTILS.escapeHtml(item.file.name)}</div>
-        <div class="h-1.5 overflow-hidden rounded bg-slate-800">
-          <div data-photo-progress class="h-full w-0 rounded bg-emerald-500 transition-all"></div>
-        </div>
-        <div class="flex items-center justify-between gap-2">
-          <span data-photo-status class="text-[10px] font-normal text-slate-500">Ready</span>
-          <button type="button" data-remove-photo="${index}"  class="krwmp-btn krwmp-btn-danger krwmp-btn-sm border border-rose-900/40 bg-rose-950/30 text-[10px] text-rose-300 hover:bg-rose-900/50">Delete</button>
-        </div>
+        <div class="h-1.5 overflow-hidden rounded bg-slate-800"><div data-photo-progress class="h-full w-0 rounded bg-emerald-500 transition-all"></div></div>
+        <div class="flex items-center justify-between gap-2"><span data-photo-status class="text-[10px] font-normal text-slate-500">Ready</span><button type="button" data-remove-photo="${index}" class="krwmp-btn krwmp-btn-danger krwmp-btn-sm border border-rose-900/40 bg-rose-950/30 text-[10px] text-rose-300 hover:bg-rose-900/50">Delete</button></div>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
-function setPhotoProgress(index, percent, status = '') {
-  const card = photoPreviewGrid?.querySelector(`[data-photo-index="${index}"]`);
-  const bar = card?.querySelector('[data-photo-progress]');
-  const label = card?.querySelector('[data-photo-status]');
-  if (bar) bar.style.width = `${Math.max(0, Math.min(100, Number(percent) || 0))}%`;
-  if (label && status) label.textContent = status;
-}
-function addSelectedPhotos(files = []) {
-  const accepted = [];
-  for (const file of files) {
-    if (!validPhoto(file)) {
-      showStatus('Only JPG, PNG and WEBP images can be attached.', true);
-      continue;
-    }
-    if (selectedPhotos.length + accepted.length >= MAX_PHOTOS) {
-      showStatus(`Only ${MAX_PHOTOS} images can be attached.`, true);
-      break;
-    }
-    accepted.push({ file, previewUrl: URL.createObjectURL(file) });
-  }
-  selectedPhotos = selectedPhotos.concat(accepted);
-  renderPhotoPreviews();
-  if (photoEvidenceInput) photoEvidenceInput.value = '';
-}
-async function uploadReportPhotos(report) {
-  if (!selectedPhotos.length) return [];
-  if (!window.KRWMP_FILE_ATTACHMENTS?.uploadAttachment) throw new Error('Attachment upload library is not available.');
-  const uploaded = [];
-  for (let index = 0; index < selectedPhotos.length; index += 1) {
-    const item = selectedPhotos[index];
-    setPhotoProgress(index, 1, 'Preparing');
-    const result = await window.KRWMP_FILE_ATTACHMENTS.uploadAttachment(item.file, {
-      moduleKey: 'community_issues',
-      recordId: report.id,
-      recordKind: 'community_issue_report',
-      attachmentRole: 'report_photo',
-      visibility: 'private',
-      metadata: { report_code: report.report_code },
-      onProgress: percent => setPhotoProgress(index, percent, `Uploading ${percent}%`),
-    });
-    uploaded.push(result.attachment);
-    setPhotoProgress(index, 100, 'Uploaded');
-  }
-  return uploaded;
-}
+function setPhotoProgress(index, percent, status = '') { const card = photoPreviewGrid?.querySelector(`[data-photo-index="${index}"]`); const bar = card?.querySelector('[data-photo-progress]'); const label = card?.querySelector('[data-photo-status]'); if (bar) bar.style.width = `${Math.max(0, Math.min(100, Number(percent) || 0))}%`; if (label && status) label.textContent = status; }
+function addSelectedPhotos(files = []) { const accepted = []; for (const file of files) { if (!validPhoto(file)) { showStatus('Only JPG, PNG and WEBP images can be attached.', true); continue; } if (selectedPhotos.length + accepted.length >= MAX_PHOTOS) { showStatus(`Only ${MAX_PHOTOS} images can be attached.`, true); break; } accepted.push({ file, previewUrl: URL.createObjectURL(file) }); } selectedPhotos = selectedPhotos.concat(accepted); renderPhotoPreviews(); if (photoEvidenceInput) photoEvidenceInput.value = ''; }
+async function uploadReportPhotos(report) { if (!selectedPhotos.length) return []; if (!window.KRWMP_FILE_ATTACHMENTS?.uploadAttachment) throw new Error('Attachment upload library is not available.'); const uploaded = []; for (let index = 0; index < selectedPhotos.length; index += 1) { const item = selectedPhotos[index]; setPhotoProgress(index, 1, 'Preparing'); const result = await window.KRWMP_FILE_ATTACHMENTS.uploadAttachment(item.file, { moduleKey: 'community_issues', recordId: report.id, recordKind: 'community_issue_report', attachmentRole: 'report_photo', visibility: 'private', metadata: { report_code: report.report_code }, onProgress: percent => setPhotoProgress(index, percent, `Uploading ${percent}%`) }); uploaded.push(result.attachment); setPhotoProgress(index, 100, 'Uploaded'); } return uploaded; }
 async function submitCommunityReport() { return json('/api/community-reports', { method: 'POST', body: buildJsonPayload() }); }
+
 categorySelect.addEventListener('change', async () => { try { toggleOtherFields(); await loadSpecificIssues(categorySelect.value); toggleOtherFields(); } catch (error) { showStatus(error.message || 'Unable to load specific issues.', true); } });
 specificIssueSelect.addEventListener('change', async () => { try { toggleOtherFields(); syncIssueTitle(); await loadApplicableSolutions(categorySelect.value, specificIssueSelect.value); } catch (error) { showStatus(error.message || 'Unable to load applicable solutions.', true); } });
 otherCategoryInput.addEventListener('input', syncIssueTitle); otherIssueInput.addEventListener('input', syncIssueTitle); reporterContactInput.addEventListener('input', () => reporterContactInput.setCustomValidity(''));
 photoEvidenceInput?.addEventListener('change', event => addSelectedPhotos(Array.from(event.target.files || [])));
-photoPreviewGrid?.addEventListener('click', event => {
-  const button = event.target.closest('[data-remove-photo]');
-  if (!button) return;
-  const index = Number(button.dataset.removePhoto);
-  const [removed] = selectedPhotos.splice(index, 1);
-  if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl);
-  renderPhotoPreviews();
-});
+photoPreviewGrid?.addEventListener('click', event => { const button = event.target.closest('[data-remove-photo]'); if (!button) return; const index = Number(button.dataset.removePhoto); const [removed] = selectedPhotos.splice(index, 1); if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl); renderPhotoPreviews(); });
 form.addEventListener('submit', async event => { event.preventDefault(); syncIssueTitle(); if (!isValidPhone(reporterContactInput.value)) { reporterContactInput.setCustomValidity('Please enter a valid phone number with 7 to 15 digits.'); reporterContactInput.reportValidity(); return; } if (!form.reportValidity()) return; if (!latitudeInput.value || !longitudeInput.value) { showStatus('Please select the issue location on the map before submission.', true); return; } const submitButton = form.querySelector('button[type="submit"]'); if (submitButton) { submitButton.disabled = true; submitButton.textContent = selectedPhotos.length ? 'Submitting and uploading...' : 'Submitting...'; } try { const data = await submitCommunityReport(); await uploadReportPhotos(data.report); form.reset(); revokePhotoUrls(); selectedPhotos = []; renderPhotoPreviews(); resetDetectedLocation(); resetSelect(specificIssueSelect, 'Select category first', true); resetSelect(solutionSelect, 'No applicable solution selected', true); if (locationPicker) locationPicker.clear(); await loadCategories(); prefillReporterFromSession(); showStatus(`Issue submitted successfully. Reference: ${data.report.report_code}`); } catch (error) { showStatus(error.message, true); } finally { if (submitButton) { submitButton.disabled = false; submitButton.textContent = 'Submit Issue Report'; } } });
 (async () => { await initializeCommunityReportSidebar(); await loadCategories(); prefillReporterFromSession(); initializeLocationPicker(); renderPhotoPreviews(); })().catch(error => showStatus(error.message || 'Unable to initialize community report form.', true));
