@@ -17,33 +17,35 @@
       title: 'Pollution Source',
       endpoint: '/api/pollution-sources',
       recordKind: 'pollution_source',
-      permissionHints: ['pollution_sources.create', 'pollution_sources.update'],
+      lookupLoaders: ['sourceTypes'],
+      permissionHints: ['pollution_sources_management.create', 'pollution_sources_management.update', 'pollution_sources.create', 'pollution_sources.update'],
       fields: [
         ['source_name', 'Source name / identification', 'text', true],
-        ['pollution_type', 'Pollution type', 'select:Domestic|Industrial|Commercial|Agriculture|Solid Waste|Wastewater|Other', true],
-        ['source_description', 'Description', 'textarea', true],
-        ['risk_level', 'Risk level', 'select:Low|Medium|High|Critical', false],
-        ['responsible_party', 'Responsible party / institution', 'text', false],
+        ['source_type_id', 'Source type', 'lookup:sourceTypes', true],
+        ['description', 'Description', 'textarea', true],
+        ['status', 'Status', 'select:active|under_review|closed', false],
+        ['location_description', 'Location description', 'text', false],
+        ['overseeing_institution', 'Responsible / overseeing institution', 'text', false],
       ],
     },
     interventions: {
-      title: 'Intervention / Progress Update',
-      endpoint: '/api/interventions',
-      recordKind: 'intervention_field_update',
-      permissionHints: ['interventions.create', 'interventions.update'],
+      title: 'Intervention Registry',
+      endpoint: '/api/interventions/registry',
+      recordKind: 'intervention_registry',
+      permissionHints: ['intervention_registry_manage.create', 'intervention_registry_manage.update', 'interventions.create', 'interventions.update'],
       fields: [
         ['intervention_title', 'Intervention title', 'text', true],
         ['intervention_type', 'Intervention type', 'select:Structural|Non-structural|Awareness|Enforcement|Monitoring|Other', false],
-        ['description', 'Description / progress update', 'textarea', true],
+        ['description', 'Description', 'textarea', true],
         ['status', 'Status', 'select:Proposed|Ongoing|Delayed|Completed|Cancelled', false],
         ['progress_percent', 'Progress %', 'number', false],
       ],
     },
     water_quality: {
       title: 'Water Quality Monitoring',
-      endpoint: '/api/water-quality/records',
-      recordKind: 'water_quality_field_record',
-      permissionHints: ['water_quality.create', 'water_quality.update'],
+      endpoint: '/api/water-quality/tests',
+      recordKind: 'water_quality_test',
+      permissionHints: ['water_quality_records.create', 'water_quality_records.update', 'water_quality.create', 'water_quality.update'],
       fields: [
         ['sampling_point_name', 'Sampling point name', 'text', true],
         ['sample_date', 'Sample date', 'date', true],
@@ -67,20 +69,11 @@
     },
   };
 
-  const state = {
-    user: null,
-    profile: null,
-    moduleKey: 'community_issues',
-    position: null,
-    selectedFiles: [],
-  };
-
+  const state = { user: null, profile: null, moduleKey: 'community_issues', position: null, selectedFiles: [], lookups: { sourceTypes: [] } };
   const $ = selector => document.querySelector(selector);
   const $$ = selector => Array.from(document.querySelectorAll(selector));
 
-  function escapeHtml(value) {
-    return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
-  }
+  function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char])); }
 
   function toast(message, error = false) {
     const box = $('#fieldStatus');
@@ -99,7 +92,8 @@
     }
     const response = await fetch(url, init);
     const text = await response.text();
-    const data = text ? JSON.parse(text) : {};
+    let data = {};
+    try { data = text ? JSON.parse(text) : {}; } catch (_) { data = { message: text }; }
     if (!response.ok || data.success === false) throw new Error(data.message || `Request failed: ${response.status}`);
     return data;
   }
@@ -108,7 +102,7 @@
 
   function getStoredUser() {
     try { return JSON.parse(localStorage.getItem('krwmp_user') || 'null'); }
-    catch (error) { return null; }
+    catch (_) { return null; }
   }
 
   async function loadProfile() {
@@ -122,6 +116,13 @@
       if (!state.user) window.location.href = '/login.html';
     }
     $('#userLabel').textContent = state.user?.full_name || state.user?.name || state.user?.username || 'Field user';
+  }
+
+  async function loadLookupsForModule(moduleKey) {
+    const module = MODULES[moduleKey];
+    if (!module.lookupLoaders?.includes('sourceTypes') || state.lookups.sourceTypes.length) return;
+    const data = await apiRequest('/api/pollution-sources/lookups/source-types');
+    state.lookups.sourceTypes = (data.source_types || []).map(item => ({ value: item.id, label: item.type_name || item.name || item.id }));
   }
 
   function hasModuleAccess(moduleKey) {
@@ -145,20 +146,49 @@
   function fieldHtml([name, label, type, required]) {
     const req = required ? 'required' : '';
     const common = `name="${name}" ${req} class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"`;
-    if (type === 'textarea') return `<label class="block text-sm font-semibold text-slate-700">${label}<textarea ${common} rows="4"></textarea></label>`;
+    if (type === 'textarea') return `<label class="block text-sm font-semibold text-slate-700">${escapeHtml(label)}<textarea ${common} rows="4"></textarea></label>`;
     if (type.startsWith('select:')) {
       const options = type.slice(7).split('|').map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
-      return `<label class="block text-sm font-semibold text-slate-700">${label}<select ${common}><option value="">Select</option>${options}</select></label>`;
+      return `<label class="block text-sm font-semibold text-slate-700">${escapeHtml(label)}<select ${common}><option value="">Select</option>${options}</select></label>`;
     }
-    return `<label class="block text-sm font-semibold text-slate-700">${label}<input type="${type}" ${common}></label>`;
+    if (type.startsWith('lookup:')) {
+      const lookupKey = type.slice(7);
+      const options = (state.lookups[lookupKey] || []).map(item => `<option value="${escapeHtml(item.value)}">${escapeHtml(item.label)}</option>`).join('');
+      return `<label class="block text-sm font-semibold text-slate-700">${escapeHtml(label)}<select ${common}><option value="">Select</option>${options}</select></label>`;
+    }
+    return `<label class="block text-sm font-semibold text-slate-700">${escapeHtml(label)}<input type="${escapeHtml(type)}" ${common}></label>`;
   }
 
-  function renderForm() {
+  function normalizePayload(moduleKey, payload) {
+    const clean = { ...payload };
+    if (moduleKey === 'pollution_sources') {
+      clean.description = clean.description || clean.source_description || null;
+      clean.source_type_id = clean.source_type_id || null;
+      clean.status = clean.status || 'active';
+      clean.reported_date = clean.reported_date || new Date().toISOString().slice(0, 10);
+      delete clean.pollution_type;
+      delete clean.source_description;
+      delete clean.risk_level;
+      delete clean.responsible_party;
+    }
+    if (moduleKey === 'water_quality') {
+      clean.test_date = clean.sample_date || clean.test_date || new Date().toISOString().slice(0, 10);
+    }
+    return clean;
+  }
+
+  async function renderForm() {
     const module = MODULES[state.moduleKey];
     $('#formTitle').textContent = module.title;
-    $('#dynamicFields').innerHTML = module.fields.map(fieldHtml).join('');
-    $('#moduleKeyInput').value = state.moduleKey;
-    $$('.module-btn').forEach(button => button.classList.toggle('ring-4', button.dataset.module === state.moduleKey));
+    $('#dynamicFields').innerHTML = '<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">Loading form...</div>';
+    try {
+      await loadLookupsForModule(state.moduleKey);
+      $('#dynamicFields').innerHTML = module.fields.map(fieldHtml).join('');
+      $('#moduleKeyInput').value = state.moduleKey;
+      $$('.module-btn').forEach(button => button.classList.toggle('ring-4', button.dataset.module === state.moduleKey));
+    } catch (error) {
+      $('#dynamicFields').innerHTML = `<div class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">${escapeHtml(error.message || 'Unable to load form lookups.')}</div>`;
+    }
   }
 
   function setPosition(position) {
@@ -169,16 +199,10 @@
   }
 
   function captureGps() {
-    if (!navigator.geolocation) {
-      toast('GPS is not supported on this device.', true);
-      return;
-    }
+    if (!navigator.geolocation) return toast('GPS is not supported on this device.', true);
     toast('Capturing GPS location...');
     navigator.geolocation.getCurrentPosition(
-      pos => {
-        setPosition({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy });
-        toast('GPS location captured. You may edit latitude/longitude if needed.');
-      },
+      pos => { setPosition({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy }); toast('GPS location captured. You may edit latitude/longitude if needed.'); },
       error => toast(error.message || 'Unable to capture GPS location.', true),
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
     );
@@ -198,8 +222,7 @@
   }
 
   function collectPayload() {
-    const form = $('#fieldEntryForm');
-    const formData = new FormData(form);
+    const formData = new FormData($('#fieldEntryForm'));
     const payload = {};
     for (const [key, value] of formData.entries()) {
       if (key === 'photos') continue;
@@ -210,37 +233,30 @@
     payload.field_app_source = 'WIS Field App';
     payload.sync_policy = 'reviewer_decision_on_conflict';
     payload.field_collected_at = new Date().toISOString();
-    return payload;
+    return normalizePayload(state.moduleKey, payload);
   }
 
   async function uploadPhotos(moduleKey, recordId, recordKind, photos) {
     if (!photos.length || !window.KRWMP_FILE_ATTACHMENTS?.uploadAttachment) return;
     for (const photo of photos) {
-      await window.KRWMP_FILE_ATTACHMENTS.uploadAttachment(photo.blob || photo, {
-        moduleKey,
-        recordId,
-        recordKind,
-        attachmentRole: 'field_photo',
-        visibility: 'module',
-        metadata: { source: 'WIS Field App' },
-      });
+      await window.KRWMP_FILE_ATTACHMENTS.uploadAttachment(photo.blob || photo, { moduleKey, recordId, recordKind, attachmentRole: 'field_photo', visibility: 'module', metadata: { source: 'WIS Field App' } });
     }
   }
 
   async function submitOnline(moduleKey, payload, files = []) {
     const module = MODULES[moduleKey];
-    const data = await apiRequest(module.endpoint, { method: 'POST', body: payload });
-    const record = data.report || data.record || data.item || data.intervention || data.source || data.result || data.data || {};
+    const finalPayload = normalizePayload(moduleKey, payload);
+    const data = await apiRequest(module.endpoint, { method: 'POST', body: finalPayload });
+    const record = data.report || data.test || data.record || data.item || data.intervention || data.source || data.result || data.data || {};
     const recordId = record.id || data.id;
     if (recordId) await uploadPhotos(moduleKey, recordId, module.recordKind, files);
     return { data, recordId };
   }
 
   async function saveOffline() {
-    const moduleKey = state.moduleKey;
     const payload = collectPayload();
     if (!payload.latitude || !payload.longitude) throw new Error('Capture GPS or manually enter latitude/longitude before saving.');
-    await window.WIS_FIELD_STORE.saveRecord(moduleKey, payload, state.selectedFiles);
+    await window.WIS_FIELD_STORE.saveRecord(state.moduleKey, payload, state.selectedFiles);
     $('#fieldEntryForm').reset();
     state.selectedFiles = [];
     selectedPhotoList();
@@ -254,10 +270,7 @@
     try {
       const payload = collectPayload();
       if (!payload.latitude || !payload.longitude) throw new Error('Capture GPS or manually enter latitude/longitude before submission.');
-      if (!navigator.onLine) {
-        await saveOffline();
-        return;
-      }
+      if (!navigator.onLine) return saveOffline();
       try {
         await submitOnline(state.moduleKey, payload, state.selectedFiles);
         toast('Submitted successfully.');
@@ -270,9 +283,7 @@
         await renderPendingRecords();
         toast(`Online submission failed. Saved offline for sync. ${error.message}`, true);
       }
-    } catch (error) {
-      toast(error.message || 'Unable to save record.', true);
-    }
+    } catch (error) { toast(error.message || 'Unable to save record.', true); }
   }
 
   async function renderPendingRecords() {
@@ -291,22 +302,15 @@
 
   async function syncPendingRecords() {
     const records = await window.WIS_FIELD_STORE.getRecords();
-    if (!records.length) {
-      toast('No pending records to sync.');
-      return;
-    }
-    if (!navigator.onLine) {
-      toast('Device is offline. Connect to internet before syncing.', true);
-      return;
-    }
+    if (!records.length) return toast('No pending records to sync.');
+    if (!navigator.onLine) return toast('Device is offline. Connect to internet before syncing.', true);
     let synced = 0;
     for (const record of records) {
       try {
         const photos = await window.WIS_FIELD_STORE.getPhotos(record.localId);
         const result = await submitOnline(record.moduleKey, { ...record.payload, offline_local_id: record.localId }, photos);
-        if (result.recordId) {
-          await window.WIS_FIELD_STORE.deleteRecord(record.localId);
-        } else {
+        if (result.recordId) await window.WIS_FIELD_STORE.deleteRecord(record.localId);
+        else {
           record.status = 'conflict_review_required';
           record.conflictStatus = 'reviewer_decision_required';
           record.lastError = 'Submitted but server record ID was not returned. Reviewer decision required.';
@@ -315,7 +319,7 @@
         synced += 1;
       } catch (error) {
         record.attempts = Number(record.attempts || 0) + 1;
-        record.status = error.message && /conflict|duplicate|version/i.test(error.message) ? 'conflict_review_required' : 'sync_failed';
+        record.status = /conflict|duplicate|version/i.test(error.message || '') ? 'conflict_review_required' : 'sync_failed';
         record.conflictStatus = record.status === 'conflict_review_required' ? 'reviewer_decision_required' : null;
         record.lastError = error.message || 'Sync failed';
         await window.WIS_FIELD_STORE.updateRecord(record);
@@ -337,32 +341,27 @@
           <div class="mt-1 text-xs text-slate-500">${escapeHtml(item.category || item.type || '')}</div>
           <div class="mt-2 text-sm text-slate-600">${escapeHtml(item.description || item.summary || '')}</div>
         </div>`).join('') : '<div class="text-sm text-slate-500">No knowledge products found.</div>';
-    } catch (error) {
-      toast(error.message || 'Knowledge search failed.', true);
-    }
+    } catch (error) { toast(error.message || 'Knowledge search failed.', true); }
   }
 
   async function init() {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/field/field-sw.js').catch(console.error);
     await loadProfile();
     renderModuleButtons();
-    renderForm();
+    await renderForm();
     selectedPhotoList();
     await renderPendingRecords();
 
-    $('#moduleButtons').addEventListener('click', event => {
+    $('#moduleButtons').addEventListener('click', async event => {
       const button = event.target.closest('[data-module]');
       if (!button) return;
       state.moduleKey = button.dataset.module;
-      renderForm();
+      await renderForm();
     });
     $('#captureGpsBtn').addEventListener('click', captureGps);
     $('#latitudeInput').addEventListener('change', syncManualLocation);
     $('#longitudeInput').addEventListener('change', syncManualLocation);
-    $('#photoInput').addEventListener('change', event => {
-      state.selectedFiles = Array.from(event.target.files || []).filter(file => file.type.startsWith('image/'));
-      selectedPhotoList();
-    });
+    $('#photoInput').addEventListener('change', event => { state.selectedFiles = Array.from(event.target.files || []).filter(file => file.type.startsWith('image/')); selectedPhotoList(); });
     $('#fieldEntryForm').addEventListener('submit', handleSubmit);
     $('#saveOfflineBtn').addEventListener('click', () => saveOffline().catch(error => toast(error.message, true)));
     $('#syncBtn').addEventListener('click', syncPendingRecords);
