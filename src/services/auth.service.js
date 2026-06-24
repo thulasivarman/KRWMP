@@ -61,11 +61,11 @@ async function login(username, password) {
   const query = `
     SELECT u.id, u.name, u.designation, u.initials, u.identifier, u.email, u.phone_number, u.institution_id, u.password_hash,
            r.role_name, r.visible_sections,
-           COALESCE(json_agg(json_build_object('section', p.section_name, 'capability', p.capability_type)) FILTER (WHERE p.id IS NOT NULL), '[]') AS capabilities
+           COALESCE(json_agg(json_build_object('section', perm.section_name, 'capability', perm.capability_type)) FILTER (WHERE perm.id IS NOT NULL), '[]') AS capabilities
     FROM public.users u
     LEFT JOIN public.roles r ON u.role_id = r.id
     LEFT JOIN public.role_permissions rp ON r.id = rp.role_id
-    LEFT JOIN public.permissions p ON rp.permission_id = p.id
+    LEFT JOIN public.permissions perm ON rp.permission_id = perm.id
     WHERE u.identifier = $1
     GROUP BY u.id, r.id
     LIMIT 1;
@@ -93,6 +93,8 @@ async function getProfile(identifier) {
            p.nic_number,
            p.gender,
            p.date_of_birth,
+           p.phone_number AS person_phone_number,
+           p.email AS person_email,
            p.address,
            p.dsd,
            p.gnd,
@@ -100,7 +102,7 @@ async function getProfile(identifier) {
     FROM public.users u
     LEFT JOIN public.roles r ON u.role_id = r.id
     LEFT JOIN public.intervention_institutions i ON i.id = u.institution_id
-    LEFT JOIN public.persons p ON p.linked_user_id = u.id AND COALESCE(p.status, 'active') <> 'deleted'
+    LEFT JOIN public.persons p ON p.linked_user_id::text = u.id::text AND COALESCE(p.status, 'active') <> 'deleted'
     WHERE u.identifier = $1
     LIMIT 1;
   `;
@@ -145,8 +147,8 @@ async function getSelfProfile(identifier) {
       nic_number: profile.nic_number,
       gender: profile.gender,
       date_of_birth: profile.date_of_birth,
-      phone_number: profile.phone_number,
-      email: profile.email,
+      phone_number: profile.person_phone_number,
+      email: profile.person_email,
       address: profile.address,
       dsd: profile.dsd,
       gnd: profile.gnd,
@@ -183,7 +185,8 @@ async function updateSelfProfile(identifier, body = {}) {
     }
 
     const user = userResult.rows[0];
-    const personResult = await client.query(`SELECT id FROM public.persons WHERE linked_user_id = $1 AND COALESCE(status, 'active') <> 'deleted' LIMIT 1;`, [user.id]);
+    const linkedUserId = String(user.id);
+    const personResult = await client.query(`SELECT id FROM public.persons WHERE linked_user_id::text = $1 AND COALESCE(status, 'active') <> 'deleted' LIMIT 1;`, [linkedUserId]);
 
     if (personResult.rows.length) {
       await client.query(`
@@ -202,7 +205,7 @@ async function updateSelfProfile(identifier, body = {}) {
       await client.query(`
         INSERT INTO public.persons (full_name, preferred_name, phone_number, email, address, dsd, gnd, status, linked_user_id, is_system_user)
         VALUES ($1,$2,$3,$4,$5,$6,$7,'active',$8,true);
-      `, [name, preferredName, phoneNumber, email, address, dsd, gnd, user.id]);
+      `, [name, preferredName, phoneNumber, email, address, dsd, gnd, linkedUserId]);
     }
 
     await client.query('COMMIT');
