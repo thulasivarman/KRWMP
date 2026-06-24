@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Person Registry - KRWMP Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div class="flex min-h-screen">
+    <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
+    <main class="flex-1 krwmp-page krwmp-stack-lg">
+      <header class="krwmp-page-header krwmp-cluster-between gap-4">
+        <div>
+          <p class="krwmp-eyebrow">System Administration</p>
+          <h1 class="krwmp-page-title">Person Registry</h1>
+          <p class="krwmp-body-text">Maintain officers, community representatives, volunteers, focal points and other persons used across KRWMP modules.</p>
+        </div>
+        <button id="openPersonModalBtn" type="button" class="krwmp-btn krwmp-btn-primary hidden">Add Person</button>
+      </header>
+
+      <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
+
+      <section class="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <article class="krwmp-card-muted p-4">
+          <p class="krwmp-status-label">Total Persons</p>
+          <div id="totalPersonsCard" class="mt-2 text-2xl font-bold text-slate-100">0</div>
+        </article>
+        <article class="krwmp-card-muted p-4">
+          <p class="krwmp-status-label">Active Persons</p>
+          <div id="activePersonsCard" class="mt-2 text-2xl font-bold text-emerald-300">0</div>
+        </article>
+        <article class="krwmp-card-muted p-4">
+          <p class="krwmp-status-label">System User Links</p>
+          <div id="systemUsersCard" class="mt-2 text-2xl font-bold text-sky-300">0</div>
+        </article>
+        <article class="krwmp-card-muted p-4">
+          <p class="krwmp-status-label">Incomplete Contacts</p>
+          <div id="incompleteContactsCard" class="mt-2 text-2xl font-bold text-amber-300">0</div>
+        </article>
+      </section>
+
+      <section class="krwmp-panel">
+        <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-4">
+          <div>
+            <h2 class="form-section-heading">Master Person Directory</h2>
+            <p class="form-helper">Search and maintain person records used by VWMC, interventions, complaints, monitoring and field data entry workflows.</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-2 text-xs w-full lg:w-auto">
+            <input id="searchInput" placeholder="Search name, NIC, phone or email" class="form-input md:col-span-2">
+            <select id="statusFilter" class="form-select">
+              <option value="">All status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+            <input id="areaFilter" placeholder="Filter DSD / GND" class="form-input">
+            <button id="refreshBtn" type="button" class="krwmp-btn krwmp-btn-primary">Refresh</button>
+          </div>
+        </div>
+        <div class="krwmp-table-wrap">
+          <table class="krwmp-table krwmp-table-compact">
+            <thead>
+              <tr>
+                <th class="p-3">Person</th>
+                <th class="p-3">Contact</th>
+                <th class="p-3">Administrative Area</th>
+                <th class="p-3">System User</th>
+                <th class="p-3">Status</th>
+                <th class="p-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="personTableBody"></tbody>
+          </table>
+        </div>
+        <div id="paginationBox"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="writePanel" class="hidden krwmp-modal-backdrop">
+    <div class="krwmp-modal krwmp-modal-xl" role="dialog" aria-modal="true" aria-labelledby="person-modal-title">
+      <div class="krwmp-modal-header">
+        <div>
+          <h2 id="person-modal-title" class="krwmp-modal-title">Add / Edit Person</h2>
+          <p class="form-helper mt-1">Maintain the master person record. This record can be reused in other KRWMP modules.</p>
+        </div>
+        <button type="button" id="closePersonModalBtn" class="krwmp-modal-close" aria-label="Close person form">&times;</button>
+      </div>
+
+      <form id="personForm" class="krwmp-modal-body grid grid-cols-1 md:grid-cols-3 gap-4" novalidate>
+        <input type="hidden" name="id">
+
+        <section class="md:col-span-3 krwmp-card-muted p-4">
+          <h3 class="form-section-heading">Basic Information</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+            <label class="form-label md:col-span-2">Full Name <span class="text-rose-400">*</span>
+              <input name="full_name" required minlength="2" maxlength="255" class="form-input mt-1" placeholder="Full name">
+            </label>
+            <label class="form-label">Preferred Name
+              <input name="preferred_name" maxlength="150" class="form-input mt-1" placeholder="Optional short name">
+            </label>
+            <label class="form-label">NIC
+              <input name="nic_number" maxlength="20" class="form-input mt-1 uppercase" placeholder="NIC number">
+            </label>
+            <label class="form-label">Gender
+              <select name="gender" class="form-select mt-1">
+                <option value="">Not specified</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <label class="form-label">Date of Birth
+              <input name="date_of_birth" type="date" class="form-input mt-1">
+            </label>
+          </div>
+        </section>
+
+        <section class="md:col-span-3 krwmp-card-muted p-4">
+          <h3 class="form-section-heading">Contact and Area</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+            <label class="form-label">Primary Phone
+              <input name="phone_number" maxlength="30" class="form-input mt-1" placeholder="Phone number">
+            </label>
+            <label class="form-label">Email
+              <input name="email" type="email" maxlength="150" class="form-input mt-1" placeholder="email@example.com">
+            </label>
+            <label class="form-label">Status
+              <select name="status" class="form-select mt-1">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </label>
+            <label class="form-label">DSD
+              <input name="dsd" maxlength="150" class="form-input mt-1" placeholder="DS Division">
+            </label>
+            <label class="form-label">GND
+              <input name="gnd" maxlength="150" class="form-input mt-1" placeholder="GN Division">
+            </label>
+            <label class="form-label md:col-span-3">Address
+              <textarea name="address" maxlength="500" rows="3" class="form-textarea mt-1" placeholder="Address or location reference"></textarea>
+            </label>
+          </div>
+        </section>
+
+        <div class="md:col-span-3 krwmp-modal-actions px-0 pb-0">
+          <button type="submit" class="krwmp-btn krwmp-btn-primary">Save Person</button>
+          <button type="button" id="resetPersonBtn" class="krwmp-btn krwmp-btn-secondary">New Record</button>
+          <button type="button" id="cancelPersonBtn" class="krwmp-btn krwmp-btn-secondary">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <dialog id="viewPersonModal" class="krwmp-modal krwmp-modal-xl">
+    <header class="krwmp-modal-header">
+      <h2 class="krwmp-modal-title">Person Profile</h2>
+      <button id="closeViewModalBtn" type="button" class="krwmp-modal-close" aria-label="Close person profile">&times;</button>
+    </header>
+    <div id="viewPersonContent" class="krwmp-modal-body krwmp-stack-md"></div>
+    <footer class="krwmp-modal-actions">
+      <button id="closeViewModalFooterBtn" type="button" class="krwmp-btn krwmp-btn-secondary">Close</button>
+    </footer>
+  </dialog>
+
+  <script src="/assets/js/krwmp-global.js"></script>
+  <script src="/assets/js/privilege-guard.js"></script>
+  <script src="/admin-persons.js"></script>
+</body>
+</html>
