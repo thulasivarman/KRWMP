@@ -1,8 +1,6 @@
 const pool = require('../../config/database');
 const spatialService = require('./spatial.service');
 
-const FILE_CONTENT_TYPES = new Set(['document', 'pdf', 'image', 'file', 'research_paper', 'guideline', 'case_study']);
-const LINK_CONTENT_TYPES = new Set(['external_link', 'url', 'video_link', 'video']);
 const VALID_STATUSES = new Set(['draft', 'pending', 'submitted', 'reviewed', 'published', 'rejected', 'archived']);
 
 function cleanText(value) {
@@ -57,31 +55,6 @@ function normalizeStatus(value, fallback = 'pending') {
   return status;
 }
 
-function normalizeContentSource(body = {}, existing = {}) {
-  const contentType = cleanText(body.content_type ?? existing.content_type) || 'article';
-  let externalUrl = cleanText(body.external_url ?? existing.external_url);
-  let fileUrl = cleanText(body.file_url ?? existing.file_url);
-  let videoUrl = cleanText(body.video_url ?? existing.video_url);
-
-  if (FILE_CONTENT_TYPES.has(contentType)) {
-    externalUrl = null;
-    videoUrl = null;
-    if (!fileUrl) throw new Error('A file upload or file URL is required for the selected content type.');
-  } else if (LINK_CONTENT_TYPES.has(contentType)) {
-    fileUrl = null;
-    const linkValue = contentType === 'video' || contentType === 'video_link' ? (videoUrl || externalUrl) : externalUrl;
-    if (!linkValue) throw new Error('An external link is required for the selected content type.');
-    if (contentType === 'video' || contentType === 'video_link') videoUrl = linkValue;
-    else externalUrl = linkValue;
-  } else {
-    fileUrl = fileUrl || null;
-    externalUrl = externalUrl || null;
-    videoUrl = videoUrl || null;
-  }
-
-  return { contentType, externalUrl, fileUrl, videoUrl };
-}
-
 function validateCoordinates(latitude, longitude) {
   if (latitude === null && longitude === null) return;
   if (latitude === null || longitude === null) throw new Error('Both latitude and longitude are required when adding a GIS location.');
@@ -107,7 +80,7 @@ async function listCategories({ includeInactive = false } = {}) {
     LEFT JOIN (
       SELECT category_id, COUNT(*) AS count
       FROM public.knowledge_content
-      WHERE status = 'published' AND COALESCE(is_deleted, false) = false
+      WHERE status = 'published'
       GROUP BY category_id
     ) k ON k.category_id = c.id
     WHERE ($1::boolean = true OR c.is_active = true)
@@ -185,7 +158,7 @@ async function setContentTags(client, contentId, tagNames = [], user = 'system')
 
 async function listContent(query = {}, { publicOnly = false } = {}) {
   const values = [];
-  const filters = ['COALESCE(kc.is_deleted, false) = false'];
+  const filters = ["kc.status <> 'archived'"];
   if (query.id) { values.push(query.id); filters.push(`kc.id = $${values.length}`); }
   if (publicOnly) filters.push(`kc.status = 'published'`);
   if (!publicOnly && query.status) { values.push(query.status); filters.push(`kc.status = $${values.length}`); }
@@ -226,7 +199,7 @@ async function listContent(query = {}, { publicOnly = false } = {}) {
 }
 
 async function getContent(id, { publicOnly = false, incrementView = false } = {}) {
-  if (incrementView) await pool.query('UPDATE public.knowledge_content SET view_count = COALESCE(view_count,0) + 1 WHERE id = $1 AND status = $2 AND COALESCE(is_deleted, false) = false;', [id, 'published']);
+  if (incrementView) await pool.query("UPDATE public.knowledge_content SET view_count = COALESCE(view_count,0) + 1 WHERE id = $1 AND status = 'published';", [id]);
   const rows = await listContent({ id, limit: 1 }, { publicOnly });
   return rows.find(row => String(row.id) === String(id)) || null;
 }
@@ -234,7 +207,7 @@ async function getContent(id, { publicOnly = false, incrementView = false } = {}
 async function createContent(body = {}, user = 'system') {
   const title = cleanText(body.title);
   if (!title || title.length < 5) throw new Error('Knowledge title must be at least 5 characters.');
-  const source = normalizeContentSource(body);
+  const contentType = cleanText(body.content_type) || 'article';
   const status = normalizeStatus(body.status, 'pending');
   const latitude = toNumber(body.latitude);
   const longitude = toNumber(body.longitude);
@@ -253,7 +226,7 @@ async function createContent(body = {}, user = 'system') {
       VALUES
         ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,COALESCE($17::boolean,false),CASE WHEN $18::double precision IS NULL OR $19::double precision IS NULL THEN NULL ELSE ST_SetSRID(ST_MakePoint($19::double precision,$18::double precision),4326) END,$20,$21,$22,$23,$24,$24,CASE WHEN $16 = 'published' THEN now() ELSE NULL END,CASE WHEN $16 = 'published' THEN $24 ELSE NULL END)
       RETURNING id;
-    `, [title, cleanText(body.summary), contentType, body.category_id || null, body.publisher_institution_id || null, body.author_institution_id || null, body.publication_year ? Number(body.publication_year) : null, cleanText(body.language) || 'English', cleanText(body.keywords), cleanText(body.abstract), cleanText(body.body_content), externalUrl, fileUrl, thumbnailUrl, videoUrl, cleanText(body.status) || 'draft', body.is_featured, latitude, longitude, derived.dsd_name, derived.gnd_name, derived.sub_watershed_id, derived.sub_watershed_name, user]);
+    `, [title, cleanText(body.summary), contentType, body.category_id || null, body.publisher_institution_id || null, body.author_institution_id || null, body.publication_year ? Number(body.publication_year) : null, cleanText(body.language) || 'English', cleanText(body.keywords), cleanText(body.abstract), cleanText(body.body_content), externalUrl, fileUrl, thumbnailUrl, videoUrl, status, body.is_featured, latitude, longitude, derived.dsd_name, derived.gnd_name, derived.sub_watershed_id, derived.sub_watershed_name, user]);
     await setContentTags(client, result.rows[0].id, body.tags || body.tag_names || [], user);
     await client.query('COMMIT');
     return getContent(result.rows[0].id);
@@ -268,7 +241,6 @@ async function createContent(body = {}, user = 'system') {
 async function updateContent(id, body = {}, user = 'system') {
   const existing = await getContent(id);
   if (!existing) return null;
-  const source = normalizeContentSource(body, existing);
   const latitude = toNumber(body.latitude ?? existing.latitude);
   const longitude = toNumber(body.longitude ?? existing.longitude);
   validateCoordinates(latitude, longitude);
@@ -308,7 +280,7 @@ async function updateContentStatus(id, statusValue, user = 'system', reviewRemar
         reviewed_at = CASE WHEN $2 IN ('reviewed','rejected','published') THEN now() ELSE reviewed_at END,
         published_by = CASE WHEN $2 = 'published' THEN $3 ELSE published_by END,
         published_at = CASE WHEN $2 = 'published' AND published_at IS NULL THEN now() ELSE published_at END
-    WHERE id = $1 AND COALESCE(is_deleted, false) = false
+    WHERE id = $1 AND status <> 'archived'
     RETURNING id;
   `, [id, status, user, cleanText(reviewRemarks)]);
   if (!result.rowCount) return null;
@@ -318,8 +290,8 @@ async function updateContentStatus(id, statusValue, user = 'system', reviewRemar
 async function deleteContent(id, user = 'system') {
   const result = await pool.query(`
     UPDATE public.knowledge_content
-    SET status = 'archived', is_deleted = true, deleted_by = $2, deleted_at = now(), updated_by = $2, updated_at = now()
-    WHERE id = $1 AND COALESCE(is_deleted, false) = false
+    SET status = 'archived', updated_by = $2, updated_at = now()
+    WHERE id = $1 AND status <> 'archived'
     RETURNING id;
   `, [id, user]);
   return result.rowCount > 0;
@@ -328,12 +300,12 @@ async function deleteContent(id, user = 'system') {
 async function dashboard() {
   const [summary, byType, byCategory, byStatus, byWatershed, recent, pending] = await Promise.all([
     pool.query('SELECT * FROM public.vw_knowledge_dashboard_summary;'),
-    pool.query('SELECT content_type, COUNT(*)::integer AS count FROM public.knowledge_content WHERE COALESCE(is_deleted, false) = false GROUP BY content_type ORDER BY count DESC, content_type;'),
-    pool.query(`SELECT COALESCE(c.category_name, 'Uncategorised') AS category_name, COUNT(kc.*)::integer AS count FROM public.knowledge_content kc LEFT JOIN public.knowledge_categories c ON c.id = kc.category_id WHERE COALESCE(kc.is_deleted, false) = false GROUP BY COALESCE(c.category_name, 'Uncategorised') ORDER BY count DESC, category_name LIMIT 15;`),
-    pool.query('SELECT status, COUNT(*)::integer AS count FROM public.knowledge_content WHERE COALESCE(is_deleted, false) = false GROUP BY status ORDER BY status;'),
-    pool.query(`SELECT COALESCE(sub_watershed_name, 'Not Located') AS sub_watershed_name, COUNT(*)::integer AS count FROM public.knowledge_content WHERE COALESCE(is_deleted, false) = false GROUP BY COALESCE(sub_watershed_name, 'Not Located') ORDER BY count DESC LIMIT 15;`),
-    pool.query(`SELECT id, title, content_type, status, is_featured, created_at, published_at FROM public.knowledge_content WHERE COALESCE(is_deleted, false) = false ORDER BY created_at DESC LIMIT 10;`),
-    pool.query(`SELECT id, title, content_type, status, updated_at FROM public.knowledge_content WHERE status IN ('draft','pending','submitted','reviewed') AND COALESCE(is_deleted, false) = false ORDER BY updated_at DESC LIMIT 20;`)
+    pool.query("SELECT content_type, COUNT(*)::integer AS count FROM public.knowledge_content WHERE status <> 'archived' GROUP BY content_type ORDER BY count DESC, content_type;"),
+    pool.query("SELECT COALESCE(c.category_name, 'Uncategorised') AS category_name, COUNT(kc.*)::integer AS count FROM public.knowledge_content kc LEFT JOIN public.knowledge_categories c ON c.id = kc.category_id WHERE kc.status <> 'archived' GROUP BY COALESCE(c.category_name, 'Uncategorised') ORDER BY count DESC, category_name LIMIT 15;"),
+    pool.query("SELECT status, COUNT(*)::integer AS count FROM public.knowledge_content WHERE status <> 'archived' GROUP BY status ORDER BY status;"),
+    pool.query("SELECT COALESCE(sub_watershed_name, 'Not Located') AS sub_watershed_name, COUNT(*)::integer AS count FROM public.knowledge_content WHERE status <> 'archived' GROUP BY COALESCE(sub_watershed_name, 'Not Located') ORDER BY count DESC LIMIT 15;"),
+    pool.query("SELECT id, title, content_type, status, is_featured, created_at, published_at FROM public.knowledge_content WHERE status <> 'archived' ORDER BY created_at DESC LIMIT 10;"),
+    pool.query("SELECT id, title, content_type, status, updated_at FROM public.knowledge_content WHERE status IN ('draft','pending','submitted','reviewed') ORDER BY updated_at DESC LIMIT 20;")
   ]);
   return { summary: summary.rows[0] || {}, by_type: byType.rows, by_category: byCategory.rows, by_status: byStatus.rows, by_sub_watershed: byWatershed.rows, recent: recent.rows, pending_review: pending.rows };
 }
