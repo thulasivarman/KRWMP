@@ -28,12 +28,20 @@
     };
   }
 
+  function disableNativeCreateValidation() {
+    selectorContainer.querySelectorAll('[data-person-create-field]').forEach(field => {
+      field.removeAttribute('required');
+      field.removeAttribute('pattern');
+    });
+  }
+
   function setSelectorSelectionMode(selected) {
     const resultsNode = selectorContainer.querySelector('[data-person-results]');
     const searchInput = selectorContainer.querySelector('[data-person-search]');
     const createPanel = selectorContainer.querySelector('[data-person-create-panel]');
     const createToggleButtons = selectorContainer.querySelectorAll('[data-person-action="toggle-create"]');
 
+    disableNativeCreateValidation();
     if (resultsNode) resultsNode.classList.toggle('hidden', Boolean(selected));
     createPanel?.classList.add('hidden');
     createToggleButtons.forEach(button => button.classList.toggle('hidden', Boolean(selected)));
@@ -63,6 +71,7 @@
       onSelect: applyLeadOfficer,
       onCreate: applyLeadOfficer,
     });
+    disableNativeCreateValidation();
     setSelectorSelectionMode(Boolean(selectedPersonFromForm()));
   }
 
@@ -100,6 +109,7 @@
     event.stopImmediatePropagation();
     if (savingRegistry) return;
 
+    disableNativeCreateValidation();
     const { id, body } = normalizeRegistryPayload();
     if (!body.intervention_title || body.intervention_title.length < 2) {
       showStatus('Intervention title is required before saving.', true);
