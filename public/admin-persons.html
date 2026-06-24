@@ -153,6 +153,51 @@
     </div>
   </div>
 
+  <dialog id="promoteUserModal" class="krwmp-modal krwmp-modal-xl">
+    <header class="krwmp-modal-header">
+      <div>
+        <h2 class="krwmp-modal-title">Promote as System User</h2>
+        <p class="form-helper mt-1">Create a portal login account and link it to the selected master person record.</p>
+      </div>
+      <button id="closePromoteModalBtn" type="button" class="krwmp-modal-close" aria-label="Close promote user form">&times;</button>
+    </header>
+    <form id="promoteUserForm" class="krwmp-modal-body grid grid-cols-1 md:grid-cols-2 gap-4" novalidate>
+      <input type="hidden" name="person_id">
+      <section class="md:col-span-2 krwmp-card-muted p-4">
+        <h3 id="promotePersonName" class="text-lg font-bold text-slate-100">Selected Person</h3>
+        <p id="promotePersonMeta" class="form-helper mt-1">Contact details will appear here.</p>
+      </section>
+      <label class="form-label">Login Username <span class="text-rose-400">*</span>
+        <input name="identifier" required maxlength="80" class="form-input mt-1" placeholder="e.g., jperera">
+      </label>
+      <label class="form-label">Temporary Password <span class="text-rose-400">*</span>
+        <input name="password" type="password" required minlength="6" class="form-input mt-1" placeholder="Temporary password">
+      </label>
+      <label class="form-label">User Group <span class="text-rose-400">*</span>
+        <select name="role_id" id="promoteRoleSelect" required class="form-select mt-1"><option value="">Select user group</option></select>
+      </label>
+      <label class="form-label">Institution
+        <select name="institution_id" id="promoteInstitutionSelect" class="form-select mt-1"><option value="">No institution</option></select>
+      </label>
+      <label class="form-label">Display Name
+        <input name="name" class="form-input mt-1">
+      </label>
+      <label class="form-label">Designation
+        <input name="designation" class="form-input mt-1" placeholder="System User">
+      </label>
+      <label class="form-label">Email
+        <input name="email" type="email" class="form-input mt-1">
+      </label>
+      <label class="form-label">Phone
+        <input name="phone_number" class="form-input mt-1">
+      </label>
+      <div class="md:col-span-2 krwmp-modal-actions px-0 pb-0">
+        <button type="submit" class="krwmp-btn krwmp-btn-primary">Create Linked User</button>
+        <button type="button" id="cancelPromoteBtn" class="krwmp-btn krwmp-btn-secondary">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="viewPersonModal" class="krwmp-modal krwmp-modal-xl">
     <header class="krwmp-modal-header">
       <h2 class="krwmp-modal-title">Person Profile</h2>
