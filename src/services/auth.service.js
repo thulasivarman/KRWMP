@@ -21,6 +21,26 @@ function normalizePhone(value) {
   return compact;
 }
 
+function toNumber(value) {
+  if (value === undefined || value === null || String(value).trim() === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function validateProfileLocation(latitude, longitude) {
+  if (latitude === null && longitude === null) return;
+  if (latitude === null || longitude === null) {
+    const error = new Error('Both latitude and longitude are required when selecting profile location.');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (latitude < 5 || latitude > 10 || longitude < 79 || longitude > 82) {
+    const error = new Error('Profile location must be within the Sri Lanka coordinate range.');
+    error.statusCode = 400;
+    throw error;
+  }
+}
+
 function initialsFromName(name = '') {
   return String(name || '')
     .split(/\s+/)
@@ -98,6 +118,8 @@ async function getProfile(identifier) {
            p.address,
            p.dsd,
            p.gnd,
+           p.latitude,
+           p.longitude,
            p.status AS person_status
     FROM public.users u
     LEFT JOIN public.roles r ON u.role_id = r.id
@@ -152,6 +174,8 @@ async function getSelfProfile(identifier) {
       address: profile.address,
       dsd: profile.dsd,
       gnd: profile.gnd,
+      latitude: profile.latitude,
+      longitude: profile.longitude,
       status: profile.person_status,
     } : null,
   };
@@ -163,6 +187,9 @@ async function updateSelfProfile(identifier, body = {}) {
   const address = cleanText(body.address);
   const dsd = cleanText(body.dsd);
   const gnd = cleanText(body.gnd);
+  const latitude = toNumber(body.latitude);
+  const longitude = toNumber(body.longitude);
+  validateProfileLocation(latitude, longitude);
   const initials = initialsFromName(name);
 
   const client = await pool.connect();
@@ -198,14 +225,16 @@ async function updateSelfProfile(identifier, body = {}) {
             address = $6,
             dsd = $7,
             gnd = $8,
+            latitude = $9,
+            longitude = $10,
             updated_at = now()
         WHERE id = $1;
-      `, [personResult.rows[0].id, name, preferredName, phoneNumber, email, address, dsd, gnd]);
+      `, [personResult.rows[0].id, name, preferredName, phoneNumber, email, address, dsd, gnd, latitude, longitude]);
     } else {
       await client.query(`
-        INSERT INTO public.persons (full_name, preferred_name, phone_number, email, address, dsd, gnd, status, linked_user_id, is_system_user)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,'active',$8,true);
-      `, [name, preferredName, phoneNumber, email, address, dsd, gnd, linkedUserId]);
+        INSERT INTO public.persons (full_name, preferred_name, phone_number, email, address, dsd, gnd, latitude, longitude, status, linked_user_id, is_system_user)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'active',$10,true);
+      `, [name, preferredName, phoneNumber, email, address, dsd, gnd, latitude, longitude, linkedUserId]);
     }
 
     await client.query('COMMIT');
