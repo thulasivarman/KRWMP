@@ -27,8 +27,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (window.KRWMP_MAP) {
         window.KRWMP_MAP.on('load', () => {
             if (window.initializeRasterLayerControls) window.initializeRasterLayerControls();
-            if (window.initializeCommunityIssueLayer) window.initializeCommunityIssueLayer();
-            if (window.initializeWaterQualityLayer) window.initializeWaterQualityLayer();
+            // Point layers such as community issues, water quality, and knowledge resources
+            // are controlled through the database-driven Vector Layer Matrix.
+            // Do not auto-load standalone overlays here, otherwise points remain visible
+            // even after all vector layer checkboxes are switched off.
         });
     }
 });
