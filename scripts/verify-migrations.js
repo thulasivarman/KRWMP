@@ -16,7 +16,11 @@ const requiredChecks = [
   { table: 'knowledge_content', column: 'geom' },
   { table: 'knowledge_content', column: 'sub_watershed_id' },
   { table: 'knowledge_categories', column: 'category_name' },
-  { table: 'knowledge_tags', column: 'tag_name' }
+  { table: 'knowledge_tags', column: 'tag_name' },
+  { table: 'review_queue', column: 'validation_result' },
+  { table: 'review_queue', column: 'review_status' },
+  { table: 'review_history', column: 'decision' },
+  { table: 'sync_conflicts', column: 'conflict_status' }
 ];
 
 const requiredTables = [
@@ -25,7 +29,10 @@ const requiredTables = [
   'public.knowledge_tags',
   'public.knowledge_content',
   'public.knowledge_content_tags',
-  'public.knowledge_content_relations'
+  'public.knowledge_content_relations',
+  'public.review_queue',
+  'public.review_history',
+  'public.sync_conflicts'
 ];
 
 async function main() {
