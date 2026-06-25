@@ -13,7 +13,24 @@ function code() {
 function num(value) { const n = Number(value); return Number.isFinite(n) ? n : null; }
 
 function uuidOrNull(value) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || '')) ? value : null;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i.test(String(value || '')) ? value : null;
+}
+
+function cleanText(value) {
+  const text = String(value ?? '').trim();
+  return text || null;
+}
+
+function normalizeIdList(value) {
+  if (Array.isArray(value)) return value.map(uuidOrNull).filter(Boolean);
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return normalizeIdList(parsed);
+    } catch (_) {}
+    return value.split(',').map(uuidOrNull).filter(Boolean);
+  }
+  return [];
 }
 
 function progressValue(value, required = false) {
@@ -86,7 +103,8 @@ async function listRegistry() {
       COALESCE(progress.calculated_progress, 0)::integer AS progress_percent,
       l.intervention_name AS library_name, l.intervention_category,
       COALESCE(json_agg(DISTINCT o) FILTER (WHERE o.id IS NOT NULL), '[]') AS officers,
-      COALESCE(timeline.timeline, '[]'::jsonb) AS timeline
+      COALESCE(timeline.timeline, '[]'::jsonb) AS timeline,
+      COALESCE(pollution_sources.pollution_sources, '[]'::jsonb) AS pollution_sources
     FROM public.intervention_registry r
     LEFT JOIN public.intervention_library l ON l.id = r.library_id
     LEFT JOIN public.intervention_officers o ON o.intervention_id = r.id
@@ -107,7 +125,31 @@ async function listRegistry() {
       FROM public.intervention_action_timeline
       WHERE intervention_id = r.id
     ) progress ON true
-    GROUP BY r.id, progress.calculated_progress, l.intervention_name, l.intervention_category, timeline.timeline
+    LEFT JOIN LATERAL (
+      SELECT jsonb_agg(jsonb_build_object(
+        'pollution_source_id', psi.pollution_source_id,
+        'source_code', ps.source_code,
+        'source_name', ps.source_name,
+        'type_name', pst.type_name,
+        'status', ps.status,
+        'risk_class', risk.risk_class,
+        'risk_score', risk.risk_score,
+        'dsd_name', risk.dsd_name,
+        'gnd_name', risk.gnd_name,
+        'latitude', ST_Y(ps.geom),
+        'longitude', ST_X(ps.geom),
+        'link_type', COALESCE(psi.link_type, 'direct'),
+        'linkage_note', psi.linkage_note,
+        'linked_by', psi.linked_by,
+        'linked_at', psi.created_at
+      ) ORDER BY psi.created_at DESC) AS pollution_sources
+      FROM public.pollution_source_interventions psi
+      JOIN public.pollution_sources ps ON ps.id = psi.pollution_source_id
+      LEFT JOIN public.pollution_source_types pst ON pst.id = ps.source_type_id
+      LEFT JOIN public.vw_pollution_source_risk risk ON risk.id = ps.id
+      WHERE psi.intervention_id = r.id
+    ) pollution_sources ON true
+    GROUP BY r.id, progress.calculated_progress, l.intervention_name, l.intervention_category, timeline.timeline, pollution_sources.pollution_sources
     ORDER BY r.updated_at DESC;
   `);
   return result.rows;
@@ -119,7 +161,8 @@ async function getRegistry(id) {
       COALESCE(progress.calculated_progress, 0)::integer AS progress_percent,
       l.intervention_name AS library_name, l.intervention_category,
       COALESCE(json_agg(DISTINCT o) FILTER (WHERE o.id IS NOT NULL), '[]') AS officers,
-      COALESCE(timeline.timeline, '[]'::jsonb) AS timeline
+      COALESCE(timeline.timeline, '[]'::jsonb) AS timeline,
+      COALESCE(pollution_sources.pollution_sources, '[]'::jsonb) AS pollution_sources
     FROM public.intervention_registry r
     LEFT JOIN public.intervention_library l ON l.id = r.library_id
     LEFT JOIN public.intervention_officers o ON o.intervention_id = r.id
@@ -140,29 +183,135 @@ async function getRegistry(id) {
       FROM public.intervention_action_timeline
       WHERE intervention_id = r.id
     ) progress ON true
+    LEFT JOIN LATERAL (
+      SELECT jsonb_agg(jsonb_build_object(
+        'pollution_source_id', psi.pollution_source_id,
+        'source_code', ps.source_code,
+        'source_name', ps.source_name,
+        'type_name', pst.type_name,
+        'status', ps.status,
+        'risk_class', risk.risk_class,
+        'risk_score', risk.risk_score,
+        'dsd_name', risk.dsd_name,
+        'gnd_name', risk.gnd_name,
+        'latitude', ST_Y(ps.geom),
+        'longitude', ST_X(ps.geom),
+        'link_type', COALESCE(psi.link_type, 'direct'),
+        'linkage_note', psi.linkage_note,
+        'linked_by', psi.linked_by,
+        'linked_at', psi.created_at
+      ) ORDER BY psi.created_at DESC) AS pollution_sources
+      FROM public.pollution_source_interventions psi
+      JOIN public.pollution_sources ps ON ps.id = psi.pollution_source_id
+      LEFT JOIN public.pollution_source_types pst ON pst.id = ps.source_type_id
+      LEFT JOIN public.vw_pollution_source_risk risk ON risk.id = ps.id
+      WHERE psi.intervention_id = r.id
+    ) pollution_sources ON true
     WHERE r.id = $1
-    GROUP BY r.id, progress.calculated_progress, l.intervention_name, l.intervention_category, timeline.timeline;
+    GROUP BY r.id, progress.calculated_progress, l.intervention_name, l.intervention_category, timeline.timeline, pollution_sources.pollution_sources;
   `, [id]);
   return result.rows[0] || null;
 }
 
+async function syncPollutionSources(interventionId, sourceIds = [], user = 'system') {
+  const uniqueIds = [...new Set(sourceIds.map(uuidOrNull).filter(Boolean))];
+  await pool.query('DELETE FROM public.pollution_source_interventions WHERE intervention_id = $1 AND NOT (pollution_source_id = ANY($2::uuid[]));', [interventionId, uniqueIds]);
+  for (const sourceId of uniqueIds) {
+    await linkPollutionSource(interventionId, sourceId, { link_type: 'direct' }, user);
+  }
+}
+
 async function createRegistry(body = {}, user = 'system') {
-  const result = await pool.query(`
-    INSERT INTO public.intervention_registry (intervention_code, library_id, intervention_title, location_name, village_name, dsd_name, gnd_name, latitude, longitude, priority, status, progress_percent, planned_start_date, planned_end_date, actual_start_date, actual_end_date, lead_officer_name, lead_officer_contact, implementing_office, remarks, created_by, updated_by)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$21) RETURNING *;
-  `, [body.intervention_code || code(), body.library_id || null, body.intervention_title, body.location_name || null, body.village_name || null, body.dsd_name || null, body.gnd_name || null, num(body.latitude), num(body.longitude), body.priority || 'medium', body.status || 'planned', 0, body.planned_start_date || null, body.planned_end_date || null, body.actual_start_date || null, body.actual_end_date || null, body.lead_officer_name || null, body.lead_officer_contact || null, body.implementing_office || null, body.remarks || null, user]);
-  return result.rows[0];
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(`
+      INSERT INTO public.intervention_registry (intervention_code, library_id, intervention_title, location_name, village_name, dsd_name, gnd_name, latitude, longitude, priority, status, progress_percent, planned_start_date, planned_end_date, actual_start_date, actual_end_date, lead_officer_name, lead_officer_contact, implementing_office, remarks, created_by, updated_by)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$21) RETURNING *;
+    `, [body.intervention_code || code(), body.library_id || null, body.intervention_title, body.location_name || null, body.village_name || null, body.dsd_name || null, body.gnd_name || null, num(body.latitude), num(body.longitude), body.priority || 'medium', body.status || 'planned', 0, body.planned_start_date || null, body.planned_end_date || null, body.actual_start_date || null, body.actual_end_date || null, body.lead_officer_name || null, body.lead_officer_contact || null, body.implementing_office || null, body.remarks || null, user]);
+    await client.query('COMMIT');
+    const interventionId = result.rows[0].id;
+    const sourceIds = normalizeIdList(body.pollution_source_ids || body.linked_pollution_source_ids);
+    if (sourceIds.length) await syncPollutionSources(interventionId, sourceIds, user);
+    return getRegistry(interventionId);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 async function updateRegistry(id, body = {}, user = 'system') {
   const result = await pool.query(`
     UPDATE public.intervention_registry SET library_id=COALESCE($2,library_id), intervention_title=COALESCE($3,intervention_title), location_name=COALESCE($4,location_name), village_name=COALESCE($5,village_name), dsd_name=COALESCE($6,dsd_name), gnd_name=COALESCE($7,gnd_name), latitude=COALESCE($8,latitude), longitude=COALESCE($9,longitude), priority=COALESCE($10,priority), status=COALESCE($11,status), planned_start_date=COALESCE($12,planned_start_date), planned_end_date=COALESCE($13,planned_end_date), actual_start_date=COALESCE($14,actual_start_date), actual_end_date=COALESCE($15,actual_end_date), lead_officer_name=COALESCE($16,lead_officer_name), lead_officer_contact=COALESCE($17,lead_officer_contact), implementing_office=COALESCE($18,implementing_office), remarks=COALESCE($19,remarks), updated_by=$20, updated_at=now() WHERE id=$1 RETURNING *;
   `, [id, body.library_id || null, body.intervention_title || null, body.location_name || null, body.village_name || null, body.dsd_name || null, body.gnd_name || null, body.latitude === undefined ? null : num(body.latitude), body.longitude === undefined ? null : num(body.longitude), body.priority || null, body.status || null, body.planned_start_date || null, body.planned_end_date || null, body.actual_start_date || null, body.actual_end_date || null, body.lead_officer_name || null, body.lead_officer_contact || null, body.implementing_office || null, body.remarks || null, user]);
-  return result.rows[0] || null;
+  if (!result.rows[0]) return null;
+  if (body.pollution_source_ids !== undefined || body.linked_pollution_source_ids !== undefined) {
+    await syncPollutionSources(id, normalizeIdList(body.pollution_source_ids || body.linked_pollution_source_ids), user);
+  }
+  return getRegistry(id);
 }
 
 async function deleteRegistry(id) {
   const result = await pool.query('DELETE FROM public.intervention_registry WHERE id = $1 RETURNING id;', [id]);
+  return result.rowCount > 0;
+}
+
+async function searchPollutionSources({ q = null, status = null, risk_class = null, source_type_id = null, near_latitude = null, near_longitude = null, radius_m = null, limit = 50 } = {}) {
+  const latitude = num(near_latitude);
+  const longitude = num(near_longitude);
+  const radius = Math.min(Math.max(Number(radius_m || 0), 0), 10000);
+  const result = await pool.query(`
+    SELECT r.id, r.source_code, r.source_name, r.type_name, r.status, r.risk_class, r.risk_score,
+           r.dsd_name, r.gnd_name, r.sub_watershed_name, r.nearest_river_distance_m,
+           ST_Y(r.geom) AS latitude, ST_X(r.geom) AS longitude,
+           CASE WHEN $5::double precision IS NOT NULL AND $6::double precision IS NOT NULL
+             THEN ROUND(ST_Distance(r.geom::geography, ST_SetSRID(ST_MakePoint($6::double precision,$5::double precision),4326)::geography))::integer
+             ELSE NULL
+           END AS distance_m
+    FROM public.vw_pollution_source_risk r
+    LEFT JOIN public.pollution_sources ps ON ps.id = r.id
+    WHERE ($1::text IS NULL OR r.status = $1)
+      AND ($2::text IS NULL OR r.risk_class = $2)
+      AND ($3::uuid IS NULL OR ps.source_type_id = $3)
+      AND ($4::text IS NULL OR r.source_code ILIKE '%' || $4 || '%' OR r.source_name ILIKE '%' || $4 || '%' OR r.type_name ILIKE '%' || $4 || '%' OR r.dsd_name ILIKE '%' || $4 || '%' OR r.gnd_name ILIKE '%' || $4 || '%')
+      AND ($7::integer = 0 OR ($5::double precision IS NOT NULL AND $6::double precision IS NOT NULL AND ST_DWithin(r.geom::geography, ST_SetSRID(ST_MakePoint($6::double precision,$5::double precision),4326)::geography, $7::integer)))
+    ORDER BY distance_m ASC NULLS LAST, r.risk_score DESC NULLS LAST, r.source_name
+    LIMIT LEAST(GREATEST($8::integer, 1), 200);
+  `, [cleanText(status), cleanText(risk_class), uuidOrNull(source_type_id), cleanText(q), latitude, longitude, radius, Number(limit || 50)]);
+  return result.rows;
+}
+
+async function listLinkedPollutionSources(interventionId) {
+  const result = await pool.query(`
+    SELECT psi.pollution_source_id, ps.source_code, ps.source_name, pst.type_name, ps.status,
+           risk.risk_class, risk.risk_score, risk.dsd_name, risk.gnd_name,
+           ST_Y(ps.geom) AS latitude, ST_X(ps.geom) AS longitude,
+           COALESCE(psi.link_type, 'direct') AS link_type, psi.linkage_note, psi.linked_by, psi.created_at AS linked_at
+    FROM public.pollution_source_interventions psi
+    JOIN public.pollution_sources ps ON ps.id = psi.pollution_source_id
+    LEFT JOIN public.pollution_source_types pst ON pst.id = ps.source_type_id
+    LEFT JOIN public.vw_pollution_source_risk risk ON risk.id = ps.id
+    WHERE psi.intervention_id = $1
+    ORDER BY psi.created_at DESC;
+  `, [interventionId]);
+  return result.rows;
+}
+
+async function linkPollutionSource(interventionId, sourceId, body = {}, user = 'system') {
+  const result = await pool.query(`
+    INSERT INTO public.pollution_source_interventions (pollution_source_id, intervention_id, link_type, linkage_note, linked_by)
+    VALUES ($1,$2,COALESCE($3,'direct'),$4,$5)
+    ON CONFLICT (pollution_source_id, intervention_id)
+    DO UPDATE SET link_type = COALESCE(EXCLUDED.link_type, public.pollution_source_interventions.link_type), linkage_note = EXCLUDED.linkage_note, linked_by = EXCLUDED.linked_by, created_at = now()
+    RETURNING *;
+  `, [sourceId, interventionId, cleanText(body.link_type) || 'direct', cleanText(body.linkage_note || body.note || body.remarks), user]);
+  return result.rows[0];
+}
+
+async function unlinkPollutionSource(interventionId, sourceId) {
+  const result = await pool.query('DELETE FROM public.pollution_source_interventions WHERE intervention_id = $1 AND pollution_source_id = $2;', [interventionId, sourceId]);
   return result.rowCount > 0;
 }
 
@@ -240,6 +389,10 @@ module.exports = {
   createRegistry,
   updateRegistry,
   deleteRegistry,
+  searchPollutionSources,
+  listLinkedPollutionSources,
+  linkPollutionSource,
+  unlinkPollutionSource,
   createTimeline,
   listTimeline,
   updateTimeline,
