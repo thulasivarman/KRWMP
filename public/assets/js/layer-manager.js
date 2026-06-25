@@ -78,7 +78,7 @@ function addDynamicSpatialLayer(layer) {
         if (window.attachInteractivePopupHandshake) {
             window.attachInteractivePopupHandshake(
                 layer.fill_layer_id,
-                layer.popup_type || layer.layer_key
+                layer
             );
         }
     }
