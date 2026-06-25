@@ -4,11 +4,46 @@
 window.KRWMP_ADMIN_USERS = {
     roles: [],
     institutions: [],
+    jurisdictions: [],
     privileges: [],
     users: [],
     filteredUsers: [],
     currentPage: 1,
     pageSize: 10,
+
+    ensureJurisdictionControls() {
+        const regInstitution = document.getElementById('regInstitutionId');
+        if (regInstitution && !document.getElementById('regJurisdictionIds')) {
+            const label = document.createElement('label');
+            label.className = 'form-label md:col-span-2';
+            label.innerHTML = 'Jurisdiction / Working Area<select id="regJurisdictionIds" multiple size="6" class="form-select text-emerald-300 cursor-pointer"></select><span class="form-helper">Select one or more GND-based jurisdictions. Leave empty only for unrestricted admin users.</span>';
+            regInstitution.closest('label')?.insertAdjacentElement('afterend', label);
+        }
+        const editInstitution = document.getElementById('editInstitutionId');
+        if (editInstitution && !document.getElementById('editJurisdictionIds')) {
+            const label = document.createElement('label');
+            label.className = 'form-label';
+            label.innerHTML = 'Jurisdiction / Working Area<select id="editJurisdictionIds" multiple size="6" class="form-select text-emerald-300 cursor-pointer"></select><span class="form-helper">Assign one or more GND-based jurisdictions.</span>';
+            editInstitution.closest('label')?.insertAdjacentElement('afterend', label);
+        }
+    },
+
+    jurisdictionOptions(selectedIds = []) {
+        const selected = new Set((selectedIds || []).map(id => String(id)));
+        return this.jurisdictions.map(j => {
+            const label = `${j.jurisdiction_type || 'CUSTOM'} - ${j.jurisdiction_name || ''}${j.gnd_count ? ` (${j.gnd_count} GNDs)` : ''}`;
+            return `<option value="${j.id}" ${selected.has(String(j.id)) ? 'selected' : ''}>${this.escapeHtml(label)}</option>`;
+        }).join('');
+    },
+
+    populateJurisdictionSelects() {
+        this.ensureJurisdictionControls();
+        const options = this.jurisdictionOptions();
+        const reg = document.getElementById('regJurisdictionIds');
+        const edit = document.getElementById('editJurisdictionIds');
+        if (reg) reg.innerHTML = options || '<option disabled>No jurisdictions configured</option>';
+        if (edit) edit.innerHTML = options || '<option disabled>No jurisdictions configured</option>';
+    },
 
     async refreshDirectoryData() {
         const tableBody = document.getElementById('userDirectoryTableBody');
@@ -23,6 +58,7 @@ window.KRWMP_ADMIN_USERS = {
             const data = await window.KRWMP_ADMIN_API.getUsers();
             this.roles = data.roles || [];
             this.institutions = data.institutions || [];
+            this.jurisdictions = data.jurisdictions || [];
             this.privileges = data.privileges || [];
             this.users = data.users || [];
 
@@ -35,6 +71,7 @@ window.KRWMP_ADMIN_USERS = {
             if (regInstitution) regInstitution.innerHTML = institutionOptions;
             if (editInstitution) editInstitution.innerHTML = institutionOptions;
             if (institutionFilter) institutionFilter.innerHTML = '<option value="">All institutions</option>' + this.institutions.map(i => `<option value="${i.id}">${this.escapeHtml(i.institution_name)}</option>`).join('');
+            this.populateJurisdictionSelects();
 
             this.renderRoleList();
             if (!tableBody) return;
@@ -58,7 +95,8 @@ window.KRWMP_ADMIN_USERS = {
             const roleMatch = !roleId || roleIds.includes(roleId);
             const institutionMatch = !institutionId || String(user.institution_id || '') === institutionId;
             const roleText = (user.roles || []).map(r => r.role_name).join(' ');
-            const text = [user.name, user.identifier, user.designation, user.phone_number, user.email, user.institution_name, user.role_name, roleText].join(' ').toLowerCase();
+            const jurisdictionText = (user.jurisdictions || []).map(j => `${j.jurisdiction_type} ${j.jurisdiction_name}`).join(' ');
+            const text = [user.name, user.identifier, user.designation, user.phone_number, user.email, user.institution_name, user.role_name, roleText, jurisdictionText].join(' ').toLowerCase();
             const searchMatch = !query || text.includes(query);
             return roleMatch && institutionMatch && searchMatch;
         });
@@ -108,12 +146,14 @@ window.KRWMP_ADMIN_USERS = {
         const isMasterUser = safeIdentifier === 'thulasi';
         const institutionName = this.escapeHtml(user.institution_name || 'No institution');
         const roleText = (user.roles || []).map(r => String(r.role_name).toUpperCase()).join(', ') || this.escapeHtml(user.role_name || '-');
+        const jurisdictionText = (user.jurisdictions || []).map(j => `${j.jurisdiction_type}: ${j.jurisdiction_name}`).join(', ') || 'No jurisdiction assigned';
+        const safeJurisdictionIds = this.escapeHtml(JSON.stringify(user.jurisdiction_ids || []));
         const safeEmail = this.escapeHtml(user.email || '');
         const safePhoneNumber = this.escapeHtml(user.phone_number || '');
         const email = safeEmail || '-';
         const phoneNumber = safePhoneNumber || '-';
 
-        return `<tr><td><div class="flex items-center gap-2"><div class="h-7 w-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-bold text-emerald-400 uppercase">${safeInitials}</div><div><div class="text-slate-200 font-medium">${safeName}</div><div class="krwmp-status-label">${safeDesignation}</div></div></div></td><td class="text-slate-400 font-mono">${safeIdentifier}</td><td><div class="krwmp-status-label">${phoneNumber}</div><div class="krwmp-status-label">${email}</div></td><td><div class="krwmp-status-label mb-1">${institutionName}</div><select multiple size="3" data-action="assign-role" data-identifier="${safeIdentifier}"  class="form-select text-slate-300 px-1.5 py-0.5 text-[11px] font-medium cursor-pointer">${dropdownOptions}</select><div class="krwmp-status-label mt-1">${this.escapeHtml(roleText)}</div></td><td class="text-right"><div class="krwmp-table-actions"><button data-action="edit-user" data-identifier="${safeIdentifier}" data-name="${safeName}" data-designation="${safeDesignation}" data-initials="${safeInitials}" data-phone-number="${safePhoneNumber}" data-email="${safeEmail}" data-institution-id="${user.institution_id || ''}"  class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Edit</button><button data-action="delete-user" data-identifier="${safeIdentifier}"  class="krwmp-btn krwmp-btn-danger krwmp-btn-sm ${isMasterUser ? 'opacity-30 cursor-not-allowed' : ''}" ${isMasterUser ? 'disabled' : ''}>Delete</button></div></td></tr>`;
+        return `<tr><td><div class="flex items-center gap-2"><div class="h-7 w-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-bold text-emerald-400 uppercase">${safeInitials}</div><div><div class="text-slate-200 font-medium">${safeName}</div><div class="krwmp-status-label">${safeDesignation}</div></div></div></td><td class="text-slate-400 font-mono">${safeIdentifier}</td><td><div class="krwmp-status-label">${phoneNumber}</div><div class="krwmp-status-label">${email}</div></td><td><div class="krwmp-status-label mb-1">${institutionName}</div><select multiple size="3" data-action="assign-role" data-identifier="${safeIdentifier}"  class="form-select text-slate-300 px-1.5 py-0.5 text-[11px] font-medium cursor-pointer">${dropdownOptions}</select><div class="krwmp-status-label mt-1">${this.escapeHtml(roleText)}</div><div class="krwmp-status-label mt-1 text-emerald-300">${this.escapeHtml(jurisdictionText)}</div></td><td class="text-right"><div class="krwmp-table-actions"><button data-action="edit-user" data-identifier="${safeIdentifier}" data-name="${safeName}" data-designation="${safeDesignation}" data-initials="${safeInitials}" data-phone-number="${safePhoneNumber}" data-email="${safeEmail}" data-institution-id="${user.institution_id || ''}" data-jurisdiction-ids="${safeJurisdictionIds}" class="krwmp-btn krwmp-btn-secondary krwmp-btn-sm">Edit</button><button data-action="delete-user" data-identifier="${safeIdentifier}" class="krwmp-btn krwmp-btn-danger krwmp-btn-sm ${isMasterUser ? 'opacity-30 cursor-not-allowed' : ''}" ${isMasterUser ? 'disabled' : ''}>Delete</button></div></td></tr>`;
     },
 
     renderRoleList() {
@@ -133,7 +173,11 @@ window.KRWMP_ADMIN_USERS = {
                 if (!button) return;
                 const action = button.dataset.action;
                 const identifier = button.dataset.identifier;
-                if (action === 'edit-user') window.KRWMP_ADMIN_UI.fillEditForm({ identifier, name: button.dataset.name, designation: button.dataset.designation, initials: button.dataset.initials, phone_number: button.dataset.phoneNumber, email: button.dataset.email, institution_id: button.dataset.institutionId });
+                if (action === 'edit-user') {
+                    let jurisdiction_ids = [];
+                    try { jurisdiction_ids = JSON.parse(button.dataset.jurisdictionIds || '[]'); } catch (_) {}
+                    window.KRWMP_ADMIN_UI.fillEditForm({ identifier, name: button.dataset.name, designation: button.dataset.designation, initials: button.dataset.initials, phone_number: button.dataset.phoneNumber, email: button.dataset.email, institution_id: button.dataset.institutionId, jurisdiction_ids });
+                }
                 if (action === 'delete-user') await this.deleteUser(identifier);
             });
             tableBody.addEventListener('change', async (event) => {
@@ -143,7 +187,7 @@ window.KRWMP_ADMIN_USERS = {
             });
         }
 
-        document.getElementById('openRegistrationModalBtn')?.addEventListener('click', () => window.KRWMP_ADMIN_UI.toggleRegistrationModal(true));
+        document.getElementById('openRegistrationModalBtn')?.addEventListener('click', () => { this.populateJurisdictionSelects(); window.KRWMP_ADMIN_UI.toggleRegistrationModal(true); });
         document.getElementById('userSearchInput')?.addEventListener('input', () => { this.currentPage = 1; this.applyDirectoryFilters(); });
         document.getElementById('userRoleFilter')?.addEventListener('change', () => { this.currentPage = 1; this.applyDirectoryFilters(); });
         document.getElementById('userInstitutionFilter')?.addEventListener('change', () => { this.currentPage = 1; this.applyDirectoryFilters(); });
@@ -167,8 +211,8 @@ window.KRWMP_ADMIN_USERS = {
         const roleForm = document.getElementById('roleForm');
         const privilegeForm = document.getElementById('privilegeForm');
 
-        if (registrationForm) registrationForm.addEventListener('submit', async event => { event.preventDefault(); if (!registrationForm.reportValidity()) return; try { await window.KRWMP_ADMIN_API.registerUser(window.KRWMP_ADMIN_UI.getRegistrationPayload()); window.KRWMP_ADMIN_UI.showSuccess('Success: User identity provisioned within Supabase.'); registrationForm.reset(); window.KRWMP_ADMIN_UI.toggleRegistrationModal(false); await this.refreshDirectoryData(); } catch (error) { window.KRWMP_ADMIN_UI.showError('Error: ' + error.message); } });
-        if (editForm) editForm.addEventListener('submit', async event => { event.preventDefault(); if (!editForm.reportValidity()) return; try { await window.KRWMP_ADMIN_API.updateUser(window.KRWMP_ADMIN_UI.getEditPayload()); window.KRWMP_ADMIN_UI.showSuccess('Success: Database identity adjustments saved.'); window.KRWMP_ADMIN_UI.toggleEditModal(false); await this.refreshDirectoryData(); } catch (error) { window.KRWMP_ADMIN_UI.showError('Error: ' + error.message); } });
+        if (registrationForm) registrationForm.addEventListener('submit', async event => { event.preventDefault(); if (!registrationForm.reportValidity()) return; try { await window.KRWMP_ADMIN_API.registerUser(window.KRWMP_ADMIN_UI.getRegistrationPayload()); window.KRWMP_ADMIN_UI.showSuccess('Success: User identity provisioned with jurisdiction access.'); registrationForm.reset(); window.KRWMP_ADMIN_UI.toggleRegistrationModal(false); await this.refreshDirectoryData(); } catch (error) { window.KRWMP_ADMIN_UI.showError('Error: ' + error.message); } });
+        if (editForm) editForm.addEventListener('submit', async event => { event.preventDefault(); if (!editForm.reportValidity()) return; try { await window.KRWMP_ADMIN_API.updateUser(window.KRWMP_ADMIN_UI.getEditPayload()); window.KRWMP_ADMIN_UI.showSuccess('Success: Database identity and jurisdiction access saved.'); window.KRWMP_ADMIN_UI.toggleEditModal(false); await this.refreshDirectoryData(); } catch (error) { window.KRWMP_ADMIN_UI.showError('Error: ' + error.message); } });
         if (resetForm) resetForm.addEventListener('submit', async event => { event.preventDefault(); try { await window.KRWMP_ADMIN_API.resetPassword(window.KRWMP_ADMIN_UI.getResetPasswordPayload()); window.KRWMP_ADMIN_UI.showSuccess('Success: Passkey updated securely.'); resetForm.reset(); } catch (error) { window.KRWMP_ADMIN_UI.showError('Error: ' + error.message); } });
         if (roleForm) roleForm.addEventListener('submit', async event => { event.preventDefault(); const id = document.getElementById('roleEditId').value; const payload = { role_name: document.getElementById('roleName').value, description: document.getElementById('roleDescription').value }; try { if (id) await window.KRWMP_ADMIN_API.updateRole(id, payload); else await window.KRWMP_ADMIN_API.createRole(payload); roleForm.reset(); document.getElementById('roleEditId').value = ''; await this.refreshDirectoryData(); } catch (error) { window.KRWMP_ADMIN_UI.showError('Role save failed: ' + error.message); } });
         if (privilegeForm) privilegeForm.addEventListener('submit', async event => { event.preventDefault(); const payload = { role_id: document.getElementById('privRoleId').value, privilege_key: document.getElementById('privilegeKey').value, privilege_name: document.getElementById('privilegeName').value, can_view: document.getElementById('canView').checked, can_create: document.getElementById('canCreate').checked, can_update: document.getElementById('canUpdate').checked, can_delete: document.getElementById('canDelete').checked }; try { await window.KRWMP_ADMIN_API.savePrivilege(payload); privilegeForm.reset(); document.getElementById('canView').checked = true; await this.refreshDirectoryData(); } catch (error) { window.KRWMP_ADMIN_UI.showError('Privilege save failed: ' + error.message); } });
