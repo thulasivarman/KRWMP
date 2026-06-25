@@ -2,6 +2,7 @@ const API_BASE = '/api';
 let canCreateVectorLayer = false;
 let canUpdateVectorLayer = false;
 let canDeleteVectorLayer = false;
+let layerPopupMetadata = new Map();
 
 async function initializeVectorLayerSidebar() {
   if (window.KRWMP_ENGINE) {
@@ -37,10 +38,41 @@ function normalizeHex(value, fallback) {
   return /^#[0-9a-f]{6}$/i.test(value || '') ? value : fallback;
 }
 
+function normalisePopupFieldList(fields) {
+  if (!fields) return '';
+  if (typeof fields === 'string') {
+    try {
+      const parsed = JSON.parse(fields);
+      if (Array.isArray(parsed)) return normalisePopupFieldList(parsed);
+    } catch (error) {
+      return fields;
+    }
+  }
+  if (!Array.isArray(fields)) return '';
+  return fields.map(field => typeof field === 'string' ? field : field?.key).filter(Boolean).join(', ');
+}
+
+async function loadPopupMetadata() {
+  layerPopupMetadata = new Map();
+  try {
+    const payload = await requestJson(`${API_BASE}/layers`);
+    (payload.layers || []).forEach(layer => {
+      layerPopupMetadata.set(layer.layer_key, {
+        popupTitleField: layer.popup_title_field || '',
+        popupSubtitle: layer.popup_subtitle || '',
+        popupFields: layer.popup_fields || []
+      });
+    });
+  } catch (error) {
+    console.warn('Could not load layer popup metadata:', error);
+  }
+}
+
 async function loadLayers() {
   layersList.innerHTML = '<p>Loading layers...</p>';
 
   try {
+    await loadPopupMetadata();
     const payload = await requestJson(`${API_BASE}/vector-layers`);
     layersList.innerHTML = '';
 
@@ -60,7 +92,9 @@ function renderLayer(layer) {
   const node = layerTemplate.content.cloneNode(true);
   const card = node.querySelector('.layer-card');
   const form = node.querySelector('.style-form');
+  const popupForm = node.querySelector('.popup-form');
   const style = layer.style || {};
+  const popupMeta = layerPopupMetadata.get(layer.id) || {};
 
   node.querySelector('[data-field="name"]').textContent = layer.name || layer.id;
   node.querySelector('[data-field="meta"]').textContent = `${layer.id} | ${layer.geometryType || 'Unknown geometry'} | ${layer.url}`;
@@ -73,13 +107,24 @@ function renderLayer(layer) {
   form.radius.value = style.radius || 6;
   form.visible.checked = Boolean(layer.visible);
 
+  popupForm.id.value = layer.id;
+  popupForm.popupTitleField.value = popupMeta.popupTitleField || layer.popupTitleField || '';
+  popupForm.popupSubtitle.value = popupMeta.popupSubtitle || layer.popupSubtitle || '';
+  popupForm.popupFields.value = normalisePopupFieldList(popupMeta.popupFields || layer.popupFields);
+
   form.addEventListener('submit', async event => {
     event.preventDefault();
     await saveStyle(form);
   });
 
+  popupForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    await savePopup(popupForm);
+  });
+
   card.querySelector('[data-action="delete"]').addEventListener('click', async () => deleteLayer(layer.id));
   form.querySelector('button[type="submit"]')?.classList.toggle('hidden', !canUpdateVectorLayer);
+  popupForm.querySelector('button[type="submit"]')?.classList.toggle('hidden', !canUpdateVectorLayer);
   card.querySelector('[data-action="delete"]')?.classList.toggle('hidden', !canDeleteVectorLayer);
   layersList.appendChild(node);
 }
@@ -98,6 +143,23 @@ async function saveStyle(form) {
   try {
     await requestJson(`${API_BASE}/vector-layers/${encodeURIComponent(id)}/style`, { method: 'PUT', body });
     showStatus('Layer symbol updated successfully.');
+    await loadLayers();
+  } catch (error) {
+    showStatus(error.message, true);
+  }
+}
+
+async function savePopup(form) {
+  if (!canUpdateVectorLayer) return showStatus('You do not have update access for vector layers.', true);
+  const id = form.id.value;
+  const body = {
+    popupTitleField: form.popupTitleField.value.trim(),
+    popupSubtitle: form.popupSubtitle.value.trim(),
+    popupFields: form.popupFields.value.trim()
+  };
+  try {
+    await requestJson(`${API_BASE}/vector-layers/${encodeURIComponent(id)}/popup`, { method: 'PUT', body });
+    showStatus('Popup configuration updated successfully. Refresh the map to see changes.');
     await loadLayers();
   } catch (error) {
     showStatus(error.message, true);
@@ -125,7 +187,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const formData = new FormData(uploadForm);
     formData.set('visible', uploadForm.visible.checked ? 'true' : 'false');
     try {
-      await fetch(`${API_BASE}/vector-layers/upload`, {
+      const payload = await fetch(`${API_BASE}/vector-layers/upload`, {
         method: 'POST',
         body: formData,
         credentials: 'same-origin'
@@ -134,6 +196,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!response.ok || payload.success === false) throw new Error(payload.message || 'Upload failed');
         return payload;
       });
+
+      const layerId = payload?.layer?.layer_key;
+      if (layerId && (uploadForm.popupTitleField.value || uploadForm.popupSubtitle.value || uploadForm.popupFields.value)) {
+        await requestJson(`${API_BASE}/vector-layers/${encodeURIComponent(layerId)}/popup`, {
+          method: 'PUT',
+          body: {
+            popupTitleField: uploadForm.popupTitleField.value.trim(),
+            popupSubtitle: uploadForm.popupSubtitle.value.trim(),
+            popupFields: uploadForm.popupFields.value.trim()
+          }
+        });
+      }
+
       uploadForm.reset();
       uploadForm.color.value = '#10b981';
       uploadForm.fillColor.value = '#10b981';
