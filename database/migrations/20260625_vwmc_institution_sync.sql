@@ -5,8 +5,8 @@ ALTER TABLE IF EXISTS public.vwmc_committees
 CREATE INDEX IF NOT EXISTS idx_vwmc_committees_institution_id
   ON public.vwmc_committees(institution_id);
 
-INSERT INTO public.institution_types (type_name, description, active)
-VALUES ('VWMC', 'Village Watershed Management Committee / Community watershed institution', true)
+INSERT INTO public.institution_types (type_name, active)
+VALUES ('VWMC', true)
 ON CONFLICT DO NOTHING;
 
 ALTER TABLE IF EXISTS public.intervention_institutions
