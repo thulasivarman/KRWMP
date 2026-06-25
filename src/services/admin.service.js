@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const pool = require('../../config/database');
+const adminJurisdictionService = require('./admin-jurisdiction.service');
 
 const ENFORCED_PRIVILEGE_KEYS = [
   { privilege_key: 'user_management_settings', privilege_name: 'User Management & System Settings', group_name: 'Administration', description: 'Manage users, roles, passwords and privilege groups.' },
@@ -51,13 +52,29 @@ async function getUsers() {
       u.institution_id,
       i.institution_name,
       r.role_name,
-      COALESCE(json_agg(DISTINCT jsonb_build_object('id', ur.role_id, 'role_name', r2.role_name)) FILTER (WHERE ur.role_id IS NOT NULL), '[]') AS roles
+      COALESCE(json_agg(DISTINCT jsonb_build_object('id', ur.role_id, 'role_name', r2.role_name)) FILTER (WHERE ur.role_id IS NOT NULL), '[]') AS roles,
+      COALESCE(jurisdictions.items, '[]'::jsonb) AS jurisdictions,
+      COALESCE(jurisdictions.ids, '[]'::jsonb) AS jurisdiction_ids
     FROM public.users u
     LEFT JOIN public.roles r ON u.role_id = r.id
     LEFT JOIN public.intervention_institutions i ON i.id = u.institution_id
     LEFT JOIN public.user_roles ur ON ur.user_id = u.id
     LEFT JOIN public.roles r2 ON r2.id = ur.role_id
-    GROUP BY u.id, i.institution_name, r.role_name
+    LEFT JOIN LATERAL (
+      SELECT
+        jsonb_agg(DISTINCT jsonb_build_object(
+          'id', j.id,
+          'jurisdiction_name', j.jurisdiction_name,
+          'jurisdiction_type', j.jurisdiction_type,
+          'module_key', uj.module_key,
+          'access_level', uj.access_level
+        )) FILTER (WHERE j.id IS NOT NULL) AS items,
+        jsonb_agg(DISTINCT j.id) FILTER (WHERE j.id IS NOT NULL) AS ids
+      FROM public.user_jurisdictions uj
+      JOIN public.jurisdictions j ON j.id = uj.jurisdiction_id
+      WHERE uj.user_id = u.id
+    ) jurisdictions ON true
+    GROUP BY u.id, i.institution_name, r.role_name, jurisdictions.items, jurisdictions.ids
     ORDER BY u.id ASC;
   `;
 
@@ -69,8 +86,9 @@ async function getUsers() {
   const roles = await pool.query(rolesQuery);
   const institutions = await pool.query(institutionsQuery);
   const privileges = await pool.query(privilegesQuery);
+  const jurisdictions = await adminJurisdictionService.listJurisdictions();
 
-  return { success: true, users: users.rows, roles: roles.rows, institutions: institutions.rows, privileges: privileges.rows };
+  return { success: true, users: users.rows, roles: roles.rows, institutions: institutions.rows, privileges: privileges.rows, jurisdictions };
 }
 
 async function registerUser(data) {
@@ -102,6 +120,7 @@ async function registerUser(data) {
   `, [name.trim(), designation.trim(), initials.trim().toUpperCase(), cleanIdentifier, email, phoneNumber, primaryRoleId, institution_id || null, passwordHash]);
 
   await setUserRolesById(result.rows[0].id, selectedRoles);
+  if (data.jurisdiction_ids !== undefined) await adminJurisdictionService.setUserJurisdictionsByIdentifier(cleanIdentifier, data.jurisdiction_ids, { assigned_by: cleanIdentifier });
   return { success: true, message: 'User registered successfully', userId: result.rows[0].id };
 }
 
@@ -125,6 +144,7 @@ async function updateUser(data) {
         phone_number = $6
     WHERE identifier = $7;
   `, [name.trim(), designation.trim(), initials.trim().toUpperCase(), institution_id || null, email, phoneNumber, identifier.trim().toLowerCase()]);
+  if (data.jurisdiction_ids !== undefined) await adminJurisdictionService.setUserJurisdictionsByIdentifier(identifier, data.jurisdiction_ids, { assigned_by: identifier });
   return { success: true };
 }
 
