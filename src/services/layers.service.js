@@ -11,6 +11,9 @@ async function getActiveLayers() {
             fill_layer_id,
             line_layer_id,
             popup_type,
+            popup_title_field,
+            popup_subtitle,
+            popup_fields,
             default_visible,
             min_zoom,
             max_zoom,
@@ -52,7 +55,8 @@ async function getLayerGeoJSON(layerKey) {
         'basin_boundary',
         'forest_cover',
         'dsd_boundary',
-        'gnd_boundary'
+        'gnd_boundary',
+        'district_boundary'
     ];
 
     if (!allowedTables.includes(layer.table_name)) {
