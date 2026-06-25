@@ -1,4 +1,5 @@
 const adminService = require('../services/admin.service');
+const adminJurisdictionService = require('../services/admin-jurisdiction.service');
 const auditArchiveService = require('../services/audit-archive.service');
 const auditLogService = require('../services/audit-log.service');
 const auditReportService = require('../services/audit-report.service');
@@ -29,6 +30,28 @@ async function adminRoutes(fastify) {
   fastify.get('/admin/users', async (request, reply) => {
     if (!await requireUserManagement(request, reply, 'view')) return;
     return adminService.getUsers();
+  });
+
+  fastify.get('/admin/jurisdiction-builder/districts', async (request, reply) => {
+    if (!await requireUserManagement(request, reply, 'view')) return;
+    return { success: true, districts: await adminJurisdictionService.listDistricts() };
+  });
+
+  fastify.get('/admin/jurisdiction-builder/dsds', async (request, reply) => {
+    if (!await requireUserManagement(request, reply, 'view')) return;
+    return { success: true, dsds: await adminJurisdictionService.listDsds(request.query || {}) };
+  });
+
+  fastify.get('/admin/jurisdiction-builder/gnds', async (request, reply) => {
+    if (!await requireUserManagement(request, reply, 'view')) return;
+    return { success: true, gnds: await adminJurisdictionService.listGnds(request.query || {}) };
+  });
+
+  fastify.post('/admin/jurisdiction-builder/custom', async (request, reply) => {
+    if (!await requireUserManagement(request, reply, 'create')) return;
+    const user = getRequestUser(request) || 'system';
+    const jurisdiction = await adminJurisdictionService.createJurisdictionFromGnds(request.body || {}, user);
+    return reply.status(201).send({ success: true, jurisdiction });
   });
 
   fastify.post('/admin/register', async (request, reply) => {
@@ -119,22 +142,14 @@ async function adminRoutes(fastify) {
     if (!await requireUserManagement(request, reply, 'view')) return;
     const result = await auditReportService.buildCsvReport(request.query || {});
     const filename = `krwmp-audit-report-${new Date().toISOString().slice(0, 10)}.csv`;
-    return reply
-      .header('Content-Type', 'text/csv; charset=utf-8')
-      .header('Content-Disposition', `attachment; filename="${filename}"`)
-      .header('X-KRWMP-Audit-Record-Count', String(result.rows.length))
-      .send(result.body);
+    return reply.header('Content-Type', 'text/csv; charset=utf-8').header('Content-Disposition', `attachment; filename="${filename}"`).header('X-KRWMP-Audit-Record-Count', String(result.rows.length)).send(result.body);
   });
 
   fastify.get('/admin/audit/export.pdf', async (request, reply) => {
     if (!await requireUserManagement(request, reply, 'view')) return;
     const result = await auditReportService.buildPdfReport(request.query || {}, getRequestUser(request) || 'Administrator');
     const filename = `krwmp-audit-report-${new Date().toISOString().slice(0, 10)}.pdf`;
-    return reply
-      .header('Content-Type', 'application/pdf')
-      .header('Content-Disposition', `attachment; filename="${filename}"`)
-      .header('X-KRWMP-Audit-Record-Count', String(result.rows.length))
-      .send(result.body);
+    return reply.header('Content-Type', 'application/pdf').header('Content-Disposition', `attachment; filename="${filename}"`).header('X-KRWMP-Audit-Record-Count', String(result.rows.length)).send(result.body);
   });
 }
 
