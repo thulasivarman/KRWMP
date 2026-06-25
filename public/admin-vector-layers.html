@@ -16,7 +16,7 @@
         <main class="flex-1 krwmp-page krwmp-stack-lg">
             <header class="krwmp-page-header">
                 <h1 class="krwmp-page-title">Vector Layer Management</h1>
-                <p class="krwmp-body-text">Upload GeoJSON layers, remove existing layers, and update map symbols.</p>
+                <p class="krwmp-body-text">Upload GeoJSON layers, remove existing layers, update map symbols, and configure attribute popups.</p>
             </header>
 
             <section id="authNotice" class="auth-notice" hidden>Login required. Redirecting...</section>
@@ -31,7 +31,9 @@
                     <label>Fill Color<input type="color" name="fillColor" value="#10b981" /></label>
                     <label>Line Width<input type="number" name="weight" min="1" max="10" value="2" /></label>
                     <label>Fill Opacity<input type="number" name="fillOpacity" min="0" max="1" step="0.1" value="0.2" /></label>
-                    <label>Popup Fields<input type="text" name="popupFields" placeholder="name, dsd_name, area" /></label>
+                    <label>Popup Title Field<input type="text" name="popupTitleField" placeholder="Example: district_n" /></label>
+                    <label>Popup Subtitle<input type="text" name="popupSubtitle" placeholder="Example: District Boundary" /></label>
+                    <label>Popup Fields<input type="text" name="popupFields" placeholder="district_n, area_ha" /></label>
                     <label class="form-label flex items-center gap-2"><input type="checkbox" name="visible" checked class="form-checkbox"> Show layer by default</label>
                     <div class="form-actions"><button type="submit">Upload Layer</button></div>
                 </form>
@@ -62,6 +64,17 @@
                 <div class="layer-actions">
                     <button type="submit">Save Symbol</button>
                     <button type="button" class="danger" data-action="delete">Delete</button>
+                </div>
+            </form>
+            <form class="popup-form">
+                <input type="hidden" name="id" />
+                <h4 class="form-section-heading text-sm">Popup Configuration</h4>
+                <label>Title Field <input type="text" name="popupTitleField" placeholder="Example: district_n" /></label>
+                <label>Subtitle <input type="text" name="popupSubtitle" placeholder="Example: District Boundary" /></label>
+                <label>Visible Fields <input type="text" name="popupFields" placeholder="district_n, area_ha" /></label>
+                <p class="text-[11px] text-slate-500">Use exact GeoJSON/PostGIS attribute names separated by commas. Example: district_n, area_ha.</p>
+                <div class="layer-actions">
+                    <button type="submit">Save Popup</button>
                 </div>
             </form>
         </article>
