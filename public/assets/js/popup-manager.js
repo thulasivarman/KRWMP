@@ -68,15 +68,30 @@ function buildFallbackPopupData(layer, props) {
     };
 }
 
+function normalisePopupField(field) {
+    if (!field) return null;
+    if (typeof field === 'string') {
+        const key = field.trim();
+        return key ? { key, label: prettifyKey(key), type: 'text' } : null;
+    }
+    const key = String(field.key || '').trim();
+    if (!key) return null;
+    return {
+        key,
+        label: String(field.label || prettifyKey(key)).trim(),
+        type: field.type || 'text',
+        digits: field.digits
+    };
+}
+
 function normalisePopupFields(fields) {
-    if (Array.isArray(fields)) return fields;
+    if (Array.isArray(fields)) return fields.map(normalisePopupField).filter(Boolean);
     if (typeof fields === 'string' && fields.trim()) {
         try {
             const parsed = JSON.parse(fields);
-            return Array.isArray(parsed) ? parsed : [];
+            if (Array.isArray(parsed)) return parsed.map(normalisePopupField).filter(Boolean);
         } catch (error) {
-            console.warn('Invalid popup_fields JSON:', error);
-            return [];
+            return fields.split(',').map(normalisePopupField).filter(Boolean);
         }
     }
     return [];
