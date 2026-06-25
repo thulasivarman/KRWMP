@@ -80,6 +80,16 @@ function addDynamicSpatialLayer(layer) {
     window.setTimeout(hideLayerLoading, 3500);
 }
 
+function normaliseLayerToken(value) {
+    return String(value || '').trim().toLowerCase();
+}
+
+function isVolunteerLayer(layer) {
+    const tokens = [layer.layer_key, layer.popup_type, layer.fill_layer_id, layer.source_id, layer.layer_name]
+        .map(normaliseLayerToken);
+    return tokens.some(token => token.includes('volunteer_organisation') || token.includes('volunteer_organization') || token.includes('volunteer organisation') || token.includes('volunteer organization'));
+}
+
 function getPointPaint(layer) {
     if (layer.layer_key === 'community_complaints') {
         return {
@@ -101,6 +111,16 @@ function getPointPaint(layer) {
         };
     }
 
+    if (isVolunteerLayer(layer)) {
+        return {
+            'circle-radius': 8,
+            'circle-color': layer.fill_color || '#0ea5e9',
+            'circle-stroke-color': layer.line_color || '#ffffff',
+            'circle-stroke-width': Number(layer.line_width || 2),
+            'circle-opacity': Number(layer.fill_opacity ?? 0.9)
+        };
+    }
+
     return {
         'circle-radius': 8,
         'circle-color': layer.fill_color || '#14b8a6',
@@ -116,6 +136,9 @@ function isPointLayer(layer) {
         'vwmc_locations',
         'institution_locations',
         'volunteer_organisations',
+        'volunteer_organizations',
+        'volunteer_organisation_locations',
+        'volunteer_organization_locations',
         'intervention_locations',
         'intervention_registry',
         'water_quality_latest',
@@ -124,6 +147,7 @@ function isPointLayer(layer) {
 
     return pointLayerKeys.includes(layer.layer_key)
         || pointLayerKeys.includes(layer.popup_type)
+        || isVolunteerLayer(layer)
         || String(layer.geometry_type || '').toLowerCase().includes('point')
         || String(layer.fill_layer_id || '').includes('_circle')
         || String(layer.fill_layer_id || '').includes('-circle');
@@ -186,7 +210,7 @@ function getLayerDescription(layer) {
     if (layer.layer_key === 'community_complaints') return 'Red: high · Amber: medium · Green: low';
     if (layer.layer_key === 'vwmc_locations') return 'Village watershed committee locations';
     if (layer.layer_key === 'institution_locations') return 'Institution office locations';
-    if (layer.layer_key === 'volunteer_organisations') return 'Volunteer organisation locations';
+    if (isVolunteerLayer(layer)) return 'Volunteer organisation locations';
     if (layer.layer_key === 'intervention_locations' || layer.layer_key === 'intervention_registry') return 'Intervention registry locations';
     if (layer.category === 'uploaded_vector') return 'Supabase/PostGIS uploaded layer';
     return 'Database managed GIS layer';
