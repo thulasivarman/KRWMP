@@ -1,4 +1,6 @@
 const communityService = require('../services/community-issues.service');
+const validationService = require('../services/submission-validation.service');
+const reviewService = require('../services/review.service');
 const audit = require('../services/audit-log.service');
 const { getRequestUser, requirePrivilegeInline } = require('../middleware/privilege.middleware');
 const { assertImageUpload } = require('../utils/upload-validation');
@@ -92,6 +94,10 @@ async function communityIssueRoutes(fastify) {
   fastify.post('/community-reports', { config: { rateLimit: { max: Number(process.env.PUBLIC_COMPLAINT_RATE_LIMIT || 20), timeWindow: '1 minute' } } }, async (request, reply) => {
     const contentType = String(request.headers['content-type'] || '');
     let report;
+    let validation;
+    let sourceFields = {};
+    let hasPhoto = false;
+
     if (contentType.includes('multipart/form-data')) {
       const parts = request.parts();
       const fields = {};
@@ -101,18 +107,48 @@ async function communityIssueRoutes(fastify) {
           const buffer = await part.toBuffer();
           const fileMeta = { filename: part.filename, mimetype: part.mimetype, size: buffer.length };
           assertImageUpload(fileMeta);
-          if (buffer.length > 0) photoFile = { ...fileMeta, toBuffer: async () => buffer };
+          if (buffer.length > 0) {
+            hasPhoto = true;
+            photoFile = { ...fileMeta, toBuffer: async () => buffer };
+          }
         } else if (part.file) {
           await part.toBuffer();
         } else {
           fields[part.fieldname] = part.value;
         }
       }
+      sourceFields = fields;
+      validation = validationService.assertValid(validationService.validateCommunityIssueSubmission(fields, { hasPhoto }));
       report = await communityService.createPublicReport({ fields, photoFile });
     } else {
-      report = await communityService.createPublicReport({ fields: request.body || {}, photoFile: null });
+      sourceFields = request.body || {};
+      validation = validationService.assertValid(validationService.validateCommunityIssueSubmission(sourceFields, { hasPhoto: false }));
+      report = await communityService.createPublicReport({ fields: sourceFields, photoFile: null });
     }
-    return reply.status(201).send({ success: true, message: 'Issue report submitted successfully', report });
+
+    const pendingReport = await communityService.updateReport(report.id, { status: 'pending_review' }, 'system-validation');
+    const reviewItem = await reviewService.createReviewItem({
+      moduleName: 'community_issues',
+      recordKind: 'community_issue_report',
+      recordId: report.id,
+      recordCode: report.report_code,
+      title: report.issue_title,
+      submittedBy: report.reporter_email || report.reporter_contact || report.reporter_name || 'public',
+      validationResult: validation,
+      payloadSnapshot: {
+        ...sourceFields,
+        report_code: report.report_code,
+        photo_url: report.photo_url,
+      },
+    });
+
+    return reply.status(201).send({
+      success: true,
+      message: 'Issue report submitted successfully and sent for review',
+      report: pendingReport || report,
+      validation,
+      review_item: reviewItem,
+    });
   });
 
   fastify.put('/community-reports/:id', async (request, reply) => {
@@ -145,7 +181,7 @@ async function auditCommunityReviewUpdate(request, reportId, body = {}, report =
       summary: `Community issue status changed to ${body.status}`,
       details,
     });
-    if (body.status === 'verified') {
+    if (body.status === 'verified' || body.status === 'approved') {
       await audit.logApprove({
         request,
         module_name: 'community_issues',
