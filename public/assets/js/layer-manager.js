@@ -90,6 +90,17 @@ function getPointPaint(layer) {
             'circle-opacity': Number(layer.fill_opacity ?? 0.9)
         };
     }
+
+    if (layer.layer_key === 'intervention_locations' || layer.layer_key === 'intervention_registry' || layer.popup_type === 'intervention_locations' || layer.popup_type === 'intervention_registry') {
+        return {
+            'circle-radius': 8,
+            'circle-color': layer.fill_color || '#8b5cf6',
+            'circle-stroke-color': layer.line_color || '#ffffff',
+            'circle-stroke-width': Number(layer.line_width || 2),
+            'circle-opacity': Number(layer.fill_opacity ?? 0.9)
+        };
+    }
+
     return {
         'circle-radius': 8,
         'circle-color': layer.fill_color || '#14b8a6',
@@ -104,11 +115,16 @@ function isPointLayer(layer) {
         'community_complaints',
         'vwmc_locations',
         'institution_locations',
-        'volunteer_organisations'
+        'volunteer_organisations',
+        'intervention_locations',
+        'intervention_registry',
+        'water_quality_latest',
+        'knowledge_resources'
     ];
 
     return pointLayerKeys.includes(layer.layer_key)
         || pointLayerKeys.includes(layer.popup_type)
+        || String(layer.geometry_type || '').toLowerCase().includes('point')
         || String(layer.fill_layer_id || '').includes('_circle')
         || String(layer.fill_layer_id || '').includes('-circle');
 }
@@ -143,6 +159,7 @@ function renderDatabaseLayerControls(layers) {
 function getLegendSymbol(layer) {
     if (layer.layer_key === 'community_complaints') return '<span class="inline-flex gap-0.5"><i class="h-2.5 w-2.5 rounded-full bg-red-500 border border-white/70"></i><i class="h-2.5 w-2.5 rounded-full bg-amber-500 border border-white/70"></i><i class="h-2.5 w-2.5 rounded-full bg-green-500 border border-white/70"></i></span>';
     if (layer.layer_key === 'vwmc_locations') return '<span class="inline-block h-3.5 w-3.5 rounded-full bg-teal-500 border-2 border-white/80"></span>';
+    if (isPointLayer(layer)) return `<span class="inline-block h-3.5 w-3.5 rounded-full border-2 border-white/80" style="background:${window.KRWMP_UTILS.escapeHtml(layer.fill_color || '#14b8a6')}"></span>`;
     return `<span class="inline-block h-4 w-6 rounded-sm border-2" style="border-color:${window.KRWMP_UTILS.escapeHtml(layer.line_color || '#10b981')};background:${window.KRWMP_UTILS.escapeHtml(layer.fill_color || '#10b981')}33"></span>`;
 }
 
@@ -161,6 +178,7 @@ function getCategoryTitle(category) {
     if (category === 'boundary' || category === 'Administrative') return 'Boundary Layers';
     if (category === 'environment' || category === 'Environment') return 'Environmental Layers';
     if (category === 'hydrology') return 'Hydrology Layers';
+    if (category === 'watershed_management') return 'Watershed Management';
     return String(category || 'Database Layers').replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
 }
 
@@ -169,6 +187,7 @@ function getLayerDescription(layer) {
     if (layer.layer_key === 'vwmc_locations') return 'Village watershed committee locations';
     if (layer.layer_key === 'institution_locations') return 'Institution office locations';
     if (layer.layer_key === 'volunteer_organisations') return 'Volunteer organisation locations';
+    if (layer.layer_key === 'intervention_locations' || layer.layer_key === 'intervention_registry') return 'Intervention registry locations';
     if (layer.category === 'uploaded_vector') return 'Supabase/PostGIS uploaded layer';
     return 'Database managed GIS layer';
 }
