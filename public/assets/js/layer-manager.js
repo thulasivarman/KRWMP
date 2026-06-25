@@ -46,7 +46,7 @@ function addDynamicSpatialLayer(layer) {
             paint: getPointPaint(layer),
             layout: { visibility: window.getLayerInitialVisibility(layer.layer_key) }
         });
-        if (window.attachInteractivePopupHandshake) window.attachInteractivePopupHandshake(layer.fill_layer_id, layer.popup_type || layer.layer_key);
+        if (window.attachInteractivePopupHandshake) window.attachInteractivePopupHandshake(layer.fill_layer_id, layer);
     }
 
     if (!isPointLayer(layer) && layer.fill_layer_id && !window.KRWMP_MAP.getLayer(layer.fill_layer_id)) {
@@ -60,7 +60,7 @@ function addDynamicSpatialLayer(layer) {
             paint: { 'fill-color': layer.fill_color || '#22c55e', 'fill-opacity': Number(layer.fill_opacity ?? 0.4) },
             layout: { visibility: window.getLayerInitialVisibility(layer.layer_key) }
         });
-        if (window.attachInteractivePopupHandshake) window.attachInteractivePopupHandshake(layer.fill_layer_id, layer.popup_type || layer.layer_key);
+        if (window.attachInteractivePopupHandshake) window.attachInteractivePopupHandshake(layer.fill_layer_id, layer);
     }
 
     if (layer.line_layer_id && !window.KRWMP_MAP.getLayer(layer.line_layer_id)) {
@@ -73,7 +73,7 @@ function addDynamicSpatialLayer(layer) {
             paint: { 'line-color': layer.line_color || '#166534', 'line-width': Number(layer.line_width || 1) },
             layout: { visibility: window.getLayerInitialVisibility(layer.layer_key) }
         });
-        if (window.attachInteractivePopupHandshake) window.attachInteractivePopupHandshake(layer.line_layer_id, layer.popup_type || layer.layer_key);
+        if (window.attachInteractivePopupHandshake) window.attachInteractivePopupHandshake(layer.line_layer_id, layer);
     }
 
     window.KRWMP_MAP.once('idle', hideLayerLoading);
