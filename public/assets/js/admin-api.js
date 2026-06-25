@@ -31,6 +31,17 @@ window.KRWMP_ADMIN_API = {
     async deleteRole(id) { return this.request('/api/admin/roles/' + id, { method: 'DELETE' }); },
     async savePrivilege(payload) { return this.request('/api/admin/role-privileges', { method: 'POST', body: payload }); },
 
+    async getJurisdictionDistricts() { return this.request('/api/admin/jurisdiction-builder/districts'); },
+    async getJurisdictionDsds(iddistrict) { return this.request('/api/admin/jurisdiction-builder/dsds' + (iddistrict ? '?iddistrict=' + encodeURIComponent(iddistrict) : '')); },
+    async getJurisdictionGnds(params = {}) {
+        const query = new URLSearchParams();
+        if (params.iddistrict) query.set('iddistrict', params.iddistrict);
+        if (params.iddsd) query.set('iddsd', params.iddsd);
+        if (params.q) query.set('q', params.q);
+        return this.request('/api/admin/jurisdiction-builder/gnds' + (query.toString() ? '?' + query.toString() : ''));
+    },
+    async createJurisdictionFromGnds(payload) { return this.request('/api/admin/jurisdiction-builder/custom', { method: 'POST', body: payload }); },
+
     async getInstitutions() { return this.request('/api/interventions/lookups/institutions'); },
     async createInstitution(payload) { return this.request('/api/interventions/lookups/institutions', { method: 'POST', body: payload }); },
     async updateInstitution(id, payload) { return this.request('/api/interventions/lookups/institutions/' + id, { method: 'PUT', body: payload }); },
