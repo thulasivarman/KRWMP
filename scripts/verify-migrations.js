@@ -20,7 +20,10 @@ const requiredChecks = [
   { table: 'review_queue', column: 'validation_result' },
   { table: 'review_queue', column: 'review_status' },
   { table: 'review_history', column: 'decision' },
-  { table: 'sync_conflicts', column: 'conflict_status' }
+  { table: 'sync_conflicts', column: 'conflict_status' },
+  { table: 'pollution_source_interventions', column: 'pollution_source_id' },
+  { table: 'pollution_source_interventions', column: 'intervention_id' },
+  { table: 'pollution_source_interventions', column: 'link_type' }
 ];
 
 const requiredTables = [
@@ -32,7 +35,8 @@ const requiredTables = [
   'public.knowledge_content_relations',
   'public.review_queue',
   'public.review_history',
-  'public.sync_conflicts'
+  'public.sync_conflicts',
+  'public.pollution_source_interventions'
 ];
 
 async function main() {
