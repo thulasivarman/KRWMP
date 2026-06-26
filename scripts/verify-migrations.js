@@ -23,7 +23,14 @@ const requiredChecks = [
   { table: 'sync_conflicts', column: 'conflict_status' },
   { table: 'pollution_source_interventions', column: 'pollution_source_id' },
   { table: 'pollution_source_interventions', column: 'intervention_id' },
-  { table: 'pollution_source_interventions', column: 'link_type' }
+  { table: 'pollution_source_interventions', column: 'link_type' },
+  { table: 'pollution_source_community_issues', column: 'pollution_source_id' },
+  { table: 'pollution_source_community_issues', column: 'community_issue_id' },
+  { table: 'pollution_source_water_quality_records', column: 'pollution_source_id' },
+  { table: 'pollution_source_water_quality_records', column: 'water_quality_record_id' },
+  { table: 'pollution_source_monitoring', column: 'pollution_source_id' },
+  { table: 'water_quality_tests', column: 'overall_status' },
+  { table: 'intervention_action_timeline', column: 'intervention_id' }
 ];
 
 const requiredTables = [
@@ -36,7 +43,12 @@ const requiredTables = [
   'public.review_queue',
   'public.review_history',
   'public.sync_conflicts',
-  'public.pollution_source_interventions'
+  'public.pollution_source_interventions',
+  'public.pollution_source_community_issues',
+  'public.pollution_source_water_quality_records',
+  'public.pollution_source_monitoring',
+  'public.water_quality_tests',
+  'public.intervention_action_timeline'
 ];
 
 async function main() {
