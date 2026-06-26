@@ -4,9 +4,17 @@ const path = require('path');
 const fastify = require('fastify')({ logger: true });
 const pool = require('../config/database');
 
+const isLocalRequest = request => String(request.ip || '').startsWith('127.0.0.1');
+
 fastify.register(require('@fastify/static'), { root: path.join(__dirname, '../public'), prefix: '/' });
 fastify.register(require('@fastify/compress'), { global: true });
-fastify.register(require('@fastify/rate-limit'), { global: true, max: Number(process.env.RATE_LIMIT_MAX || 300), timeWindow: process.env.RATE_LIMIT_WINDOW || '1 minute' });
+fastify.register(require('@fastify/rate-limit'), {
+  global: true,
+  max: Number(process.env.RATE_LIMIT_MAX || 300),
+  timeWindow: process.env.RATE_LIMIT_WINDOW || '1 minute',
+  allowList: isLocalRequest,
+  errorResponseBuilder: () => ({ success: false, message: 'Too many requests. Please try again shortly.' })
+});
 fastify.register(require('@fastify/multipart'), { limits: { fileSize: Number(process.env.MAX_LAYER_UPLOAD_SIZE || process.env.MAX_RASTER_UPLOAD_SIZE || 250 * 1024 * 1024), files: 1 } });
 
 fastify.register(require('./routes/auth.routes'), { prefix: '/api' });
