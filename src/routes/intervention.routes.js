@@ -69,6 +69,12 @@ async function interventionRoutes(fastify) {
     return { success: true, gnds: result.rows };
   });
 
+  fastify.get('/interventions/lookups/pollution-sources', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'intervention_registry_view', 'view')) return;
+    const sources = await service.searchPollutionSources(request.query || {});
+    return { success: true, sources };
+  });
+
   fastify.get('/interventions/lookups/institutions', async (request, reply) => {
     if (!await requirePrivilegeInline(request, reply, 'intervention_registry_view', 'view')) return;
     const includeInactive = String(request.query?.include_inactive || '').toLowerCase() === 'true';
@@ -193,6 +199,27 @@ async function interventionRoutes(fastify) {
     const deleted = await service.deleteRegistry(request.params.id);
     if (!deleted) return reply.status(404).send({ success: false, message: 'Intervention not found' });
     return { success: true, deleted: request.params.id };
+  });
+
+  fastify.get('/interventions/registry/:id/pollution-sources', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'intervention_registry_view', 'view')) return;
+    const sources = await service.listLinkedPollutionSources(request.params.id);
+    return { success: true, sources };
+  });
+
+  fastify.post('/interventions/registry/:id/pollution-sources', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'intervention_registry_manage', 'update')) return;
+    const sourceId = request.body?.pollution_source_id || request.body?.source_id;
+    if (!sourceId) return reply.status(400).send({ success: false, message: 'pollution_source_id is required.' });
+    const linkage = await service.linkPollutionSource(request.params.id, sourceId, request.body || {}, getUser(request));
+    return reply.status(201).send({ success: true, linkage });
+  });
+
+  fastify.delete('/interventions/registry/:id/pollution-sources/:sourceId', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'intervention_registry_manage', 'update')) return;
+    const removed = await service.unlinkPollutionSource(request.params.id, request.params.sourceId);
+    if (!removed) return reply.status(404).send({ success: false, message: 'Pollution source linkage not found.' });
+    return { success: true };
   });
 
   fastify.post('/interventions/registry/:id/timeline', async (request, reply) => {
