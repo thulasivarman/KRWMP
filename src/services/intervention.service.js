@@ -10,7 +10,11 @@ function code() {
   return `INT-${stamp}-${rand}`;
 }
 
-function num(value) { const n = Number(value); return Number.isFinite(n) ? n : null; }
+function num(value) {
+  if (value === undefined || value === null || String(value).trim() === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
 
 function uuidOrNull(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i.test(String(value || '')) ? value : null;
@@ -82,7 +86,19 @@ async function createLibrary(body = {}, user = 'system') {
 
 async function updateLibrary(id, body = {}, user = 'system') {
   const result = await pool.query(`
-    UPDATE public.intervention_library SET intervention_name=COALESCE($2,intervention_name), intervention_category=COALESCE($3,intervention_category), description=COALESCE($4,description), standard_actions=COALESCE($5,standard_actions), expected_outputs=COALESCE($6,expected_outputs), responsible_institution=COALESCE($7,responsible_institution), default_priority=COALESCE($8,default_priority), active=COALESCE($9,active), updated_by=$10, updated_at=now() WHERE id=$1 RETURNING *;
+    UPDATE public.intervention_library
+    SET intervention_name = COALESCE($2, intervention_name),
+        intervention_category = COALESCE($3, intervention_category),
+        description = COALESCE($4, description),
+        standard_actions = COALESCE($5, standard_actions),
+        expected_outputs = COALESCE($6, expected_outputs),
+        responsible_institution = COALESCE($7, responsible_institution),
+        default_priority = COALESCE($8, default_priority),
+        active = COALESCE($9, active),
+        updated_by = $10,
+        updated_at = now()
+    WHERE id = $1
+    RETURNING *;
   `, [id, body.intervention_name || null, body.intervention_category || null, body.description || null, body.standard_actions || null, body.expected_outputs || null, body.responsible_institution || null, body.default_priority || null, body.active === undefined ? null : Boolean(body.active), user]);
   return result.rows[0] || null;
 }
@@ -97,11 +113,12 @@ async function deleteLibrary(id, user = 'system') {
   return result.rowCount > 0;
 }
 
-async function listRegistry() {
-  const result = await pool.query(`
+function registryBaseSelect(whereSql = '') {
+  return `
     SELECT r.*,
       COALESCE(progress.calculated_progress, 0)::integer AS progress_percent,
-      l.intervention_name AS library_name, l.intervention_category,
+      l.intervention_name AS library_name,
+      l.intervention_category,
       COALESCE(json_agg(DISTINCT o) FILTER (WHERE o.id IS NOT NULL), '[]') AS officers,
       COALESCE(timeline.timeline, '[]'::jsonb) AS timeline,
       COALESCE(pollution_sources.pollution_sources, '[]'::jsonb) AS pollution_sources
@@ -149,76 +166,25 @@ async function listRegistry() {
       LEFT JOIN public.vw_pollution_source_risk risk ON risk.id = ps.id
       WHERE psi.intervention_id = r.id
     ) pollution_sources ON true
+    ${whereSql}
     GROUP BY r.id, progress.calculated_progress, l.intervention_name, l.intervention_category, timeline.timeline, pollution_sources.pollution_sources
-    ORDER BY r.updated_at DESC;
-  `);
+  `;
+}
+
+async function listRegistry() {
+  const result = await pool.query(`${registryBaseSelect()} ORDER BY r.updated_at DESC;`);
   return result.rows;
 }
 
 async function getRegistry(id) {
-  const result = await pool.query(`
-    SELECT r.*,
-      COALESCE(progress.calculated_progress, 0)::integer AS progress_percent,
-      l.intervention_name AS library_name, l.intervention_category,
-      COALESCE(json_agg(DISTINCT o) FILTER (WHERE o.id IS NOT NULL), '[]') AS officers,
-      COALESCE(timeline.timeline, '[]'::jsonb) AS timeline,
-      COALESCE(pollution_sources.pollution_sources, '[]'::jsonb) AS pollution_sources
-    FROM public.intervention_registry r
-    LEFT JOIN public.intervention_library l ON l.id = r.library_id
-    LEFT JOIN public.intervention_officers o ON o.intervention_id = r.id
-    LEFT JOIN LATERAL (
-      SELECT jsonb_agg((to_jsonb(t) || jsonb_build_object(
-        'responsible_person_full_name', p.full_name,
-        'responsible_person_phone_number', p.phone_number,
-        'responsible_person_email', p.email,
-        'responsible_person_dsd', p.dsd,
-        'responsible_person_gnd', p.gnd
-      )) ORDER BY t.action_date DESC, t.created_at DESC) AS timeline
-      FROM public.intervention_action_timeline t
-      LEFT JOIN public.persons p ON p.id = t.responsible_person_id
-      WHERE t.intervention_id = r.id
-    ) timeline ON true
-    LEFT JOIN LATERAL (
-      SELECT ROUND(AVG(COALESCE(progress_percent, 0)))::integer AS calculated_progress
-      FROM public.intervention_action_timeline
-      WHERE intervention_id = r.id
-    ) progress ON true
-    LEFT JOIN LATERAL (
-      SELECT jsonb_agg(jsonb_build_object(
-        'pollution_source_id', psi.pollution_source_id,
-        'source_code', ps.source_code,
-        'source_name', ps.source_name,
-        'type_name', pst.type_name,
-        'status', ps.status,
-        'risk_class', risk.risk_class,
-        'risk_score', risk.risk_score,
-        'dsd_name', risk.dsd_name,
-        'gnd_name', risk.gnd_name,
-        'latitude', ST_Y(ps.geom),
-        'longitude', ST_X(ps.geom),
-        'link_type', COALESCE(psi.link_type, 'direct'),
-        'linkage_note', psi.linkage_note,
-        'linked_by', psi.linked_by,
-        'linked_at', psi.created_at
-      ) ORDER BY psi.created_at DESC) AS pollution_sources
-      FROM public.pollution_source_interventions psi
-      JOIN public.pollution_sources ps ON ps.id = psi.pollution_source_id
-      LEFT JOIN public.pollution_source_types pst ON pst.id = ps.source_type_id
-      LEFT JOIN public.vw_pollution_source_risk risk ON risk.id = ps.id
-      WHERE psi.intervention_id = r.id
-    ) pollution_sources ON true
-    WHERE r.id = $1
-    GROUP BY r.id, progress.calculated_progress, l.intervention_name, l.intervention_category, timeline.timeline, pollution_sources.pollution_sources;
-  `, [id]);
+  const result = await pool.query(`${registryBaseSelect('WHERE r.id = $1')} ;`, [id]);
   return result.rows[0] || null;
 }
 
 async function syncPollutionSources(interventionId, sourceIds = [], user = 'system') {
   const uniqueIds = [...new Set(sourceIds.map(uuidOrNull).filter(Boolean))];
   await pool.query('DELETE FROM public.pollution_source_interventions WHERE intervention_id = $1 AND NOT (pollution_source_id = ANY($2::uuid[]));', [interventionId, uniqueIds]);
-  for (const sourceId of uniqueIds) {
-    await linkPollutionSource(interventionId, sourceId, { link_type: 'direct' }, user);
-  }
+  for (const sourceId of uniqueIds) await linkPollutionSource(interventionId, sourceId, { link_type: 'direct' }, user);
 }
 
 async function createRegistry(body = {}, user = 'system') {
@@ -244,7 +210,29 @@ async function createRegistry(body = {}, user = 'system') {
 
 async function updateRegistry(id, body = {}, user = 'system') {
   const result = await pool.query(`
-    UPDATE public.intervention_registry SET library_id=COALESCE($2,library_id), intervention_title=COALESCE($3,intervention_title), location_name=COALESCE($4,location_name), village_name=COALESCE($5,village_name), dsd_name=COALESCE($6,dsd_name), gnd_name=COALESCE($7,gnd_name), latitude=COALESCE($8,latitude), longitude=COALESCE($9,longitude), priority=COALESCE($10,priority), status=COALESCE($11,status), planned_start_date=COALESCE($12,planned_start_date), planned_end_date=COALESCE($13,planned_end_date), actual_start_date=COALESCE($14,actual_start_date), actual_end_date=COALESCE($15,actual_end_date), lead_officer_name=COALESCE($16,lead_officer_name), lead_officer_contact=COALESCE($17,lead_officer_contact), implementing_office=COALESCE($18,implementing_office), remarks=COALESCE($19,remarks), updated_by=$20, updated_at=now() WHERE id=$1 RETURNING *;
+    UPDATE public.intervention_registry
+    SET library_id = COALESCE($2, library_id),
+        intervention_title = COALESCE($3, intervention_title),
+        location_name = COALESCE($4, location_name),
+        village_name = COALESCE($5, village_name),
+        dsd_name = COALESCE($6, dsd_name),
+        gnd_name = COALESCE($7, gnd_name),
+        latitude = COALESCE($8, latitude),
+        longitude = COALESCE($9, longitude),
+        priority = COALESCE($10, priority),
+        status = COALESCE($11, status),
+        planned_start_date = COALESCE($12, planned_start_date),
+        planned_end_date = COALESCE($13, planned_end_date),
+        actual_start_date = COALESCE($14, actual_start_date),
+        actual_end_date = COALESCE($15, actual_end_date),
+        lead_officer_name = COALESCE($16, lead_officer_name),
+        lead_officer_contact = COALESCE($17, lead_officer_contact),
+        implementing_office = COALESCE($18, implementing_office),
+        remarks = COALESCE($19, remarks),
+        updated_by = $20,
+        updated_at = now()
+    WHERE id = $1
+    RETURNING *;
   `, [id, body.library_id || null, body.intervention_title || null, body.location_name || null, body.village_name || null, body.dsd_name || null, body.gnd_name || null, body.latitude === undefined ? null : num(body.latitude), body.longitude === undefined ? null : num(body.longitude), body.priority || null, body.status || null, body.planned_start_date || null, body.planned_end_date || null, body.actual_start_date || null, body.actual_end_date || null, body.lead_officer_name || null, body.lead_officer_contact || null, body.implementing_office || null, body.remarks || null, user]);
   if (!result.rows[0]) return null;
   if (body.pollution_source_ids !== undefined || body.linked_pollution_source_ids !== undefined) {
