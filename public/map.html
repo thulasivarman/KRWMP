@@ -18,7 +18,7 @@
         <div class="flex-1 relative h-full">
             <div id="map-canvas" class="absolute inset-0 h-full w-full z-10"></div>
 
-// Loading indicator for map layers
+            <!-- Loading indicator for map layers -->
             <div id="map-loading-indicator"
      class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900 text-white text-xs px-4 py-2 rounded-lg shadow-lg">
     Loading layer...
@@ -47,6 +47,17 @@
                 </div>
 
                 <div class="space-y-3">
+                    <label class="flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-red-500/30 transition">
+                        <input type="checkbox" id="chk-layer-pollution-pressure-heatmap" class="accent-red-500 h-4 w-4 cursor-pointer flex-shrink-0">
+                        <div class="flex items-center justify-center w-8 flex-shrink-0" title="Dynamic pollution pressure heatmap">
+                            <span class="inline-block h-4 w-6 rounded-sm bg-gradient-to-r from-green-500 via-yellow-400 to-red-600 opacity-80"></span>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="font-semibold text-slate-300">Pollution Pressure Heatmap</div>
+                            <div class="text-[10px] text-slate-500">Weighted sources, complaints and water quality risk</div>
+                        </div>
+                    </label>
+
                     <label class="flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-sky-500/30 transition">
                         <input type="checkbox" id="chk-layer-basin" checked class="accent-sky-500 h-4 w-4 cursor-pointer flex-shrink-0">
                         <div class="flex items-center justify-center w-8 flex-shrink-0" title="Basin boundary legend">
