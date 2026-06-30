@@ -161,18 +161,9 @@ async function evidenceSearch(kind) {
   const point = selectedPoint();
   const radius = document.getElementById('evidenceRadiusSelect')?.value || '1000';
   const config = {
-    pollution: {
-      input: 'pollutionSourceSearchInput', target: 'pollutionSourceSearchResults', state: evidenceState.pollutionSources,
-      url: params => `/api/interventions/lookups/pollution-sources?${params}`, responseKey: 'sources'
-    },
-    complaint: {
-      input: 'complaintSearchInput', target: 'complaintSearchResults', state: evidenceState.complaints,
-      responseKey: 'reports'
-    },
-    water: {
-      input: 'waterQualitySearchInput', target: 'waterQualitySearchResults', state: evidenceState.waterQualityRecords,
-      url: params => `/api/interventions/lookups/water-quality-records?${params}`, responseKey: 'records'
-    },
+    pollution: { input: 'pollutionSourceSearchInput', target: 'pollutionSourceSearchResults', state: evidenceState.pollutionSources, url: params => `/api/interventions/lookups/pollution-sources?${params}`, responseKey: 'sources' },
+    complaint: { input: 'complaintSearchInput', target: 'complaintSearchResults', state: evidenceState.complaints, responseKey: 'reports' },
+    water: { input: 'waterQualitySearchInput', target: 'waterQualitySearchResults', state: evidenceState.waterQualityRecords, url: params => `/api/interventions/lookups/water-quality-records?${params}`, responseKey: 'records' },
   }[kind];
   const q = document.getElementById(config.input)?.value || '';
   const target = document.getElementById(config.target);
@@ -243,6 +234,75 @@ function bindEvidenceUi() {
   if (form) form.dataset.evidenceBound = 'true';
 }
 
+function evidenceCardsHtml(title, rows, type) {
+  return `<section class="krwmp-card-muted p-4"><h3 class="form-section-heading mb-3">${evEsc(title)}</h3>${rows.length ? rows.map(row => `<div class="krwmp-card p-3 text-sm"><strong>${evEsc(evidenceTitle(type, row))}</strong><div class="form-helper">${evEsc(evidenceMeta(type, row))}</div></div>`).join('') : '<div class="krwmp-empty-state">No linked records.</div>'}</section>`;
+}
+
+function installEnhancedViewModal() {
+  if (window.__krwmpEnhancedViewInstalled || typeof window.openViewModal !== 'function') return;
+  window.__krwmpEnhancedViewInstalled = true;
+  window.openViewModal = async function openViewModalWithEvidence(id) {
+    const viewModal = document.getElementById('viewInterventionModal');
+    const viewContent = document.getElementById('viewInterventionContent');
+    if (!viewModal || !viewContent) return;
+    const api = window.KRWMP_UTILS.apiRequest;
+    const esc = window.KRWMP_UTILS.escapeHtml;
+    const dRow = window.detailRow || ((label, value) => `<div><dt class="form-helper">${esc(label)}</dt><dd class="text-sm text-slate-100">${esc(value || '-')}</dd></div>`);
+    viewContent.innerHTML = '<div class="krwmp-loading-state">Loading intervention details...</div>';
+    viewModal.showModal();
+    try {
+      const [{ intervention }, complaintsData, attachmentsData] = await Promise.all([
+        api(`/api/interventions/registry/${id}`),
+        api(`/api/interventions/registry/${id}/community-reports`).catch(() => ({ reports: [] })),
+        api(`/api/files/intervention_registry/${id}`).catch(() => ({ files: [] })),
+      ]);
+      const complaints = complaintsData.reports || [];
+      const attachments = attachmentsData.files || [];
+      const pollutionSources = intervention.pollution_sources || [];
+      const waterQualityRecords = intervention.water_quality_records || [];
+      const progress = typeof window.calculatedProgress === 'function' ? window.calculatedProgress(intervention) : Number(intervention.progress_percent || 0);
+      const actionsHtml = typeof window.actionCardsHtml === 'function' ? window.actionCardsHtml(intervention.timeline || [], false) : '<div class="krwmp-empty-state">No actions recorded.</div>';
+      viewContent.innerHTML = `
+        <section class="krwmp-card-muted p-4">
+          <h3 class="form-section-heading mb-3">${esc(intervention.intervention_title || '-')}</h3>
+          <dl class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            ${dRow('Library Type', intervention.library_name)}${dRow('Status', intervention.status)}${dRow('Priority', intervention.priority)}
+            ${dRow('Location', intervention.location_name)}${dRow('Village', intervention.village_name)}${dRow('DSD', intervention.dsd_name)}${dRow('GND', intervention.gnd_name)}
+            ${dRow('Latitude', intervention.latitude)}${dRow('Longitude', intervention.longitude)}${dRow('Planned Start', window.formatDate ? window.formatDate(intervention.planned_start_date) : intervention.planned_start_date)}${dRow('Planned End', window.formatDate ? window.formatDate(intervention.planned_end_date) : intervention.planned_end_date)}
+            ${dRow('Actual Start', window.formatDate ? window.formatDate(intervention.actual_start_date) : intervention.actual_start_date)}${dRow('Actual End', window.formatDate ? window.formatDate(intervention.actual_end_date) : intervention.actual_end_date)}${dRow('Lead Officer', intervention.lead_officer_name)}${dRow('Lead Contact', intervention.lead_officer_contact)}${dRow('Responsible Institution', intervention.implementing_office)}${dRow('Calculated Progress', `${progress}%`)}${dRow('Remarks / Description', intervention.remarks)}
+          </dl>
+        </section>
+        ${evidenceCardsHtml('Linked Pollution Sources', pollutionSources.map(row => ({ ...row, id: row.pollution_source_id || row.id })), 'pollution')}
+        <section class="krwmp-card-muted p-4"><h3 class="form-section-heading mb-3">Linked Complaints</h3>${complaints.length ? complaints.map(row => `<div class="krwmp-card p-3 text-sm"><strong>${esc(row.issue_title || row.description || row.report_code || 'Community complaint')}</strong><div class="form-helper">${esc(row.report_code || '-')} · ${esc(row.category_name || row.issue_name || '-')} · ${esc(row.report_status || row.status || '-')}</div></div>`).join('') : '<div class="krwmp-empty-state">No linked complaints.</div>'}</section>
+        ${evidenceCardsHtml('Linked Water Quality Records', waterQualityRecords.map(row => ({ ...row, id: row.water_quality_record_id || row.id })), 'water')}
+        <section class="krwmp-card-muted p-4"><h3 class="form-section-heading mb-3">Actions</h3>${actionsHtml}</section>
+        <section class="krwmp-card-muted p-4"><h3 class="form-section-heading mb-3">Attachments</h3>${attachments.length ? attachments.map(file => `<div class="text-sm text-slate-200">${esc(file.original_filename || file.object_key || 'Attachment')}</div>`).join('') : '<div class="krwmp-empty-state">No attachments found.</div>'}</section>`;
+    } catch (error) {
+      viewContent.innerHTML = `<div class="krwmp-empty-state">Unable to load intervention details: ${evEsc(error.message)}</div>`;
+    }
+  };
+}
+
+function installRobustRegistryButtonHandlers() {
+  if (window.__krwmpRobustRegistryButtonsInstalled) return;
+  window.__krwmpRobustRegistryButtonsInstalled = true;
+  document.addEventListener('click', event => {
+    const actionButton = event.target.closest('button[data-action]');
+    const viewButton = event.target.closest('button[data-view]');
+    if (!actionButton && !viewButton) return;
+    const id = actionButton?.dataset.action || viewButton?.dataset.view;
+    if (!id) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    if (viewButton && typeof window.openViewModal === 'function') return window.openViewModal(id);
+    if (actionButton && typeof window.interventionById === 'function' && typeof window.openActionModal === 'function') {
+      const item = window.interventionById(id);
+      if (item) return window.openActionModal(item);
+    }
+  }, true);
+}
+
 const interventionObserver = new MutationObserver(() => {
   enhanceInterventionAccordions();
   applyInterventionRegistryFilters();
@@ -254,9 +314,13 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('interventionStatusFilter')?.addEventListener('change', applyInterventionRegistryFilters);
   installEvidenceUi();
   bindEvidenceUi();
+  installEnhancedViewModal();
+  installRobustRegistryButtonHandlers();
   setTimeout(() => {
     installEvidenceUi();
     bindEvidenceUi();
+    installEnhancedViewModal();
+    installRobustRegistryButtonHandlers();
     enhanceInterventionAccordions();
     applyInterventionRegistryFilters();
   }, 500);
