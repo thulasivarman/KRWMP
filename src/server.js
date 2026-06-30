@@ -19,6 +19,7 @@ fastify.register(require('./routes/spatial.routes'), { prefix: '/api' });
 fastify.register(require('./routes/layers.routes'), { prefix: '/api' });
 fastify.register(require('@fastify/multipart'));
 fastify.register(require('./routes/vector-layer.routes'), { prefix: '/api' });
+fastify.register(require('./routes/pollution-pressure.routes'), { prefix: '/api' });
 
 fastify.setErrorHandler((error, request, reply) => {
   fastify.log.error(error);
