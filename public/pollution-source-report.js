@@ -17,6 +17,11 @@ let contactMatches = [];
 function show(message, error = false) { window.KRWMP_UTILS.showStatus(statusBox, message, error); }
 function clean(value) { return String(value ?? '').trim(); }
 function openList() { window.location.href = '/pollution-sources.html'; }
+function normalizeSourceStatus(value) {
+  const status = clean(value).toLowerCase();
+  if (status === 'closed') return 'closed';
+  return 'active';
+}
 
 async function initSidebar() {
   if (window.KRWMP_ENGINE) await window.KRWMP_ENGINE.assembleInterfaceContext('/sidebar.html', 'sidebar');
@@ -118,6 +123,7 @@ async function uploadSourceFiles(source) {
 async function saveSource(event) {
   event.preventDefault();
   const body = Object.fromEntries(new FormData(form));
+  body.status = normalizeSourceStatus(body.status);
   if (!body.latitude || !body.longitude) return show('Please select the pollution source location.', true);
   try {
     const response = await api('/api/pollution-sources', { method: 'POST', body });
