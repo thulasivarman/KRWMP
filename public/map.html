@@ -12,8 +12,10 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-emerald-500/30 overflow-hidden">
     <a href="#map-canvas" class="krwmp-skip-link">Skip to map</a>
+
     <div class="flex h-screen w-screen overflow-hidden">
         <aside id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col z-30 krwmp-sidebar" aria-label="System navigation"></aside>
+
         <main class="flex-1 relative h-full" aria-label="GIS map workspace">
             <button id="mobile-sidebar-toggle" type="button" class="krwmp-mobile-menu-btn" aria-controls="sidebar" aria-expanded="false" aria-label="Open navigation menu">Menu</button>
             <div id="map-canvas" class="absolute inset-0 h-full w-full z-10" tabindex="0" aria-label="Interactive watershed map"></div>
@@ -42,28 +44,29 @@
                 <button id="btn-map-export" type="button" class="krwmp-map-btn-primary">Export PNG</button>
             </div>
 
-            <section id="data-layers-panel" class="hidden krwmp-layer-panel absolute top-20 right-6 w-80 max-h-[70vh] p-5 z-20 text-xs flex flex-col" aria-label="Vector layer controls">
+            <section id="data-layers-panel" class="hidden krwmp-layer-panel absolute top-20 right-6 w-80 max-h-[70vh] p-5 z-20 text-xs flex flex-col overflow-hidden" aria-label="Vector layer controls">
                 <div class="krwmp-layer-panel-header flex-shrink-0 mb-4">
                     <h2 class="krwmp-layer-panel-title">Vector Layer Matrix</h2>
                     <button id="btn-close-layer-panel" type="button" class="krwmp-modal-close" aria-label="Close vector layer panel">&times;</button>
                 </div>
 
-                <div class="space-y-3">
+                <div id="vector-layer-control-list" class="space-y-3 overflow-y-auto flex-1 pr-2">
+                    <label class="flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-red-500/30 transition">
+                        <input type="checkbox" id="chk-layer-pollution-pressure-heatmap" class="accent-red-500 h-4 w-4 cursor-pointer flex-shrink-0">
+                        <div class="flex items-center justify-center w-8 flex-shrink-0" title="Dynamic pollution pressure heatmap">
+                            <span class="inline-block h-4 w-6 rounded-sm bg-gradient-to-r from-green-500 via-yellow-400 to-red-600 opacity-80"></span>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="font-semibold text-slate-300">Pollution Pressure Heatmap</div>
+                            <div class="text-[10px] text-slate-500">Weighted sources, complaints and water quality risk</div>
+                        </div>
+                    </label>
+
                     <label class="flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-sky-500/30 transition">
                         <input type="checkbox" id="chk-layer-basin" checked class="accent-sky-500 h-4 w-4 cursor-pointer flex-shrink-0">
                         <div class="flex items-center justify-center w-8 flex-shrink-0" title="Basin boundary legend">
                             <span class="inline-block h-4 w-6 rounded-sm border-2 border-sky-500 bg-sky-500/10 border-dashed"></span>
                         </div>
-<label class="flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-red-500/30 transition">
-    <input type="checkbox" id="chk-layer-pollution-pressure-heatmap" class="accent-red-500 h-4 w-4 cursor-pointer flex-shrink-0">
-    <div class="flex items-center justify-center w-8 flex-shrink-0" title="Dynamic pollution pressure heatmap">
-        <span class="inline-block h-4 w-6 rounded-sm bg-gradient-to-r from-green-500 via-yellow-400 to-red-600 opacity-80"></span>
-    </div>
-    <div class="min-w-0">
-        <div class="font-semibold text-slate-300">Pollution Pressure Heatmap</div>
-        <div class="text-[10px] text-slate-500">Weighted sources, complaints and water quality risk</div>
-    </div>
-</label>
                         <div class="min-w-0">
                             <div class="font-semibold text-slate-300">Watershed Catchment Perimeter</div>
                             <div class="text-[10px] text-slate-500">Blue transparent polygon with dashed blue outline</div>
@@ -93,27 +96,29 @@
                     </label>
 
                     <label class="flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-green-500/30 transition">
-    <input type="checkbox" id="chk-layer-forest" class="accent-green-500 h-4 w-4 cursor-pointer">
-    <div class="h-4 w-4 rounded-sm bg-green-600 border border-green-800"></div>
-    <div>
-        <div class="font-semibold text-slate-300">Forest Cover</div>
-        <div class="text-[10px] text-slate-500">Forest plantations and cover areas</div>
-    </div>
-<label class="flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-red-500/30 transition">
-    <input type="checkbox" id="chk-layer-pollution-pressure-heatmap" class="accent-red-500 h-4 w-4 cursor-pointer flex-shrink-0">
-    <div class="flex items-center justify-center w-8 flex-shrink-0" title="Dynamic pollution pressure heatmap">
-        <span class="inline-block h-4 w-6 rounded-sm bg-gradient-to-r from-green-500 via-yellow-400 to-red-600 opacity-80"></span>
-    </div>
-    <div class="min-w-0">
-        <div class="font-semibold text-slate-300">Pollution Pressure Heatmap</div>
-        <div class="text-[10px] text-slate-500">Weighted sources, complaints and water quality risk</div>
-    </div>
-</label></label>
+                        <input type="checkbox" id="chk-layer-forest" class="accent-green-500 h-4 w-4 cursor-pointer flex-shrink-0">
+                        <div class="h-4 w-4 rounded-sm bg-green-600 border border-green-800 flex-shrink-0"></div>
+                        <div class="min-w-0">
+                            <div class="font-semibold text-slate-300">Forest Cover</div>
+                            <div class="text-[10px] text-slate-500">Forest plantations and cover areas</div>
+                        </div>
+                    </label>
                 </div>
-                <div id="raster-layer-control-list" class="space-y-3 overflow-y-auto flex-1 pr-2"><div class="krwmp-loading-state">Loading raster layers...</div></div>
+            </section>
+
+            <section id="raster-layers-panel" class="hidden krwmp-layer-panel absolute top-20 right-6 w-96 max-h-[75vh] p-5 z-20 text-xs flex flex-col overflow-hidden" aria-label="Raster layer controls">
+                <div class="krwmp-layer-panel-header flex-shrink-0 mb-4">
+                    <h2 class="krwmp-layer-panel-title">Raster Layer Matrix</h2>
+                    <button id="btn-close-raster-layer-panel" type="button" class="krwmp-modal-close" aria-label="Close raster layer panel">&times;</button>
+                </div>
+
+                <div id="raster-layer-control-list" class="space-y-3 overflow-y-auto flex-1 pr-2">
+                    <div class="krwmp-loading-state">Loading raster layers...</div>
+                </div>
             </section>
         </main>
     </div>
+
 <script src="/assets/js/krwmp-global.js"></script>
 <script src="/assets/js/krwmp-ui-enhancements.js"></script>
 <script src="/assets/js/layer-registry.js"></script>
