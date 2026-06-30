@@ -4,20 +4,24 @@
  * Loads layer definitions from /api/layers through window.KRWMP_DYNAMIC_LAYERS.
  */
 
+const POLLUTION_PRESSURE_SOURCE_ID = 'pollution-pressure-heatmap-source';
+const POLLUTION_PRESSURE_LAYER_ID = 'pollution-pressure-heatmap-layer';
+const POLLUTION_PRESSURE_API_URL = '/api/analytics/pollution-pressure/heatmap.geojson';
+
 window.initializeSupabaseSpatialSources = function () {
     const layers = window.KRWMP_DYNAMIC_LAYERS || [];
 
     if (!layers.length) {
         console.warn('No dynamic GIS layers found. Check /api/layers and layer-registry.js.');
-        return;
+    } else {
+        layers.forEach(layer => {
+            if (!window.shouldLoadLayerGroup(layer.layer_key)) return;
+            addDynamicSpatialLayer(layer);
+        });
     }
 
-    layers.forEach(layer => {
-        if (!window.shouldLoadLayerGroup(layer.layer_key)) return;
-        addDynamicSpatialLayer(layer);
-    });
-
     bindAllLayerToggles();
+    bindPollutionPressureHeatmapToggle();
 };
 
 // =====================================================
@@ -104,6 +108,111 @@ function addDynamicSpatialLayer(layer) {
     }
 
     window.KRWMP_MAP.once('idle', hideLayerLoading);
+}
+
+// =====================================================
+// Pollution Pressure Heatmap
+// =====================================================
+
+function bindPollutionPressureHeatmapToggle() {
+    const checkbox = document.getElementById('chk-layer-pollution-pressure-heatmap');
+    if (!checkbox || checkbox.dataset.krwmpBound === 'true') return;
+
+    checkbox.dataset.krwmpBound = 'true';
+
+    checkbox.addEventListener('change', async (event) => {
+        if (event.target.checked) {
+            await addPollutionPressureHeatmapLayer();
+            setLayerVisibility(POLLUTION_PRESSURE_LAYER_ID, 'visible');
+        } else {
+            setLayerVisibility(POLLUTION_PRESSURE_LAYER_ID, 'none');
+        }
+    });
+
+    if (checkbox.checked) {
+        addPollutionPressureHeatmapLayer();
+    }
+}
+
+async function addPollutionPressureHeatmapLayer() {
+    if (!window.KRWMP_MAP) return;
+
+    showLayerLoading('Loading pollution pressure heatmap...');
+
+    if (!window.KRWMP_MAP.getSource(POLLUTION_PRESSURE_SOURCE_ID)) {
+        window.KRWMP_MAP.addSource(POLLUTION_PRESSURE_SOURCE_ID, {
+            type: 'geojson',
+            data: POLLUTION_PRESSURE_API_URL
+        });
+    } else {
+        const source = window.KRWMP_MAP.getSource(POLLUTION_PRESSURE_SOURCE_ID);
+        if (source && typeof source.setData === 'function') {
+            source.setData(`${POLLUTION_PRESSURE_API_URL}?_=${Date.now()}`);
+        }
+    }
+
+    if (!window.KRWMP_MAP.getLayer(POLLUTION_PRESSURE_LAYER_ID)) {
+        window.KRWMP_MAP.addLayer({
+            id: POLLUTION_PRESSURE_LAYER_ID,
+            type: 'heatmap',
+            source: POLLUTION_PRESSURE_SOURCE_ID,
+            maxzoom: 17,
+            paint: {
+                'heatmap-weight': [
+                    'interpolate',
+                    ['linear'],
+                    ['get', 'intensity_normalized'],
+                    0, 0,
+                    1, 1
+                ],
+                'heatmap-intensity': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    0, 1,
+                    12, 2,
+                    17, 3
+                ],
+                'heatmap-radius': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    0, 10,
+                    9, 24,
+                    14, 38,
+                    17, 55
+                ],
+                'heatmap-opacity': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    7, 0.80,
+                    17, 0.60
+                ],
+                'heatmap-color': [
+                    'interpolate',
+                    ['linear'],
+                    ['heatmap-density'],
+                    0, 'rgba(34,197,94,0)',
+                    0.20, 'rgb(34,197,94)',
+                    0.40, 'rgb(163,230,53)',
+                    0.60, 'rgb(250,204,21)',
+                    0.80, 'rgb(249,115,22)',
+                    1, 'rgb(220,38,38)'
+                ]
+            },
+            layout: {
+                visibility: 'visible'
+            }
+        });
+    }
+
+    window.KRWMP_MAP.once('idle', hideLayerLoading);
+}
+
+function setLayerVisibility(layerId, visibility) {
+    if (!window.KRWMP_MAP || !window.KRWMP_MAP.getLayer(layerId)) return;
+    window.KRWMP_MAP.setLayoutProperty(layerId, 'visibility', visibility);
 }
 
 // =====================================================
