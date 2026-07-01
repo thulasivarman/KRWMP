@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pollution Pressure Configuration - KRWMP Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen overflow-x-hidden">
+  <div class="flex min-h-screen w-full max-w-full overflow-x-hidden">
+    <div id="sidebar" class="w-64 shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
+    <main class="flex-1 min-w-0 max-w-full overflow-x-hidden krwmp-page krwmp-stack-lg">
+      <header class="krwmp-page-header flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 min-w-0">
+        <div class="min-w-0">
+          <p class="krwmp-eyebrow">Analytics Configuration</p>
+          <h1 class="krwmp-page-title">Pollution Pressure Heatmap Logic</h1>
+          <p class="krwmp-body-text">Configure expert-defined component weights, scoring rules, and pressure classification ranges.</p>
+        </div>
+        <button id="refreshConfigBtn" class="krwmp-btn krwmp-btn-secondary">Refresh</button>
+      </header>
+
+      <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
+
+      <section class="krwmp-panel krwmp-stack-md">
+        <h2 class="text-lg font-bold text-slate-100">Component Weights</h2>
+        <p class="krwmp-body-text">Adjust the influence of pollution sources, complaints, and water quality records.</p>
+        <div id="componentConfigGrid" class="grid grid-cols-1 lg:grid-cols-3 gap-4"></div>
+      </section>
+
+      <section class="krwmp-panel krwmp-stack-md">
+        <h2 class="text-lg font-bold text-slate-100">Scoring Rules</h2>
+        <p class="krwmp-body-text">Enable/disable rules and update score values used by the dynamic heatmap model.</p>
+        <div class="max-w-full overflow-x-auto">
+          <table class="w-full text-xs border-collapse min-w-[900px]">
+            <thead class="bg-slate-900 text-slate-300">
+              <tr>
+                <th class="border border-slate-800 p-2 text-left">Component</th>
+                <th class="border border-slate-800 p-2 text-left">Rule</th>
+                <th class="border border-slate-800 p-2 text-left">Field</th>
+                <th class="border border-slate-800 p-2 text-left">Operator</th>
+                <th class="border border-slate-800 p-2 text-left">Value</th>
+                <th class="border border-slate-800 p-2 text-right">Score</th>
+                <th class="border border-slate-800 p-2 text-center">Active</th>
+                <th class="border border-slate-800 p-2 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody id="ruleConfigBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="krwmp-panel krwmp-stack-md">
+        <h2 class="text-lg font-bold text-slate-100">Pressure Classes</h2>
+        <p class="krwmp-body-text">Configure score ranges used in the dashboard pie chart and GN priority classification.</p>
+        <div class="max-w-full overflow-x-auto">
+          <table class="w-full text-xs border-collapse min-w-[760px]">
+            <thead class="bg-slate-900 text-slate-300">
+              <tr>
+                <th class="border border-slate-800 p-2 text-left">Class</th>
+                <th class="border border-slate-800 p-2 text-right">Min</th>
+                <th class="border border-slate-800 p-2 text-right">Max</th>
+                <th class="border border-slate-800 p-2 text-left">Color</th>
+                <th class="border border-slate-800 p-2 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody id="classConfigBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="/assets/js/krwmp-global.js"></script>
+  <script src="/assets/js/privilege-guard.js"></script>
+  <script src="/assets/js/admin-pollution-pressure-config.js"></script>
+</body>
+</html>
