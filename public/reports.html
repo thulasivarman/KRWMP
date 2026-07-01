@@ -12,14 +12,24 @@
       overflow-x: hidden;
     }
 
-    #reportTableWrapper {
+    #reportTableWrapper,
+    #criticalGnWrapper {
       max-width: 100%;
       overflow-x: auto;
       overflow-y: hidden;
     }
 
-    #reportTableWrapper table {
+    #reportTableWrapper table,
+    #criticalGnWrapper table {
       min-width: max-content;
+    }
+
+    .pollution-pie-legend span {
+      display: inline-block;
+      width: 0.7rem;
+      height: 0.7rem;
+      border-radius: 9999px;
+      margin-right: 0.35rem;
     }
   </style>
 </head>
@@ -36,6 +46,68 @@
       </header>
 
       <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
+
+      <section class="krwmp-panel krwmp-stack-md">
+        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+          <div>
+            <p class="krwmp-eyebrow">Pollution Stress Analytics</p>
+            <h2 class="text-xl font-bold text-slate-100">Pollution Pressure Dashboard</h2>
+            <p class="krwmp-body-text">GN-level pressure grouping from the active pollution pressure heatmap model.</p>
+          </div>
+          <div class="flex flex-wrap gap-2 text-xs">
+            <label class="form-label">Pressure Level
+              <select id="pollutionPressureLevelFilter" class="form-select mt-1 min-w-36">
+                <option value="">All Levels</option>
+                <option value="Very Low">Very Low</option>
+                <option value="Low">Low</option>
+                <option value="Moderate">Moderate</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+              </select>
+            </label>
+            <label class="form-label">Component
+              <select id="pollutionComponentFilter" class="form-select mt-1 min-w-40">
+                <option value="">All Components</option>
+                <option value="pollution_source">Pollution Sources</option>
+                <option value="complaint">Complaints</option>
+                <option value="water_quality">Water Quality</option>
+              </select>
+            </label>
+            <label class="form-label">Min Intensity
+              <input id="pollutionMinIntensityFilter" type="number" min="0" max="100" step="1" class="form-input mt-1 w-28" placeholder="0">
+            </label>
+            <button id="pollutionDashboardRefreshBtn" class="krwmp-btn krwmp-btn-secondary self-end">Refresh</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div class="bg-slate-950/50 border border-slate-800 rounded-xl p-4">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-300 mb-3">Pressure Distribution by GN</h3>
+            <div id="pollutionPressurePie" class="min-h-64 flex items-center justify-center text-slate-500 text-sm">Loading chart...</div>
+            <div id="pollutionPressureLegend" class="pollution-pie-legend mt-4 grid grid-cols-1 gap-2 text-xs text-slate-400"></div>
+          </div>
+
+          <div class="xl:col-span-2 bg-slate-950/50 border border-slate-800 rounded-xl p-4">
+            <div class="flex items-center justify-between gap-3 mb-3">
+              <h3 class="text-sm font-bold uppercase tracking-wider text-slate-300">Critical GN Priority List</h3>
+              <span id="criticalGnCount" class="text-[10px] text-slate-500 uppercase tracking-wider">Loading</span>
+            </div>
+            <div id="criticalGnWrapper">
+              <table class="w-full text-xs border-collapse">
+                <thead class="bg-slate-900 text-slate-300">
+                  <tr>
+                    <th class="border border-slate-800 p-2 text-left">GN</th>
+                    <th class="border border-slate-800 p-2 text-left">Pressure Level</th>
+                    <th class="border border-slate-800 p-2 text-right">Score</th>
+                    <th class="border border-slate-800 p-2 text-left">Recommended Action</th>
+                  </tr>
+                </thead>
+                <tbody id="criticalGnTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section class="krwmp-panel grid grid-cols-1 md:grid-cols-5 gap-4 text-sm max-w-full overflow-hidden">
         <label class="form-label min-w-0 md:col-span-2">Report Type
