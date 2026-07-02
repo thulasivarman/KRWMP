@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Intelligence - KRWMP Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div class="flex min-h-screen">
+    <div id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col"></div>
+    <main class="flex-1 krwmp-page krwmp-stack-lg">
+      <header class="krwmp-page-header krwmp-cluster-between gap-4">
+        <div>
+          <p class="krwmp-eyebrow">Dashboard Intelligence</p>
+          <h1 class="krwmp-page-title">Core Watershed KPIs</h1>
+          <p class="krwmp-body-text">Complaint conversion, unresolved hotspots, recurrence, intervention effectiveness and watershed health.</p>
+        </div>
+        <button id="refreshBtn" type="button" class="krwmp-btn krwmp-btn-primary">Refresh</button>
+      </header>
+
+      <section id="statusBox" class="hidden rounded-lg p-3 text-sm"></section>
+
+      <section id="healthPanel" class="krwmp-panel krwmp-stack-md"></section>
+
+      <section id="kpiGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4"></section>
+
+      <section class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div id="hotspotPanel" class="krwmp-panel krwmp-stack-sm"></div>
+        <div id="recurrencePanel" class="krwmp-panel krwmp-stack-sm"></div>
+      </section>
+
+      <section id="effectivenessPanel" class="krwmp-panel krwmp-stack-sm"></section>
+    </main>
+  </div>
+  <script src="/assets/js/krwmp-global.js"></script>
+  <script src="/assets/js/privilege-guard.js"></script>
+  <script src="/dashboard-intelligence.js"></script>
+</body>
+</html>
