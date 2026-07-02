@@ -8,9 +8,25 @@ const recurrencePanel = document.getElementById('recurrencePanel');
 const effectivenessPanel = document.getElementById('effectivenessPanel');
 const refreshBtn = document.getElementById('refreshBtn');
 
+let hotspotMap = null;
+let hotspotMarkers = [];
+
 function show(message, error = false) { showStatus(statusBox, message, error); }
 function pct(value) { return `${Number(value || 0).toFixed(1)}%`; }
 function num(value, decimals = 0) { return Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: decimals, minimumFractionDigits: decimals }); }
+function validCoord(row) { return Number.isFinite(Number(row.latitude)) && Number.isFinite(Number(row.longitude)); }
+function severityClass(row) {
+  const severity = Number(row.severity_max || 0);
+  if (severity >= 4) return 'high';
+  if (severity >= 2) return 'medium';
+  return 'low';
+}
+function severityLabel(row) {
+  const cls = severityClass(row);
+  if (cls === 'high') return 'High';
+  if (cls === 'medium') return 'Medium';
+  return 'Low';
+}
 
 function kpiCard(title, value, helper, tone = 'info') {
   return `<article class="krwmp-card p-4"><p class="form-helper">${esc(title)}</p><div class="mt-2 text-3xl font-bold text-slate-100">${esc(value)}</div><p class="mt-2 text-xs text-slate-400">${esc(helper)}</p><span class="mt-3 inline-flex krwmp-badge krwmp-badge-${tone}">${esc(tone.toUpperCase())}</span></article>`;
@@ -46,9 +62,83 @@ function renderKpis(data) {
   ].join('');
 }
 
+function clearHotspotMarkers() {
+  hotspotMarkers.forEach(marker => marker.remove());
+  hotspotMarkers = [];
+}
+
+function initHotspotMap(rows) {
+  if (!window.maplibregl) return;
+  const validRows = rows.filter(validCoord);
+  if (!hotspotMap) {
+    hotspotMap = new maplibregl.Map({
+      container: 'hotspotMap',
+      style: {
+        version: 8,
+        sources: {
+          osm: {
+            type: 'raster',
+            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '© OpenStreetMap contributors',
+          },
+        },
+        layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
+      },
+      center: validRows.length ? [Number(validRows[0].longitude), Number(validRows[0].latitude)] : [80.45, 6.95],
+      zoom: validRows.length ? 10 : 8,
+    });
+    hotspotMap.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-left');
+  }
+  clearHotspotMarkers();
+  validRows.forEach((row, index) => {
+    const cls = severityClass(row);
+    const markerEl = document.createElement('div');
+    markerEl.className = `hotspot-marker hotspot-${cls}`;
+    markerEl.textContent = String(index + 1);
+    const popup = new maplibregl.Popup({ offset: 18 }).setHTML(`
+      <div class="text-sm">
+        <strong>Hotspot ${esc(index + 1)}</strong>
+        <div class="mt-1">Severity: ${esc(severityLabel(row))}</div>
+        <div>Cases: ${esc(row.case_count || 1)}</div>
+        <div>Lat/Lng: ${esc(Number(row.latitude).toFixed(5))}, ${esc(Number(row.longitude).toFixed(5))}</div>
+      </div>`);
+    const marker = new maplibregl.Marker({ element: markerEl })
+      .setLngLat([Number(row.longitude), Number(row.latitude)])
+      .setPopup(popup)
+      .addTo(hotspotMap);
+    hotspotMarkers.push(marker);
+  });
+  if (validRows.length) {
+    const bounds = new maplibregl.LngLatBounds();
+    validRows.forEach(row => bounds.extend([Number(row.longitude), Number(row.latitude)]));
+    hotspotMap.fitBounds(bounds, { padding: 60, maxZoom: 13, duration: 700 });
+  }
+  setTimeout(() => hotspotMap?.resize(), 150);
+}
+
 function renderHotspots(data) {
   const rows = data.unresolved_hotspot_density?.hotspots || [];
-  hotspotPanel.innerHTML = `<h2 class="form-section-heading">Unresolved Hotspots</h2>${rows.length ? rows.map(row => `<div class="krwmp-card p-3 text-sm"><strong>Cluster ${esc(row.cluster_id)}</strong><div class="form-helper">${esc(row.case_count)} cases · ${esc(row.latitude?.toFixed ? row.latitude.toFixed(5) : row.latitude)}, ${esc(row.longitude?.toFixed ? row.longitude.toFixed(5) : row.longitude)}</div></div>`).join('') : '<div class="krwmp-empty-state">No unresolved hotspot clusters found.</div>'}`;
+  hotspotPanel.innerHTML = `
+    <div class="krwmp-cluster-between gap-3">
+      <div><h2 class="form-section-heading">Unresolved Hotspots Map</h2><p class="form-helper">Pinned unresolved complaint hotspots. Pin colour indicates severity.</p></div>
+      <div class="flex items-center gap-3 text-xs text-slate-400"><span><i class="inline-block w-3 h-3 rounded-full bg-red-600 mr-1"></i>High</span><span><i class="inline-block w-3 h-3 rounded-full bg-orange-500 mr-1"></i>Medium</span><span><i class="inline-block w-3 h-3 rounded-full bg-yellow-500 mr-1"></i>Low</span></div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-3">
+      <div id="hotspotMap" class="lg:col-span-2 h-[430px] rounded-xl border border-slate-700 overflow-hidden bg-slate-900"></div>
+      <div class="krwmp-stack-sm max-h-[430px] overflow-y-auto pr-1">
+        ${rows.length ? rows.map((row, index) => `<button type="button" data-hotspot-index="${index}" class="krwmp-card p-3 text-left text-sm hover:border-emerald-400 transition w-full"><strong>Hotspot ${esc(index + 1)} · ${esc(severityLabel(row))}</strong><div class="form-helper">${esc(row.case_count || 1)} case(s) · ${esc(Number(row.latitude || 0).toFixed(5))}, ${esc(Number(row.longitude || 0).toFixed(5))}</div></button>`).join('') : '<div class="krwmp-empty-state">No unresolved hotspot coordinates found.</div>'}
+      </div>
+    </div>`;
+  initHotspotMap(rows);
+  hotspotPanel.querySelectorAll('[data-hotspot-index]').forEach(button => {
+    button.addEventListener('click', () => {
+      const row = rows[Number(button.dataset.hotspotIndex)];
+      if (!row || !validCoord(row) || !hotspotMap) return;
+      hotspotMap.flyTo({ center: [Number(row.longitude), Number(row.latitude)], zoom: 14 });
+      hotspotMarkers[Number(button.dataset.hotspotIndex)]?.togglePopup();
+    });
+  });
 }
 
 function renderRecurrence(data) {
