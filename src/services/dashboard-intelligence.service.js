@@ -53,7 +53,7 @@ async function unresolvedHotspotDensity() {
     SELECT
       (SELECT COUNT(*) FROM unresolved)::integer AS unresolved_cases,
       COALESCE((SELECT km2 FROM area), 0) AS basin_area_km2,
-      ROUND(((SELECT COUNT(*) FROM unresolved)::numeric / NULLIF((SELECT km2 FROM area), 0))::numeric, 4) AS unresolved_density_per_km2,
+      ROUND(((SELECT COUNT(*) FROM unresolved)::numeric / NULLIF((SELECT km2 FROM area), 0)), 4) AS unresolved_density_per_km2,
       COALESCE(jsonb_agg(jsonb_build_object(
         'cluster_id', cluster_id,
         'case_count', case_count,
@@ -143,16 +143,16 @@ async function interventionEffectiveness() {
       GROUP BY r.id
     ), scored AS (
       SELECT *,
-        LEAST(100, GREATEST(0,
+        ROUND(CAST(LEAST(100, GREATEST(0,
           progress_percent * 0.55 +
           CASE WHEN lower(COALESCE(status,'')) = 'completed' THEN 25 WHEN lower(COALESCE(status,'')) = 'ongoing' THEN 12 ELSE 0 END +
           LEAST(action_count, 5) * 4
-        )) AS effectiveness_score
+        )) AS numeric), 2) AS effectiveness_score
       FROM base
     )
     SELECT
       COUNT(*)::integer AS total_interventions,
-      ROUND(AVG(effectiveness_score)::numeric, 2) AS average_effectiveness_score,
+      ROUND(AVG(effectiveness_score), 2) AS average_effectiveness_score,
       COUNT(*) FILTER (WHERE effectiveness_score >= 70)::integer AS effective_count,
       COUNT(*) FILTER (WHERE effectiveness_score >= 40 AND effectiveness_score < 70)::integer AS moderate_count,
       COUNT(*) FILTER (WHERE effectiveness_score < 40)::integer AS weak_count,
@@ -166,7 +166,7 @@ async function interventionEffectiveness() {
         'linked_complaints', linked_complaints,
         'linked_pollution_sources', linked_pollution_sources,
         'linked_water_quality_records', linked_water_quality_records,
-        'effectiveness_score', ROUND(effectiveness_score::numeric, 2),
+        'effectiveness_score', effectiveness_score,
         'effectiveness_class', CASE WHEN effectiveness_score >= 70 THEN 'Effective' WHEN effectiveness_score >= 40 THEN 'Moderate' ELSE 'Weak' END
       ) ORDER BY effectiveness_score DESC), '[]'::jsonb) AS interventions
     FROM scored;
