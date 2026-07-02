@@ -5,7 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Intelligence - KRWMP Portal</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/style.css">
+  <style>
+    .hotspot-marker { width: 28px; height: 28px; border-radius: 999px; display: grid; place-items: center; color: white; font-size: 12px; font-weight: 700; border: 2px solid rgba(255,255,255,.9); box-shadow: 0 8px 18px rgba(0,0,0,.35); }
+    .hotspot-high { background: #dc2626; }
+    .hotspot-medium { background: #f97316; }
+    .hotspot-low { background: #eab308; color: #111827; }
+    .maplibregl-popup-content { background: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 12px; }
+    .maplibregl-popup-tip { border-top-color: #0f172a !important; }
+  </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
   <div class="flex min-h-screen">
@@ -26,8 +36,8 @@
 
       <section id="kpiGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4"></section>
 
-      <section class="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <div id="hotspotPanel" class="krwmp-panel krwmp-stack-sm"></div>
+      <section class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <div id="hotspotPanel" class="krwmp-panel krwmp-stack-sm xl:col-span-2"></div>
         <div id="recurrencePanel" class="krwmp-panel krwmp-stack-sm"></div>
       </section>
 
