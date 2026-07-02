@@ -10,6 +10,8 @@ const POLLUTION_PRESSURE_API_URL = '/api/analytics/pollution-pressure/heatmap.ge
 window.initializeSupabaseSpatialSources = function () {
     const layers = window.KRWMP_DYNAMIC_LAYERS || [];
 
+    renderDynamicLayerToggles(layers);
+
     if (!layers.length) {
         console.warn('No dynamic GIS layers found. Check /api/layers and layer-registry.js.');
     } else {
@@ -37,7 +39,7 @@ function hideLayerLoading() {
 }
 
 function addDynamicSpatialLayer(layer) {
-    if (!window.KRWMP_MAP || !layer) return;
+    if (!window.KRWMP_MAP || !layer || !layer.source_id || !layer.api_url) return;
     showLayerLoading(`Loading ${layer.layer_name || layer.layer_key}...`);
 
     if (!window.KRWMP_MAP.getSource(layer.source_id)) {
@@ -96,6 +98,73 @@ function addDynamicSpatialLayer(layer) {
     }
 
     window.KRWMP_MAP.once('idle', hideLayerLoading);
+}
+
+// =====================================================
+// Dynamic checkbox rendering
+// =====================================================
+
+function renderDynamicLayerToggles(layers) {
+    const list = document.getElementById('vector-layer-control-list');
+    if (!list || !Array.isArray(layers)) return;
+
+    layers.forEach(layer => {
+        if (!layer || !layer.layer_key) return;
+
+        const checkboxId = getCheckboxIdFromConfigKey(layer.layer_key);
+        if (document.getElementById(checkboxId)) return;
+
+        const label = document.createElement('label');
+        label.className = 'flex items-center gap-3 bg-slate-950/40 p-2.5 rounded border border-slate-800/60 cursor-pointer hover:border-cyan-500/30 transition';
+        label.dataset.dynamicLayerKey = layer.layer_key;
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = checkboxId;
+        checkbox.className = 'accent-cyan-500 h-4 w-4 cursor-pointer flex-shrink-0';
+        checkbox.checked = isLayerDefaultVisible(layer);
+
+        const symbol = document.createElement('div');
+        symbol.className = 'flex items-center justify-center w-8 flex-shrink-0';
+        symbol.title = layer.layer_name || layer.layer_key;
+        symbol.innerHTML = getLayerLegendSymbol(layer);
+
+        const textWrap = document.createElement('div');
+        textWrap.className = 'min-w-0';
+
+        const title = document.createElement('div');
+        title.className = 'font-semibold text-slate-300 truncate';
+        title.textContent = layer.layer_name || prettifyKey(layer.layer_key);
+
+        const subtitle = document.createElement('div');
+        subtitle.className = 'text-[10px] text-slate-500 truncate';
+        subtitle.textContent = layer.category || getLayerTypeLabel(layer);
+
+        textWrap.appendChild(title);
+        textWrap.appendChild(subtitle);
+
+        label.appendChild(checkbox);
+        label.appendChild(symbol);
+        label.appendChild(textWrap);
+        list.appendChild(label);
+    });
+}
+
+function getLayerLegendSymbol(layer) {
+    const fill = layer.fill_color || layer.point_color || '#22c55e';
+    const line = layer.line_color || '#ffffff';
+
+    if (isPointLayer(layer)) {
+        return `<span class="inline-block h-4 w-4 rounded-full" style="background:${escapeAttr(fill)}; border:2px solid ${escapeAttr(line)}"></span>`;
+    }
+
+    return `<span class="inline-block h-4 w-6 rounded-sm" style="background:${escapeAttr(fill)}33; border:2px solid ${escapeAttr(line)}"></span>`;
+}
+
+function getLayerTypeLabel(layer) {
+    if (isPointLayer(layer)) return 'Operational point layer';
+    if (layer.line_layer_id && !layer.fill_layer_id) return 'Boundary / line layer';
+    return 'GIS vector layer';
 }
 
 // =====================================================
@@ -214,13 +283,21 @@ function bindAllLayerToggles() {
 window.bindCheckboxVisibilityToggle = function (checkboxId, targetLayerIds) {
     const checkbox = document.getElementById(checkboxId);
     if (!checkbox || checkbox.dataset.krwmpBound === 'true') return;
+
     checkbox.dataset.krwmpBound = 'true';
+
     checkbox.addEventListener('change', (e) => {
         const visibility = e.target.checked ? 'visible' : 'none';
         const layer = getLayerDefinitionByKey(getConfigKeyFromCheckboxId(checkboxId));
-        if (e.target.checked && layer) addDynamicSpatialLayer(layer);
+
+        if (e.target.checked && layer) {
+            addDynamicSpatialLayer(layer);
+        }
+
         targetLayerIds.forEach(layerId => {
-            if (window.KRWMP_MAP.getLayer(layerId)) window.KRWMP_MAP.setLayoutProperty(layerId, 'visibility', visibility);
+            if (window.KRWMP_MAP.getLayer(layerId)) {
+                window.KRWMP_MAP.setLayoutProperty(layerId, 'visibility', visibility);
+            }
         });
     });
 };
@@ -272,6 +349,7 @@ function isPointLayer(layer) {
         || layerKey.includes('point')
         || layerKey.includes('source')
         || layerKey.includes('complaint')
+        || layerKey.includes('intervention')
         || layerKey.includes('monitoring');
 }
 
@@ -283,4 +361,22 @@ function getPointPaint(layer) {
         'circle-stroke-color': layer.line_color || '#ffffff',
         'circle-stroke-width': Number(layer.line_width || 1)
     };
+}
+
+function prettifyKey(key) {
+    return String(key || '')
+        .replaceAll('_', ' ')
+        .replaceAll('-', ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function escapeAttr(value) {
+    return String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;');
 }
