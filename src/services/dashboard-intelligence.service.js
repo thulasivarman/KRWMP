@@ -53,7 +53,7 @@ async function unresolvedHotspotDensity() {
     SELECT
       (SELECT COUNT(*) FROM unresolved)::integer AS unresolved_cases,
       COALESCE((SELECT km2 FROM area), 0) AS basin_area_km2,
-      ROUND(((SELECT COUNT(*) FROM unresolved)::numeric / NULLIF((SELECT km2 FROM area), 0)), 4) AS unresolved_density_per_km2,
+      ROUND(((SELECT COUNT(*) FROM unresolved)::numeric / NULLIF((SELECT km2 FROM area), 0))::numeric, 4) AS unresolved_density_per_km2,
       COALESCE(jsonb_agg(jsonb_build_object(
         'cluster_id', cluster_id,
         'case_count', case_count,
