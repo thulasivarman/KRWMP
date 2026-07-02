@@ -152,7 +152,7 @@ async function interventionEffectiveness() {
     )
     SELECT
       COUNT(*)::integer AS total_interventions,
-      ROUND(AVG(effectiveness_score), 2) AS average_effectiveness_score,
+      ROUND(AVG(effectiveness_score)::numeric, 2) AS average_effectiveness_score,
       COUNT(*) FILTER (WHERE effectiveness_score >= 70)::integer AS effective_count,
       COUNT(*) FILTER (WHERE effectiveness_score >= 40 AND effectiveness_score < 70)::integer AS moderate_count,
       COUNT(*) FILTER (WHERE effectiveness_score < 40)::integer AS weak_count,
@@ -166,7 +166,7 @@ async function interventionEffectiveness() {
         'linked_complaints', linked_complaints,
         'linked_pollution_sources', linked_pollution_sources,
         'linked_water_quality_records', linked_water_quality_records,
-        'effectiveness_score', ROUND(effectiveness_score, 2),
+        'effectiveness_score', ROUND(effectiveness_score::numeric, 2),
         'effectiveness_class', CASE WHEN effectiveness_score >= 70 THEN 'Effective' WHEN effectiveness_score >= 40 THEN 'Moderate' ELSE 'Weak' END
       ) ORDER BY effectiveness_score DESC), '[]'::jsonb) AS interventions
     FROM scored;
