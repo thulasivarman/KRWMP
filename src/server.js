@@ -23,6 +23,7 @@ fastify.register(require('./routes/admin.routes'), { prefix: '/api' });
 fastify.register(require('./routes/privileges.routes'), { prefix: '/api' });
 fastify.register(require('./routes/spatial.routes'), { prefix: '/api' });
 fastify.register(require('./routes/layers.routes'), { prefix: '/api' });
+fastify.register(require('./routes/vector-tile.routes'), { prefix: '/api' });
 fastify.register(require('./routes/vector-layer.routes'), { prefix: '/api' });
 fastify.register(require('./routes/pollution-pressure.routes'), { prefix: '/api' });
 fastify.register(require('./routes/raster-layer.routes'), { prefix: '/api' });
