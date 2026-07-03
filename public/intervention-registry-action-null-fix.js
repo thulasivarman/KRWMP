@@ -18,6 +18,14 @@
     };
   };
 
+  if (!document.querySelector('script[data-intervention-registry-performance]')) {
+    const script = document.createElement('script');
+    script.src = '/intervention-registry-performance.js';
+    script.defer = true;
+    script.dataset.interventionRegistryPerformance = 'true';
+    document.body.appendChild(script);
+  }
+
   // Keep a visible marker for debugging without interrupting users.
   console.debug('Intervention Registry action person null-safety patch loaded.', escapeHtml('OK'));
 })();
