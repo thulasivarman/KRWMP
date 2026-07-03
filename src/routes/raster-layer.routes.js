@@ -1,4 +1,5 @@
 const rasterLayerService = require('../services/raster-layer.service');
+const rasterTileService = require('../services/raster-tile.service');
 const { getRequestUser, requirePrivilegeInline } = require('../middleware/privilege.middleware');
 const { assertRasterUpload } = require('../utils/upload-validation');
 
@@ -16,10 +17,21 @@ function extractFields(fields = {}) {
   return {
     name: getFieldValue(fields, 'name'), id: getFieldValue(fields, 'id'), visible: getFieldValue(fields, 'visible'), opacity: getFieldValue(fields, 'opacity'),
     minZoom: getFieldValue(fields, 'minZoom'), maxZoom: getFieldValue(fields, 'maxZoom'), attribution: getFieldValue(fields, 'attribution'), bounds: getFieldValue(fields, 'bounds'), fileType: getFieldValue(fields, 'fileType'),
+    symbology: getFieldValue(fields, 'symbology'),
   };
 }
 
 async function rasterLayerRoutes(fastify) {
+  fastify.get('/raster-tiles/:layerKey/:z/:x/:y.png', async (request, reply) => {
+    if (!await requirePrivilegeInline(request, reply, 'map_view', 'view')) return;
+    const tile = await rasterTileService.getRasterTile(request.params.layerKey, request.params.z, request.params.x, request.params.y);
+    if (!tile) return reply.status(404).send({ success: false, message: 'Raster layer not found' });
+    return reply
+      .header('Content-Type', 'image/png')
+      .header('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800')
+      .send(tile);
+  });
+
   fastify.get('/raster-layers', async (request, reply) => {
     if (!await requirePrivilegeInline(request, reply, 'raster_layers', 'view')) return;
     const layers = await rasterLayerService.listRasterLayers({ activeOnly: true });
@@ -44,9 +56,8 @@ async function rasterLayerRoutes(fastify) {
 
   fastify.post('/raster-layers/:id/process', async (request, reply) => {
     if (!await requirePrivilegeInline(request, reply, 'raster_layers', 'update')) return;
-    const result = await rasterLayerService.processRasterLayerForTiles(request.params.id, request.body || {});
-    if (!result) return reply.status(404).send({ success: false, message: 'Raster layer not found' });
-    return { success: result.success !== false, message: result.message, result };
+    const result = { success: true, message: 'Raster tile endpoint is generated automatically from the R2-backed preview image.', tile_url_template: `/api/raster-tiles/${encodeURIComponent(request.params.id)}/{z}/{x}/{y}.png` };
+    return { success: true, message: result.message, result };
   });
 
   fastify.put('/raster-layers/:id', async (request, reply) => {
