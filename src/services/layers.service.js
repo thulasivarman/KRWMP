@@ -16,9 +16,6 @@ async function getActiveLayers(identifier = '') {
             layer_name,
             category,
             api_url,
-            '/api/tiles/layers/' || layer_key || '/{z}/{x}/{y}.pbf' AS tile_url,
-            mvt_layer_name(layer_key) AS mvt_layer,
-            'vector' AS source_type,
             source_id,
             fill_layer_id,
             line_layer_id,
@@ -49,9 +46,9 @@ async function getActiveLayers(identifier = '') {
         if (await hasPrivilege(identifier, layer.required_privilege || 'map_view', 'view')) {
             filtered.push({
                 ...layer,
-                mvt_layer: mvtLayerName(layer.layer_key),
                 source_type: 'vector',
                 tile_url: `/api/tiles/layers/${encodeURIComponent(layer.layer_key)}/{z}/{x}/{y}.pbf`,
+                mvt_layer: mvtLayerName(layer.layer_key),
             });
         }
     }
