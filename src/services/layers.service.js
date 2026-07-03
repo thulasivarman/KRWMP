@@ -5,6 +5,10 @@ function isSafeIdentifier(value) {
     return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(String(value || ''));
 }
 
+function mvtLayerName(layerKey) {
+    return String(layerKey || '').trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '') || 'layer';
+}
+
 async function getActiveLayers(identifier = '') {
     const sql = `
         SELECT
@@ -12,6 +16,9 @@ async function getActiveLayers(identifier = '') {
             layer_name,
             category,
             api_url,
+            '/api/tiles/layers/' || layer_key || '/{z}/{x}/{y}.pbf' AS tile_url,
+            mvt_layer_name(layer_key) AS mvt_layer,
+            'vector' AS source_type,
             source_id,
             fill_layer_id,
             line_layer_id,
@@ -27,6 +34,9 @@ async function getActiveLayers(identifier = '') {
             line_color,
             line_width,
             sort_order,
+            table_name,
+            geom_column,
+            geometry_type,
             COALESCE(required_privilege, 'map_view') AS required_privilege
         FROM public.gis_layers
         WHERE active = true
@@ -36,7 +46,14 @@ async function getActiveLayers(identifier = '') {
     const result = await pool.query(sql);
     const filtered = [];
     for (const layer of result.rows) {
-        if (await hasPrivilege(identifier, layer.required_privilege || 'map_view', 'view')) filtered.push(layer);
+        if (await hasPrivilege(identifier, layer.required_privilege || 'map_view', 'view')) {
+            filtered.push({
+                ...layer,
+                mvt_layer: mvtLayerName(layer.layer_key),
+                source_type: 'vector',
+                tile_url: `/api/tiles/layers/${encodeURIComponent(layer.layer_key)}/{z}/{x}/{y}.pbf`,
+            });
+        }
     }
 
     return { success: true, layers: filtered };
@@ -132,7 +149,9 @@ async function getLayerGeoJSON(layerKey, identifier = '') {
         'vwmc_committees',
         'intervention_registry',
         'intervention_institutions',
-        'vw_volunteer_organisation_performance'
+        'vw_volunteer_organisation_performance',
+        'pollution_sources',
+        'water_quality_tests'
     ];
     const isAdminUploadedTable = layer.managed_by_admin === true && String(layer.table_name || '').startsWith('uploaded_') && isSafeIdentifier(layer.table_name);
 
