@@ -1,6 +1,6 @@
 /**
  * KRWMP Layer Manager
- * Fully database-driven GIS layer manager.
+ * Fully database-driven GIS layer manager with MVT/vector-tile support.
  */
 
 const POLLUTION_PRESSURE_SOURCE_ID = 'pollution-pressure-heatmap-source';
@@ -38,61 +38,86 @@ function hideLayerLoading() {
     el.classList.add('hidden');
 }
 
+function getMvtLayerName(layer) {
+    return String(layer?.mvt_layer || layer?.layer_key || 'layer')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_]+/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '') || 'layer';
+}
+
+function hasVectorTileSource(layer) {
+    return Boolean(layer?.tile_url || layer?.source_type === 'vector');
+}
+
 function addDynamicSpatialLayer(layer) {
-    if (!window.KRWMP_MAP || !layer || !layer.source_id || !layer.api_url) return;
+    if (!window.KRWMP_MAP || !layer || !layer.source_id || (!layer.api_url && !layer.tile_url)) return;
     showLayerLoading(`Loading ${layer.layer_name || layer.layer_key}...`);
 
+    const sourceLayer = getMvtLayerName(layer);
+
     if (!window.KRWMP_MAP.getSource(layer.source_id)) {
-        window.KRWMP_MAP.addSource(layer.source_id, {
-            type: 'geojson',
-            data: layer.api_url,
-            promoteId: 'id'
-        });
+        if (hasVectorTileSource(layer)) {
+            const tileUrl = layer.tile_url || `/api/tiles/layers/${encodeURIComponent(layer.layer_key)}/{z}/{x}/{y}.pbf`;
+            window.KRWMP_MAP.addSource(layer.source_id, {
+                type: 'vector',
+                tiles: [tileUrl],
+                minzoom: Number(layer.min_zoom || 0),
+                maxzoom: Number(layer.max_zoom || 22),
+                promoteId: 'id'
+            });
+        } else {
+            window.KRWMP_MAP.addSource(layer.source_id, {
+                type: 'geojson',
+                data: layer.api_url,
+                promoteId: 'id'
+            });
+        }
     }
+
+    const baseLayer = {
+        source: layer.source_id,
+        minzoom: Number(layer.min_zoom || 0),
+        maxzoom: Number(layer.max_zoom || 22),
+        layout: { visibility: window.getLayerInitialVisibility(layer.layer_key) }
+    };
+    if (hasVectorTileSource(layer)) baseLayer['source-layer'] = sourceLayer;
 
     if (isPointLayer(layer) && layer.fill_layer_id && !window.KRWMP_MAP.getLayer(layer.fill_layer_id)) {
         window.KRWMP_MAP.addLayer({
+            ...baseLayer,
             id: layer.fill_layer_id,
             type: 'circle',
-            source: layer.source_id,
             filter: ['any', ['==', ['geometry-type'], 'Point'], ['==', ['geometry-type'], 'MultiPoint']],
-            minzoom: Number(layer.min_zoom || 0),
-            maxzoom: Number(layer.max_zoom || 22),
-            paint: getPointPaint(layer),
-            layout: { visibility: window.getLayerInitialVisibility(layer.layer_key) }
+            paint: getPointPaint(layer)
         });
         if (window.attachInteractivePopupHandshake) window.attachInteractivePopupHandshake(layer.fill_layer_id, layer);
     }
 
     if (!isPointLayer(layer) && layer.fill_layer_id && !window.KRWMP_MAP.getLayer(layer.fill_layer_id)) {
         window.KRWMP_MAP.addLayer({
+            ...baseLayer,
             id: layer.fill_layer_id,
             type: 'fill',
-            source: layer.source_id,
             filter: ['any', ['==', ['geometry-type'], 'Polygon'], ['==', ['geometry-type'], 'MultiPolygon']],
-            minzoom: Number(layer.min_zoom || 0),
-            maxzoom: Number(layer.max_zoom || 22),
             paint: {
                 'fill-color': layer.fill_color || '#22c55e',
                 'fill-opacity': Number(layer.fill_opacity ?? 0.4)
-            },
-            layout: { visibility: window.getLayerInitialVisibility(layer.layer_key) }
+            }
         });
         if (window.attachInteractivePopupHandshake) window.attachInteractivePopupHandshake(layer.fill_layer_id, layer);
     }
 
     if (layer.line_layer_id && !window.KRWMP_MAP.getLayer(layer.line_layer_id)) {
         window.KRWMP_MAP.addLayer({
+            ...baseLayer,
             id: layer.line_layer_id,
             type: 'line',
-            source: layer.source_id,
-            minzoom: Number(layer.min_zoom || 0),
-            maxzoom: Number(layer.max_zoom || 22),
             paint: {
                 'line-color': layer.line_color || '#166534',
                 'line-width': Number(layer.line_width || 1)
-            },
-            layout: { visibility: window.getLayerInitialVisibility(layer.layer_key) }
+            }
         });
         if (window.attachInteractivePopupHandshake) window.attachInteractivePopupHandshake(layer.line_layer_id, layer);
     }
@@ -138,7 +163,7 @@ function renderDynamicLayerToggles(layers) {
 
         const subtitle = document.createElement('div');
         subtitle.className = 'text-[10px] text-slate-500 truncate';
-        subtitle.textContent = layer.category || getLayerTypeLabel(layer);
+        subtitle.textContent = `${layer.category || getLayerTypeLabel(layer)}${hasVectorTileSource(layer) ? ' · MVT' : ''}`;
 
         textWrap.appendChild(title);
         textWrap.appendChild(subtitle);
@@ -319,64 +344,3 @@ window.shouldLoadLayerGroup = function (layerKey) {
 
     return isLayerDefaultVisible(layer);
 };
-
-// =====================================================
-// Mapping helpers
-// =====================================================
-
-function getCheckboxIdFromConfigKey(layerKey) {
-    return `chk-layer-${layerKey}`;
-}
-
-function getConfigKeyFromCheckboxId(checkboxId) {
-    return checkboxId.replace('chk-layer-', '');
-}
-
-function getLayerDefinitionByKey(layerKey) {
-    const layers = window.KRWMP_DYNAMIC_LAYERS || [];
-    return layers.find(layer => layer.layer_key === layerKey);
-}
-
-function isLayerDefaultVisible(layer) {
-    return layer?.default_visible === true || layer?.default_visible === 'true';
-}
-
-function isPointLayer(layer) {
-    const geometryType = String(layer.geometry_type || layer.layer_type || '').toLowerCase();
-    const layerKey = String(layer.layer_key || '').toLowerCase();
-
-    return geometryType.includes('point')
-        || layerKey.includes('point')
-        || layerKey.includes('source')
-        || layerKey.includes('complaint')
-        || layerKey.includes('intervention')
-        || layerKey.includes('monitoring');
-}
-
-function getPointPaint(layer) {
-    return {
-        'circle-radius': Number(layer.point_radius || layer.circle_radius || 6),
-        'circle-color': layer.fill_color || layer.point_color || '#ef4444',
-        'circle-opacity': Number(layer.fill_opacity ?? layer.point_opacity ?? 0.85),
-        'circle-stroke-color': layer.line_color || '#ffffff',
-        'circle-stroke-width': Number(layer.line_width || 1)
-    };
-}
-
-function prettifyKey(key) {
-    return String(key || '')
-        .replaceAll('_', ' ')
-        .replaceAll('-', ' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .replace(/\b\w/g, char => char.toUpperCase());
-}
-
-function escapeAttr(value) {
-    return String(value || '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;');
-}
