@@ -21,6 +21,10 @@ const STATIC_ALLOWED_TABLES = new Set([
   'water_quality_tests',
 ]);
 
+const LAT_LNG_TABLES = new Set([
+  'intervention_registry',
+]);
+
 function isSafeIdentifier(value) {
   return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(String(value || ''));
 }
@@ -93,8 +97,13 @@ async function getLayerConfig(layerKey, identifier = '') {
     error.statusCode = 403;
     throw error;
   }
-  if (!isSafeIdentifier(layer.table_name) || !isSafeIdentifier(layer.geom_column || 'geom')) {
-    const error = new Error('Invalid spatial layer configuration.');
+  if (!isSafeIdentifier(layer.table_name)) {
+    const error = new Error('Invalid spatial layer table configuration.');
+    error.statusCode = 500;
+    throw error;
+  }
+  if (!LAT_LNG_TABLES.has(layer.table_name) && !isSafeIdentifier(layer.geom_column || 'geom')) {
+    const error = new Error('Invalid spatial layer geometry configuration.');
     error.statusCode = 500;
     throw error;
   }
@@ -102,6 +111,7 @@ async function getLayerConfig(layerKey, identifier = '') {
   return {
     ...layer,
     geom_column: layer.geom_column || 'geom',
+    uses_lat_lng: LAT_LNG_TABLES.has(layer.table_name),
     mvt_layer_name: cleanLayerName(layer.layer_key),
   };
 }
@@ -112,6 +122,27 @@ function tileIsOutsideScale(layer, z) {
   return z < minZoom || z > maxZoom;
 }
 
+function geometryExpression(layer) {
+  if (layer.uses_lat_lng) {
+    return 'ST_SetSRID(ST_MakePoint(t.longitude, t.latitude), 4326)';
+  }
+  return `t.${quoteIdent(layer.geom_column)}`;
+}
+
+function geometryWhereClause(layer, geomExpr) {
+  if (layer.uses_lat_lng) {
+    return `t.latitude IS NOT NULL AND t.longitude IS NOT NULL AND ${geomExpr} IS NOT NULL`;
+  }
+  return `${geomExpr} IS NOT NULL`;
+}
+
+function propertyExpression(layer) {
+  if (layer.uses_lat_lng) {
+    return 'to_jsonb(t)';
+  }
+  return `(to_jsonb(t) - '${layer.geom_column}')`;
+}
+
 async function getLayerTile(layerKey, zValue, xValue, yValue, identifier = '') {
   const tile = validateTile(zValue, xValue, yValue);
   const layer = await getLayerConfig(layerKey, identifier);
@@ -119,7 +150,9 @@ async function getLayerTile(layerKey, zValue, xValue, yValue, identifier = '') {
   if (tileIsOutsideScale(layer, tile.z)) return Buffer.alloc(0);
 
   const tableSql = `public.${quoteIdent(layer.table_name)}`;
-  const geomSql = quoteIdent(layer.geom_column);
+  const geomExpr = geometryExpression(layer);
+  const whereExpr = geometryWhereClause(layer, geomExpr);
+  const propertiesExpr = propertyExpression(layer);
   const mvtLayerName = layer.mvt_layer_name;
 
   const sql = `
@@ -128,28 +161,28 @@ async function getLayerTile(layerKey, zValue, xValue, yValue, identifier = '') {
     ), source AS (
       SELECT
         t.id::text AS id,
-        (to_jsonb(t) - $4::text) AS properties,
+        ${propertiesExpr} AS properties,
         ST_AsMVTGeom(
-          ST_Transform(t.${geomSql}, 3857),
+          ST_Transform(${geomExpr}, 3857),
           bounds.geom,
+          $4,
           $5,
-          $6,
           true
         ) AS geom
       FROM ${tableSql} AS t
       CROSS JOIN bounds
-      WHERE t.${geomSql} IS NOT NULL
-        AND ST_Intersects(ST_Transform(t.${geomSql}, 3857), bounds.geom)
+      WHERE ${whereExpr}
+        AND ST_Intersects(ST_Transform(${geomExpr}, 3857), bounds.geom)
     ), mvt_features AS (
       SELECT id, properties, geom
       FROM source
       WHERE geom IS NOT NULL
     )
-    SELECT ST_AsMVT(mvt_features, $7, $5, 'geom') AS tile
+    SELECT ST_AsMVT(mvt_features, $6, $4, 'geom') AS tile
     FROM mvt_features;
   `;
 
-  const result = await pool.query(sql, [tile.z, tile.x, tile.y, layer.geom_column, TILE_EXTENT, TILE_BUFFER, mvtLayerName]);
+  const result = await pool.query(sql, [tile.z, tile.x, tile.y, TILE_EXTENT, TILE_BUFFER, mvtLayerName]);
   const rawTile = result.rows[0]?.tile;
   if (!rawTile) return Buffer.alloc(0);
   return Buffer.isBuffer(rawTile) ? rawTile : Buffer.from(rawTile);
