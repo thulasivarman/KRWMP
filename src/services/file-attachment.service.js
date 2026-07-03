@@ -96,8 +96,15 @@ function publicUrlForObject(objectKey) {
   return `${baseUrl.replace(/\/+$/, '')}/${objectKey.split('/').map(encodeURIComponent).join('/')}`;
 }
 
-function uploadHeaders(mimeType) {
-  const headers = {};
+function signedMetadataHeaders(attachment = {}) {
+  return {
+    'x-amz-meta-attachment_id': String(attachment.id),
+    'x-amz-meta-module_key': String(attachment.module_key),
+  };
+}
+
+function uploadHeaders(mimeType, attachment = {}) {
+  const headers = signedMetadataHeaders(attachment);
   if (cleanText(mimeType)) headers['Content-Type'] = cleanText(mimeType);
   return headers;
 }
@@ -124,14 +131,15 @@ async function createPresignedUploadUrl(payload = {}, user = 'system') {
     uploaded_by: user,
   });
 
+  const objectMetadata = {
+    attachment_id: String(attachment.id),
+    module_key: String(attachment.module_key),
+  };
   const command = new PutObjectCommand({
     Bucket: bucket,
     Key: objectKey,
     ContentType: mimeType || undefined,
-    Metadata: {
-      attachment_id: String(attachment.id),
-      module_key: String(attachment.module_key),
-    },
+    Metadata: objectMetadata,
   });
   const expiresIn = normalizeExpires(payload.expires_in || process.env.R2_UPLOAD_URL_EXPIRES_SECONDS, DEFAULT_UPLOAD_EXPIRES_SECONDS);
   const url = await getSignedUrl(getS3Client(), command, { expiresIn });
@@ -141,7 +149,7 @@ async function createPresignedUploadUrl(payload = {}, user = 'system') {
     upload: {
       url,
       method: 'PUT',
-      headers: uploadHeaders(mimeType),
+      headers: uploadHeaders(mimeType, attachment),
       expires_in: expiresIn,
     },
   };
