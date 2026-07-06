@@ -7,8 +7,50 @@ const POLLUTION_PRESSURE_SOURCE_ID = 'pollution-pressure-heatmap-source';
 const POLLUTION_PRESSURE_LAYER_ID = 'pollution-pressure-heatmap-layer';
 const POLLUTION_PRESSURE_API_URL = '/api/analytics/pollution-pressure/heatmap.geojson';
 
+window.getCheckboxIdFromConfigKey = window.getCheckboxIdFromConfigKey || function (layerKey) {
+    return 'chk-layer-' + String(layerKey || '').replace(/_/g, '-');
+};
+
+window.getConfigKeyFromCheckboxId = window.getConfigKeyFromCheckboxId || function (id) {
+    return String(id || '').replace(/^chk-layer-/, '').replace(/-/g, '_');
+};
+
 function gisUrl(url) {
     return window.KRWMP_UTILS.withGisApiBase(url);
+}
+
+function escapeAttr(value) {
+    return window.KRWMP_UTILS?.escapeAttribute
+        ? window.KRWMP_UTILS.escapeAttribute(value)
+        : String(value ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function prettifyKey(key) {
+    return String(key || '').replace(/_/g, ' ').replace(/\s+/g, ' ').trim().replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function getLayerDefinitionByKey(layerKey) {
+    const key = String(layerKey || '');
+    return (window.KRWMP_DYNAMIC_LAYERS || []).find(layer => String(layer.layer_key || '') === key) || null;
+}
+
+function isLayerDefaultVisible(layer) {
+    return layer?.default_visible === true || layer?.default_visible === 'true';
+}
+
+function isPointLayer(layer) {
+    const geometryType = String(layer?.geometry_type || '').toLowerCase();
+    return geometryType.includes('point') || Boolean(layer?.point_color);
+}
+
+function getPointPaint(layer) {
+    return {
+        'circle-radius': Number(layer?.point_radius || 5),
+        'circle-color': layer?.point_color || layer?.fill_color || '#22c55e',
+        'circle-opacity': Number(layer?.point_opacity ?? layer?.fill_opacity ?? 0.85),
+        'circle-stroke-color': layer?.line_color || '#ffffff',
+        'circle-stroke-width': Number(layer?.line_width || 1)
+    };
 }
 
 window.initializeSupabaseSpatialSources = function () {

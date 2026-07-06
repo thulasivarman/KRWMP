@@ -173,6 +173,31 @@
         return payload;
     }
 
+    function isCreatePanelVisible(panel) {
+        return Boolean(panel && !panel.classList.contains('hidden'));
+    }
+
+    function setCreatePanelFieldsEnabled(panel, enabled) {
+        if (!panel) return;
+        panel.querySelectorAll('[data-person-create-field]').forEach(field => {
+            if (field.dataset.personOriginalRequired === undefined) {
+                field.dataset.personOriginalRequired = field.hasAttribute('required') ? 'true' : 'false';
+            }
+            field.disabled = !enabled;
+            if (enabled && field.dataset.personOriginalRequired === 'true') {
+                field.setAttribute('required', '');
+            } else {
+                field.removeAttribute('required');
+            }
+        });
+    }
+
+    function setCreatePanelVisible(panel, visible) {
+        if (!panel) return;
+        panel.classList.toggle('hidden', !visible);
+        setCreatePanelFieldsEnabled(panel, visible);
+    }
+
     function mount(options = {}) {
         const container = resolveElement(options.container);
         if (!container) throw new Error('Person selector container is required.');
@@ -207,6 +232,7 @@
         const resultsNode = container.querySelector('[data-person-results]');
         const createPanel = container.querySelector('[data-person-create-panel]');
         const duplicateNode = container.querySelector('[data-person-duplicate-warning]');
+        setCreatePanelFieldsEnabled(createPanel, allowCreate && isCreatePanelVisible(createPanel));
 
         function setStatus(message, error = false) {
             statusNode.innerHTML = statusHtml(message, error);
@@ -216,6 +242,7 @@
             state.selectedPerson = person || null;
             if (valueInput) valueInput.value = person?.id || '';
             selectedNode.innerHTML = selectedPersonHtml(state.selectedPerson);
+            if (state.selectedPerson) setCreatePanelVisible(createPanel, false);
             if (typeof options.onSelect === 'function') options.onSelect(state.selectedPerson);
             container.dispatchEvent(new CustomEvent('krwmp:person-selected', {
                 bubbles: true,
@@ -250,6 +277,7 @@
 
         async function runDuplicateCheck() {
             if (!allowCreate) return [];
+            if (!isCreatePanelVisible(createPanel)) return [];
             const payload = collectCreatePayload(container);
             if (!payload.full_name && !payload.nic_number && !payload.phone_number && !payload.email) {
                 duplicateNode.classList.add('hidden');
@@ -318,7 +346,7 @@
             }
 
             if (action === 'toggle-create') {
-                createPanel?.classList.toggle('hidden');
+                setCreatePanelVisible(createPanel, !isCreatePanelVisible(createPanel));
                 return;
             }
 
@@ -330,6 +358,7 @@
             }
 
             if (action === 'create') {
+                setCreatePanelVisible(createPanel, true);
                 const payload = collectCreatePayload(container);
                 if (!payload.full_name || payload.full_name.length < 2) {
                     setStatus('Full name is required to create a person.', true);
@@ -345,6 +374,7 @@
                     createPanel?.querySelectorAll('[data-person-create-field]').forEach(field => { field.value = ''; });
                     duplicateNode.classList.add('hidden');
                     duplicateNode.innerHTML = '';
+                    setCreatePanelVisible(createPanel, false);
                     setStatus('Person created and selected.');
                     if (typeof options.onCreate === 'function') options.onCreate(person);
                 } catch (error) {
