@@ -430,7 +430,10 @@ test('file attachment service creates presigned upload URLs and pending metadata
   assert.equal(result.upload.method, 'PUT');
   assert.equal(result.upload.headers['Content-Type'], 'application/pdf');
   assert.match(result.upload.url, /^https:\/\/test-account\.r2\.cloudflarestorage\.com\/krwmp-test\//);
-  assert.match(result.upload.url, /attachments\/knowledge_resources\/2026\/06\/11111111-1111-4111-8111-111111111111\//);
+  const now = new Date();
+  const expectedYear = now.getUTCFullYear();
+  const expectedMonth = String(now.getUTCMonth() + 1).padStart(2, '0');
+  assert.match(result.upload.url, new RegExp(`attachments\\/knowledge_resources\\/${expectedYear}\\/${expectedMonth}\\/11111111-1111-4111-8111-111111111111\\/`));
   assert.match(result.upload.url, /X-Amz-Algorithm=AWS4-HMAC-SHA256/);
 });
 

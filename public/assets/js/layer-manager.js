@@ -7,6 +7,10 @@ const POLLUTION_PRESSURE_SOURCE_ID = 'pollution-pressure-heatmap-source';
 const POLLUTION_PRESSURE_LAYER_ID = 'pollution-pressure-heatmap-layer';
 const POLLUTION_PRESSURE_API_URL = '/api/analytics/pollution-pressure/heatmap.geojson';
 
+function gisUrl(url) {
+    return window.KRWMP_UTILS.withGisApiBase(url);
+}
+
 window.initializeSupabaseSpatialSources = function () {
     const layers = window.KRWMP_DYNAMIC_LAYERS || [];
 
@@ -62,7 +66,7 @@ function addDynamicSpatialLayer(layer) {
             const tileUrl = layer.tile_url || `/api/tiles/layers/${encodeURIComponent(layer.layer_key)}/{z}/{x}/{y}.pbf`;
             window.KRWMP_MAP.addSource(layer.source_id, {
                 type: 'vector',
-                tiles: [tileUrl],
+                tiles: [gisUrl(tileUrl)],
                 minzoom: Number(layer.min_zoom || 0),
                 maxzoom: Number(layer.max_zoom || 22),
                 promoteId: 'id'
@@ -70,7 +74,7 @@ function addDynamicSpatialLayer(layer) {
         } else {
             window.KRWMP_MAP.addSource(layer.source_id, {
                 type: 'geojson',
-                data: layer.api_url,
+                data: gisUrl(layer.api_url),
                 promoteId: 'id'
             });
         }
@@ -224,12 +228,12 @@ async function addPollutionPressureHeatmapLayer() {
     if (!window.KRWMP_MAP.getSource(POLLUTION_PRESSURE_SOURCE_ID)) {
         window.KRWMP_MAP.addSource(POLLUTION_PRESSURE_SOURCE_ID, {
             type: 'geojson',
-            data: POLLUTION_PRESSURE_API_URL
+            data: gisUrl(POLLUTION_PRESSURE_API_URL)
         });
     } else {
         const source = window.KRWMP_MAP.getSource(POLLUTION_PRESSURE_SOURCE_ID);
         if (source && typeof source.setData === 'function') {
-            source.setData(`${POLLUTION_PRESSURE_API_URL}?_=${Date.now()}`);
+            source.setData(gisUrl(`${POLLUTION_PRESSURE_API_URL}?_=${Date.now()}`));
         }
     }
 

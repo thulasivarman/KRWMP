@@ -126,7 +126,47 @@ window.KRWMP_UTILS = window.KRWMP_UTILS || (() => {
         return data;
     }
 
-    return { apiRequest, request: apiRequest, escapeHtml, escapeAttribute, setText, setHtml, renderEmpty, showStatus, createOption, resetSelect, confirmAction };
+    function cleanBaseUrl(value) {
+        const text = String(value || '').trim();
+        return text.replace(/\/+$/, '');
+    }
+
+    function getGisApiBaseUrl() {
+        const configured = window.KRWMP_CONFIG?.GIS_API_BASE_URL
+            || window.KRWMP_GIS_API_BASE_URL
+            || document.querySelector('meta[name="gis-api-base-url"]')?.content
+            || localStorage.getItem('GIS_API_BASE_URL')
+            || '';
+        return cleanBaseUrl(configured);
+    }
+
+    async function loadRuntimeConfig() {
+        try {
+            const data = await apiRequest('/api/runtime-config');
+            window.KRWMP_CONFIG = { ...(window.KRWMP_CONFIG || {}), ...(data.config || {}) };
+            return window.KRWMP_CONFIG;
+        } catch (error) {
+            window.KRWMP_CONFIG = window.KRWMP_CONFIG || {};
+            return window.KRWMP_CONFIG;
+        }
+    }
+
+    function withGisApiBase(url) {
+        const value = String(url || '');
+        if (!value || /^[a-z][a-z0-9+.-]*:/i.test(value) || value.startsWith('//')) return value;
+        const baseUrl = getGisApiBaseUrl();
+        if (!baseUrl) return value;
+        if (value.startsWith('/api/') || value.startsWith('/data/raster-')) return `${baseUrl}${value}`;
+        return value;
+    }
+
+    async function gisRequest(url, options = {}) {
+        const baseUrl = getGisApiBaseUrl();
+        const requestOptions = baseUrl ? { credentials: 'omit', ...options } : options;
+        return apiRequest(withGisApiBase(url), requestOptions);
+    }
+
+    return { apiRequest, request: apiRequest, gisRequest, loadRuntimeConfig, getGisApiBaseUrl, withGisApiBase, escapeHtml, escapeAttribute, setText, setHtml, renderEmpty, showStatus, createOption, resetSelect, confirmAction };
 })();
 
 window.KRWMP_ENGINE = {

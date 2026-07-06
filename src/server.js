@@ -5,6 +5,7 @@ const fastify = require('fastify')({ logger: true });
 const pool = require('../config/database');
 
 const isLocalRequest = request => String(request.ip || '').startsWith('127.0.0.1');
+const enableGisRoutes = String(process.env.ENABLE_GIS_ROUTES ?? 'true').trim().toLowerCase() !== 'false';
 
 fastify.register(require('@fastify/static'), { root: path.join(__dirname, '../public'), prefix: '/' });
 fastify.register(require('@fastify/compress'), { global: true });
@@ -18,15 +19,20 @@ fastify.register(require('@fastify/rate-limit'), {
 fastify.register(require('@fastify/multipart'), { limits: { fileSize: Number(process.env.MAX_LAYER_UPLOAD_SIZE || process.env.MAX_RASTER_UPLOAD_SIZE || 250 * 1024 * 1024), files: 1 } });
 
 fastify.register(require('./routes/auth.routes'), { prefix: '/api' });
+fastify.register(require('./routes/runtime-config.routes'), { prefix: '/api' });
 fastify.register(require('./routes/me.routes'), { prefix: '/api' });
 fastify.register(require('./routes/admin.routes'), { prefix: '/api' });
 fastify.register(require('./routes/privileges.routes'), { prefix: '/api' });
-fastify.register(require('./routes/spatial.routes'), { prefix: '/api' });
-fastify.register(require('./routes/layers.routes'), { prefix: '/api' });
-fastify.register(require('./routes/vector-tile.routes'), { prefix: '/api' });
-fastify.register(require('./routes/vector-layer.routes'), { prefix: '/api' });
-fastify.register(require('./routes/pollution-pressure.routes'), { prefix: '/api' });
-fastify.register(require('./routes/raster-layer.routes'), { prefix: '/api' });
+if (enableGisRoutes) {
+  fastify.register(require('./routes/spatial.routes'), { prefix: '/api' });
+  fastify.register(require('./routes/layers.routes'), { prefix: '/api' });
+  fastify.register(require('./routes/vector-tile.routes'), { prefix: '/api' });
+  fastify.register(require('./routes/vector-layer.routes'), { prefix: '/api' });
+  fastify.register(require('./routes/pollution-pressure.routes'), { prefix: '/api' });
+  fastify.register(require('./routes/raster-layer.routes'), { prefix: '/api' });
+} else {
+  fastify.register(require('./routes/pollution-pressure-config.routes'), { prefix: '/api' });
+}
 fastify.register(require('./routes/community-issues.routes'), { prefix: '/api' });
 fastify.register(require('./routes/vwmc.routes'), { prefix: '/api' });
 fastify.register(require('./routes/intervention.routes'), { prefix: '/api' });

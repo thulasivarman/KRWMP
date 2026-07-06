@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await window.KRWMP_ENGINE.initSession();
         if (!window.KRWMP_ENGINE.requireAuthenticatedSession()) return;
     }
+    if (window.KRWMP_UTILS?.loadRuntimeConfig) await window.KRWMP_UTILS.loadRuntimeConfig();
     if (window.loadLayerRegistry) await window.loadLayerRegistry();
     await window.initializeInterface();
     window.initializeMap();

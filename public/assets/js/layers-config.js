@@ -10,7 +10,7 @@ window.KRWMP_LAYERS_CONFIG = {
 
         basin: {
             id: 'krwmp-basin-source',
-            url: '/api/spatial/basin',
+            url: window.KRWMP_UTILS.withGisApiBase('/api/spatial/basin'),
             type: 'geojson',
             label: 'Kelani Watershed Boundary',
             layers: [
@@ -36,7 +36,7 @@ window.KRWMP_LAYERS_CONFIG = {
 
         forest: {
             id: 'krwmp-forest-source',
-            url: '/api/spatial/forest',
+            url: window.KRWMP_UTILS.withGisApiBase('/api/spatial/forest'),
             type: 'geojson',
             label: 'Forest Cover',
             layers: [
@@ -62,7 +62,7 @@ window.KRWMP_LAYERS_CONFIG = {
 
         dsd: {
             id: 'krwmp-dsd-source',
-            url: '/api/spatial/dsd',
+            url: window.KRWMP_UTILS.withGisApiBase('/api/spatial/dsd'),
             type: 'geojson',
             label: 'Divisional Secretariat Divisions',
             layers: [
@@ -88,7 +88,7 @@ window.KRWMP_LAYERS_CONFIG = {
 
         gnd: {
             id: 'krwmp-gnd-source',
-            url: '/api/spatial/gnd',
+            url: window.KRWMP_UTILS.withGisApiBase('/api/spatial/gnd'),
             type: 'geojson',
             label: 'Grama Niladhari Divisions',
             layers: [

@@ -2,7 +2,7 @@ window.KRWMP_RASTER_LAYERS = [];
 
 window.loadRasterLayerRegistry = async function () {
     try {
-        const data = await window.KRWMP_UTILS.apiRequest('/api/raster-layers');
+        const data = await window.KRWMP_UTILS.gisRequest('/api/raster-layers');
         window.KRWMP_RASTER_LAYERS = data.layers || [];
         return window.KRWMP_RASTER_LAYERS;
     } catch (error) {
@@ -31,7 +31,8 @@ function getRasterImageUrl(layer) {
     const previewUrl = layer.preview_file_url || layer.file_url || '';
     if (!/\.(png|jpg|jpeg|webp)(\?.*)?$/i.test(previewUrl)) return null;
     const version = encodeURIComponent(layer.updated_at || layer.uploaded_at || Date.now());
-    return previewUrl.includes('?') ? `${previewUrl}&v=${version}` : `${previewUrl}?v=${version}`;
+    const versionedUrl = previewUrl.includes('?') ? `${previewUrl}&v=${version}` : `${previewUrl}?v=${version}`;
+    return window.KRWMP_UTILS.withGisApiBase(versionedUrl);
 }
 
 function rasterLocalKey(layerKey) {
@@ -95,7 +96,7 @@ function addRasterLayerToMap(layer) {
         if (mode === 'tiles') {
             window.KRWMP_MAP.addSource(sourceId, {
                 type: 'raster',
-                tiles: [layer.tile_url_template],
+                tiles: [window.KRWMP_UTILS.withGisApiBase(layer.tile_url_template)],
                 tileSize: 256,
                 bounds: getRasterBounds(layer),
                 minzoom: Number(layer.tile_min_zoom ?? layer.min_zoom ?? 0),

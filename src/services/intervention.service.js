@@ -3,7 +3,7 @@ const pool = require('../../config/database');
 function safeKey(value, fallback = 'intervention') { return String(value || fallback).trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '') || fallback; }
 function code() { const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, ''); const rand = Math.random().toString(36).slice(2, 6).toUpperCase(); return `INT-${stamp}-${rand}`; }
 function num(value) { if (value === undefined || value === null || String(value).trim() === '') return null; const n = Number(value); return Number.isFinite(n) ? n : null; }
-function uuidOrNull(value) { return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i.test(String(value || '')) ? value : null; }
+function uuidOrNull(value) { return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || '')) ? value : null; }
 function cleanText(value) { const text = String(value ?? '').trim(); return text || null; }
 function normalizeIdList(value) { if (Array.isArray(value)) return value.map(uuidOrNull).filter(Boolean); if (typeof value === 'string') { try { const parsed = JSON.parse(value); if (Array.isArray(parsed)) return normalizeIdList(parsed); } catch (_) {} return value.split(',').map(uuidOrNull).filter(Boolean); } return []; }
 function normalizeNumericIdList(value) { const raw = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : []; return [...new Set(raw.map(v => Number(String(v).trim())).filter(Number.isFinite))]; }

@@ -4,7 +4,7 @@ window.initializeCommunityIssueLayer = function () {
   const layerId = 'community-issues-points';
 
   if (!window.KRWMP_MAP.getSource(sourceId)) {
-    window.KRWMP_MAP.addSource(sourceId, { type: 'geojson', data: '/api/community-reports.geojson' });
+    window.KRWMP_MAP.addSource(sourceId, { type: 'geojson', data: window.KRWMP_UTILS.withGisApiBase('/api/community-reports.geojson') });
   }
 
   if (!window.KRWMP_MAP.getLayer(layerId)) {

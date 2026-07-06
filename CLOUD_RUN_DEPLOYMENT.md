@@ -1,6 +1,11 @@
 # Cloud Run Deployment
 
-This project is a Node.js/Fastify application that serves static frontend files from `public/` and API routes from `src/server.js`. It connects directly to Supabase Postgres/PostGIS through the `pg` package using `DATABASE_URL`.
+This project can run two Node.js/Fastify entry points from the same container image:
+
+- API Core: `npm run start:api`, served by `src/server.js`.
+- GIS Service: `npm run start:gis`, served by `src/gis-server.js`.
+
+API Core serves static frontend files from `public/` and API routes from `src/server.js`. Both entry points connect directly to Supabase Postgres/PostGIS through the `pg` package using `DATABASE_URL`.
 
 ## Prerequisites
 
@@ -19,7 +24,7 @@ gcloud config set run/region asia-southeast1
 
 ## Build
 
-The repository includes a `Dockerfile` that installs Node dependencies and runs `npm start` on port `8080`.
+The repository includes a `Dockerfile` that installs Node dependencies and defaults to `npm run start:api` on port `8080`. The same image can run the GIS service by overriding the Cloud Run command to `npm run start:gis`.
 
 Build with Cloud Build:
 
@@ -36,7 +41,26 @@ gcloud artifacts repositories create krwmp \
   --location=asia-southeast1
 ```
 
-## Deploy
+## Runtime Modes
+
+The image exposes explicit npm scripts:
+
+```sh
+npm run start:api
+npm run start:gis
+```
+
+`npm start` aliases `npm run start:api`, so existing API deployments continue to work.
+
+API Core can exclude GIS-heavy routes with:
+
+```sh
+ENABLE_GIS_ROUTES=false
+```
+
+When unset, `ENABLE_GIS_ROUTES` preserves the current behavior and keeps GIS routes mounted in API Core.
+
+## Deploy API Core
 
 Deploy the built image to Cloud Run:
 
@@ -46,7 +70,23 @@ gcloud run deploy krwmp-portal \
   --platform managed \
   --allow-unauthenticated \
   --port 8080 \
-  --set-env-vars NODE_ENV=production,PORT=8080,JWT_EXPIRES_IN=8h,RATE_LIMIT_MAX=300,RATE_LIMIT_WINDOW="1 minute" \
+  --set-env-vars NODE_ENV=production,PORT=8080,ENABLE_GIS_ROUTES=false,JWT_EXPIRES_IN=8h,RATE_LIMIT_MAX=300,RATE_LIMIT_WINDOW="1 minute" \
+  --set-secrets DATABASE_URL=krwmp-database-url:latest,JWT_SECRET=krwmp-jwt-secret:latest
+```
+
+## Deploy GIS Service
+
+Deploy the same image with a command override:
+
+```sh
+gcloud run deploy krwmp-gis \
+  --image asia-southeast1-docker.pkg.dev/YOUR_GCP_PROJECT_ID/krwmp/portal:latest \
+  --platform managed \
+  --allow-unauthenticated \
+  --port 8080 \
+  --command npm \
+  --args run,start:gis \
+  --set-env-vars NODE_ENV=production,PORT=8080,GIS_RATE_LIMIT_MAX=600,GIS_RATE_LIMIT_WINDOW="1 minute" \
   --set-secrets DATABASE_URL=krwmp-database-url:latest,JWT_SECRET=krwmp-jwt-secret:latest
 ```
 
@@ -85,6 +125,9 @@ Optional:
 | `JWT_EXPIRES_IN` | `8h` | Session JWT lifetime. |
 | `RATE_LIMIT_MAX` | `300` | Global Fastify rate limit. |
 | `RATE_LIMIT_WINDOW` | `1 minute` | Global rate-limit window. |
+| `ENABLE_GIS_ROUTES` | `true` | Set to `false` in API Core deployments to skip GIS-heavy routes from `src/server.js`. |
+| `GIS_RATE_LIMIT_MAX` | `RATE_LIMIT_MAX` or `600` | GIS service rate limit used by `src/gis-server.js`. |
+| `GIS_RATE_LIMIT_WINDOW` | `RATE_LIMIT_WINDOW` or `1 minute` | GIS service rate-limit window. |
 | `PUBLIC_COMPLAINT_RATE_LIMIT` | `20` | Public complaint submission rate limit. |
 | `MAX_LAYER_UPLOAD_SIZE` | `250 MB` | Multipart file limit for layer uploads. |
 | `MAX_RASTER_UPLOAD_SIZE` | `250 MB` | Fallback multipart file limit for raster uploads. |

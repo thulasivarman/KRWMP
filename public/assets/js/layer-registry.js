@@ -7,7 +7,7 @@ window.KRWMP_DYNAMIC_LAYERS = [];
 
 window.loadLayerRegistry = async function () {
     try {
-        const data = await window.KRWMP_UTILS.apiRequest('/api/layers');
+        const data = await window.KRWMP_UTILS.gisRequest('/api/layers');
 
         window.KRWMP_DYNAMIC_LAYERS = data.layers || [];
 

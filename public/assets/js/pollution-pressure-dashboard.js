@@ -88,8 +88,8 @@
     try {
       const query = queryString();
       const [summaryResponse, criticalResponse] = await Promise.all([
-        request('/api/analytics/pollution-pressure/dashboard-summary' + query),
-        request('/api/analytics/pollution-pressure/critical-gns?limit=10')
+        window.KRWMP_UTILS.gisRequest('/api/analytics/pollution-pressure/dashboard-summary' + query),
+        window.KRWMP_UTILS.gisRequest('/api/analytics/pollution-pressure/critical-gns?limit=10')
       ]);
       renderPie(summaryResponse.data || []);
       renderCriticalGNs(criticalResponse.data || []);

@@ -3,7 +3,7 @@ window.initializeWaterQualityLayer = function () {
   const sourceId = 'water-quality-source';
   const layerId = 'water-quality-latest-points';
   if (!window.KRWMP_MAP.getSource(sourceId)) {
-    window.KRWMP_MAP.addSource(sourceId, { type: 'geojson', data: '/api/water-quality/latest.geojson' });
+    window.KRWMP_MAP.addSource(sourceId, { type: 'geojson', data: window.KRWMP_UTILS.withGisApiBase('/api/water-quality/latest.geojson') });
   }
   if (!window.KRWMP_MAP.getLayer(layerId)) {
     window.KRWMP_MAP.addLayer({
